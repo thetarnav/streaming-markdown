@@ -4,7 +4,10 @@
 
 `println("Hello, **Worl
 
-- [`createSwitchTransition`](#createSwitchTransition) - Create an element transition interface for switching between single elements.
+*italic **bold** italic*
+**bold *italic* bold**
+
+- [`createSwitchTransition`](#createSwitchTransition) - *Create an element transition *interface for* switching **between** single elements.*
 - [`createListTransition`](#createListTransition) - Create an element list transition interface for changes to the list of elements.
 
 ## Installation
