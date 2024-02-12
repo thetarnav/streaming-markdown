@@ -34,6 +34,7 @@ function MdStream(container) {
     this.nodes_type      =/**@type {MdNodeType[] }*/([MdNodeType.Text,,,,,])
     this.nodes_len       =/**@type {number       }*/(0)
     this.text            =/**@type {string       }*/("")
+    this.last_char       =/**@type {string       }*/("")
     this.backticks_count =/**@type {number       }*/(0)
     this.last_inline_code=/**@type {HTMLElement? }*/(null)
     this.code_block_lang =/**@type {boolean      }*/(false)
@@ -85,17 +86,21 @@ function addNode(s, type, container_el, text_el = container_el) {
 function addChunk(s, chunk) {
     console.log(`chunk: "${chunk}"`)
 
-    for (let i = 0; i < chunk.length; i++) {
-        const ch = chunk[i]
+    let i = 0,
+        char = s.last_char,
+        last_char = s.last_char
+    
+    while (i < chunk.length) {
+        last_char = char
+        char = chunk[i]
+        i += 1
 
-        switch (ch) {
+        switch (char) {
         case '*': {
-            s.backticks_count = 0
-
             switch (s.nodes_type[s.nodes_len]) {
             case MdNodeType.CodeInline:
             case MdNodeType.CodeBlock:
-                s.text += ch
+                s.text += char
                 continue
             case MdNodeType.Italic:
                 endNode(s)
@@ -106,7 +111,9 @@ function addChunk(s, chunk) {
             }
         }
         case '`': {
-            s.backticks_count += 1
+            s.backticks_count = last_char === '`'
+                ? s.backticks_count + 1
+                : 1
 
             switch (s.nodes_type[s.nodes_len]) {
             case MdNodeType.CodeInline: {
@@ -123,7 +130,7 @@ function addChunk(s, chunk) {
                     s.text = s.text.slice(0, -2)
                     endNode(s)
                 } else if (!s.code_block_lang) {
-                    s.text += ch
+                    s.text += char
                 }
                 continue
             }
@@ -147,14 +154,12 @@ function addChunk(s, chunk) {
             }
         }
         case '\n': {
-            s.backticks_count = 0
-
             switch (s.nodes_type[s.nodes_len]) {
             case MdNodeType.CodeBlock:
                 if (s.code_block_lang) {
                     s.code_block_lang = false
                 } else {
-                    s.text += ch
+                    s.text += char
                 }
                 continue
             default: 
@@ -165,14 +170,14 @@ function addChunk(s, chunk) {
             }
         }
         default: 
-            s.backticks_count = 0
             if (!s.code_block_lang) {
-                s.text += ch
+                s.text += char
             }
             continue
         }
     }
 
+    s.last_char = last_char
     s.nodes_elem[s.nodes_len].appendChild(s.temp_span).innerText = s.text
 }
 
