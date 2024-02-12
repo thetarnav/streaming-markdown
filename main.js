@@ -58,6 +58,19 @@ function flush(s) {
 }
 
 /**
+ * @param   {MdStream    } s
+ * @param   {MdNodeType  } type
+ * @param   {HTMLElement } container_el element to append to parent
+ * @param   {HTMLElement=} text_el      element to write text to
+ * @returns {void        } */
+function addNode(s, type, container_el, text_el = container_el) {
+    s.nodes_elem[s.nodes_len].appendChild(container_el)
+    s.nodes_len += 1
+    s.nodes_elem[s.nodes_len] = text_el
+    s.nodes_type[s.nodes_len] = type
+}
+
+/**
  * @param   {MdStream} s 
  * @param   {string  } chunk 
  * @returns {void    } */
@@ -71,8 +84,6 @@ function addChunk(s, chunk) {
         case '*': {
             s.backticks_count = 0
 
-            console.log(s.nodes_type[s.nodes_len])
-
             switch (s.nodes_type[s.nodes_len]) {
             case MdNodeType.CodeInline:
             case MdNodeType.CodeBlock:
@@ -83,9 +94,7 @@ function addChunk(s, chunk) {
                 continue
             default:
                 flush(s)
-                s.nodes_len += 1
-                s.nodes_elem[s.nodes_len] = s.nodes_elem[s.nodes_len-1].appendChild(document.createElement("i"))
-                s.nodes_type[s.nodes_len] = MdNodeType.Italic
+                addNode(s, MdNodeType.Italic, document.createElement("i"))
                 continue
             }
         }
@@ -110,7 +119,7 @@ function addChunk(s, chunk) {
                 }
                 continue
             }
-            default:{
+            default: {
                 flush(s)
 
                 if (s.backticks_count === 3) {
@@ -118,18 +127,14 @@ function addChunk(s, chunk) {
                         throw new Error("last_inline_code should always exist when creating code block")
                     }
 
-                    const pre = s.nodes_elem[s.nodes_len].appendChild(document.createElement("pre"))
-                    s.nodes_len += 1
-                    s.nodes_elem[s.nodes_len] = pre.appendChild(s.last_inline_code)
-                    s.nodes_type[s.nodes_len] = MdNodeType.CodeBlock
-                    s.last_inline_code = null
+                    const pre = document.createElement("pre")
+                    pre.appendChild(s.last_inline_code)
+                    addNode(s, MdNodeType.CodeBlock, pre, s.last_inline_code)
                     s.code_block_lang = true
                 } else {
-                    s.nodes_len += 1
-                    s.nodes_elem[s.nodes_len] = s.nodes_elem[s.nodes_len-1].appendChild(document.createElement("code"))
-                    s.nodes_type[s.nodes_len] = MdNodeType.CodeInline
-                    s.last_inline_code = null
+                    addNode(s, MdNodeType.CodeInline, document.createElement("code"))
                 }
+                s.last_inline_code = null
 
                 continue
             }
@@ -139,20 +144,18 @@ function addChunk(s, chunk) {
             s.backticks_count = 0
 
             switch (s.nodes_type[s.nodes_len]) {
-            case MdNodeType.CodeBlock: {
+            case MdNodeType.CodeBlock:
                 if (s.code_block_lang) {
                     s.code_block_lang = false
                 } else {
                     s.text += ch
                 }
                 continue
-            }
-            default: {
+            default: 
                 flush(s)
                 s.nodes_elem[s.nodes_len].appendChild(document.createElement("br"))
                 s.text = ""
                 continue
-            }
             }
         }
         default: 
@@ -164,13 +167,9 @@ function addChunk(s, chunk) {
 
     if (s.text.length > 0) {
         if (s.nodes_len === 0) {
-            s.nodes_elem[1] = s.nodes_elem[0].appendChild(document.createElement("span"))
-            s.nodes_type[1] = MdNodeType.Text
-            s.nodes_len = 1
-            s.nodes_elem[1].innerText = s.text
-        } else {
-            s.nodes_elem[s.nodes_len].innerText = s.text
+            addNode(s, MdNodeType.Text, document.createElement("span"))
         }
+        s.nodes_elem[s.nodes_len].innerText = s.text
     }
 }
 
