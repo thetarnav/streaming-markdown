@@ -26,16 +26,11 @@ class MdStream {
     constructor(container) {
         this.container        = container
         this.backticks_count  = 0
-        /** @type {HTMLElement | null} */
-        this.last_inline_code = null
-        /** @type {HTMLElement | null} */
-        this.code_inline      = null
-        /** @type {HTMLElement | null} */
-        this.code_block       = null
-        /** @type {HTMLElement | null} */
-        this.italic           = null
-        /** @type {HTMLElement | null} */
-        this.text_el          = null
+        this.last_inline_code = /**@type {HTMLElement?}*/(null)
+        this.code_inline      = /**@type {HTMLElement?}*/(null)
+        this.code_block       = /**@type {HTMLElement?}*/(null)
+        this.italic           = /**@type {HTMLElement?}*/(null)
+        this.text_el          = /**@type {HTMLElement?}*/(null)
         this.text             = ""
         this.code_block_lang  = false
     }
@@ -46,10 +41,12 @@ class MdStream {
  * @returns {void}
  */
 function flush(s) {
+    if (s.text.length === 0) return
     if (!s.text_el) {
         s.text_el = document.createElement("span")
         s.container.appendChild(s.text_el)
     }
+    console.log(`flush: "${s.text}"`)
     s.text_el.innerText = s.text
     s.text = ""
     s.text_el = null
@@ -61,7 +58,7 @@ function flush(s) {
  * @returns {void}
  */
 function addChunk(s, chunk) {
-    console.log(chunk)
+    console.log(`chunk: "${chunk}"`)
 
     for (let i = 0; i < chunk.length; i++) {
         const ch = chunk[i]
@@ -70,12 +67,10 @@ function addChunk(s, chunk) {
         case '*': {
             if (s.code_block || s.code_inline) break
 
+            flush(s)
             if (s.italic) {
-                s.italic.innerText = s.text
-                s.text = ""
-                s.text_el = s.italic = null
+                s.italic = null
             } else {
-                flush(s)
                 s.text_el = s.italic = document.createElement("i")
                 s.container.appendChild(s.text_el)
             }
@@ -88,17 +83,15 @@ function addChunk(s, chunk) {
             if (s.backticks_count === 3) {
                 s.backticks_count = 0
 
+                flush(s)
                 if (s.code_block) {
-                    s.code_block.innerText = s.text
-                    s.text = ""
-                    s.text_el = s.code_block = null
+                    s.code_block = null
                 } else {
                     if (s.last_inline_code) {
                         s.container.removeChild(s.last_inline_code)
                         s.last_inline_code = null
                     }
 
-                    flush(s)
                     const pre = document.createElement("pre")
                     s.container.appendChild(pre)
                     s.text_el = s.code_block = document.createElement("code")
@@ -110,13 +103,10 @@ function addChunk(s, chunk) {
             }
 
             if (!s.code_block) {
+                flush(s)
                 if (s.code_inline) {
-                    s.code_inline.innerText = s.text
-                    s.text = ""
-                    s.last_inline_code = s.code_inline
-                    s.text_el = s.code_inline = null
+                    s.code_inline = null
                 } else {
-                    flush(s)
                     s.text_el = s.code_inline = document.createElement("code")
                     s.container.appendChild(s.text_el)
                     s.last_inline_code = null
