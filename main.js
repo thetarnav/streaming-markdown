@@ -7,56 +7,60 @@ async function main() {
     const container = document.createElement('div')
     document.body.appendChild(container)
 
-    const state = new MdStream(container)
+    const stream = new MdStream(container)
 
     let i = 0
     while (i < source_md.length) {
         const length = Math.floor(Math.random() * 20) + 1
         const delay  = Math.floor(Math.random() * 80) + 10
         const chunk  = source_md.slice(i, i += length)
-        addChunk(state, chunk)
+        addChunk(stream, chunk)
         await new Promise(resolve => setTimeout(resolve, delay))
     }
 }
 
-class MdStream {
-    /**
-     * @param {HTMLElement} container 
-     */
-    constructor(container) {
-        this.container        = container
-        this.backticks_count  = 0
-        this.last_inline_code = /**@type {HTMLElement?}*/(null)
-        this.code_inline      = /**@type {HTMLElement?}*/(null)
-        this.code_block       = /**@type {HTMLElement?}*/(null)
-        this.italic           = /**@type {HTMLElement?}*/(null)
-        this.text_el          = /**@type {HTMLElement?}*/(null)
-        this.text             = ""
-        this.code_block_lang  = false
-    }
+/** @enum {(typeof MdNodeType)[keyof typeof MdNodeType]} */
+const MdNodeType = /** @type {const} */({
+    Text:       1,
+    Italic:     2,
+    Bold:       4,
+    CodeInline: 8,
+    CodeBlock:  16,
+})
+
+/** @param {HTMLElement} container */
+function MdStream(container) {
+    this.nodes_elem      =/**@type {HTMLElement[]}*/([container      ,,,,,])
+    this.nodes_type      =/**@type {MdNodeType[] }*/([MdNodeType.Text,,,,,])
+    this.nodes_len       =/**@type {number       }*/(0)
+    this.text            =/**@type {string       }*/("")
+    this.backticks_count =/**@type {number       }*/(0)
+    this.last_inline_code=/**@type {HTMLElement? }*/(null)
+    this.code_block_lang =/**@type {boolean      }*/(false)
 }
 
 /**
  * @param   {MdStream} s 
- * @returns {void}
- */
+ * @returns {void    } */
 function flush(s) {
+    if (s.nodes_len < 0) {
+        throw new Error("nodes_len should never below 0")
+    }
     console.log(`flush: "${s.text}"`)
-    if (s.text.length !== 0) {
-        if (!s.text_el) {
-            s.text_el = s.container.appendChild(document.createElement("span"))
-        }
-        s.text_el.innerText = s.text
+    if (s.nodes_len === 0) {
+        if (s.text.length === 0) return
+        s.nodes_elem[0].appendChild(document.createElement("span")).innerText = s.text
+    } else {
+        s.nodes_elem[s.nodes_len].innerText = s.text
+        s.nodes_len -= 1
     }
     s.text = ""
-    s.text_el = null
 }
 
 /**
  * @param   {MdStream} s 
- * @param   {string}   chunk 
- * @returns {void}
- */
+ * @param   {string  } chunk 
+ * @returns {void    } */
 function addChunk(s, chunk) {
     console.log(`chunk: "${chunk}"`)
 
@@ -65,55 +69,77 @@ function addChunk(s, chunk) {
 
         switch (ch) {
         case '*': {
-            if (s.code_block || s.code_inline) break
+            s.backticks_count = 0
 
-            flush(s)
-            if (s.italic) {
-                s.italic = null
-            } else {
-                s.text_el = s.italic = s.container.appendChild(document.createElement("i"))
+            console.log(s.nodes_type[s.nodes_len])
+
+            switch (s.nodes_type[s.nodes_len]) {
+            case MdNodeType.CodeInline:
+            case MdNodeType.CodeBlock:
+                s.text += ch
+                continue
+            case MdNodeType.Italic:
+                flush(s)
+                continue
+            default:
+                flush(s)
+                s.nodes_len += 1
+                s.nodes_elem[s.nodes_len] = s.nodes_elem[s.nodes_len-1].appendChild(document.createElement("i"))
+                s.nodes_type[s.nodes_len] = MdNodeType.Italic
+                continue
             }
-
-            continue
         }
         case '`': {
             s.backticks_count += 1
 
-            if (s.backticks_count === 3) {
-                s.backticks_count = 0
+            switch (s.nodes_type[s.nodes_len]) {
+            case MdNodeType.CodeInline: {
+                if (s.backticks_count === 3) {
+                    throw new Error("code inline should never have 3 backticks")
+                }
 
+                s.last_inline_code = s.nodes_elem[s.nodes_len]
                 flush(s)
-                if (s.code_block) {
-                    s.code_block = null
-                } else {
+                continue
+            }
+            case MdNodeType.CodeBlock: {
+                if (s.backticks_count === 3) {
+                    flush(s)
+                } else if (!s.code_block_lang) {
+                    s.text += ch
+                }
+                continue
+            }
+            default:{
+                flush(s)
+
+                if (s.backticks_count === 3) {
                     if (s.last_inline_code === null) {
                         throw new Error("last_inline_code should always exist when creating code block")
                     }
 
-                    const pre = s.container.appendChild(document.createElement("pre"))
-                    s.text_el = s.code_block = pre.appendChild(s.last_inline_code)
+                    const pre = s.nodes_elem[s.nodes_len].appendChild(document.createElement("pre"))
+                    s.nodes_len += 1
+                    s.nodes_elem[s.nodes_len] = pre.appendChild(s.last_inline_code)
+                    s.nodes_type[s.nodes_len] = MdNodeType.CodeBlock
                     s.last_inline_code = null
                     s.code_block_lang = true
+                } else {
+                    s.nodes_len += 1
+                    s.nodes_elem[s.nodes_len] = s.nodes_elem[s.nodes_len-1].appendChild(document.createElement("code"))
+                    s.nodes_type[s.nodes_len] = MdNodeType.CodeInline
+                    s.last_inline_code = null
                 }
 
                 continue
             }
-
-            if (!s.code_block) {
-                flush(s)
-                if (s.code_inline) {
-                    s.last_inline_code = s.code_inline
-                    s.code_inline = null
-                } else {
-                    s.text_el = s.code_inline = s.container.appendChild(document.createElement("code"))
-                    s.last_inline_code = null
-                }
             }
-
-            continue
         }
         case '\n': {
-            if (s.code_block) {
+            s.backticks_count = 0
+
+            switch (s.nodes_type[s.nodes_len]) {
+            case MdNodeType.CodeBlock: {
                 if (s.code_block_lang) {
                     s.code_block_lang = false
                 } else {
@@ -121,31 +147,31 @@ function addChunk(s, chunk) {
                 }
                 continue
             }
-
-            flush(s)
-            s.container.appendChild(document.createElement("br"))
-            s.text = ""
-            s.italic = null
-            s.code_inline = null
-            s.last_inline_code = null
+            default: {
+                flush(s)
+                s.nodes_elem[s.nodes_len].appendChild(document.createElement("br"))
+                s.text = ""
+                continue
+            }
+            }
+        }
+        default: 
             s.backticks_count = 0
-
+            s.text += ch
             continue
         }
+    }
+
+    if (s.text.length > 0) {
+        if (s.nodes_len === 0) {
+            s.nodes_elem[1] = s.nodes_elem[0].appendChild(document.createElement("span"))
+            s.nodes_type[1] = MdNodeType.Text
+            s.nodes_len = 1
+            s.nodes_elem[1].innerText = s.text
+        } else {
+            s.nodes_elem[s.nodes_len].innerText = s.text
         }
-
-        if (s.code_block_lang) continue
-
-        s.backticks_count = 0
-        s.text += ch
-
-        continue
     }
-
-    if (!s.text_el) {
-        s.text_el = s.container.appendChild(document.createElement("span"))
-    }
-    s.text_el.innerText = s.text
 }
 
 main()
