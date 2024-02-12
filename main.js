@@ -120,7 +120,8 @@ function addChunk(s, chunk) {
             }
             case MdNodeType.CodeBlock: {
                 if (s.backticks_count === 3) {
-                    endNode(s)
+                    s.nodes_elem[s.nodes_len].innerText = s.text.slice(0, -2) // remove last 2 backticks
+                    s.nodes_len -= 1
                 } else if (!s.code_block_lang) {
                     s.text += ch
                 }
@@ -165,7 +166,9 @@ function addChunk(s, chunk) {
         }
         default: 
             s.backticks_count = 0
-            s.text += ch
+            if (!s.code_block_lang) {
+                s.text += ch
+            }
             continue
         }
     }
