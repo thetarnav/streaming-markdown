@@ -44,8 +44,7 @@ function flush(s) {
     console.log(`flush: "${s.text}"`)
     if (s.text.length !== 0) {
         if (!s.text_el) {
-            s.text_el = document.createElement("span")
-            s.container.appendChild(s.text_el)
+            s.text_el = s.container.appendChild(document.createElement("span"))
         }
         s.text_el.innerText = s.text
     }
@@ -72,8 +71,7 @@ function addChunk(s, chunk) {
             if (s.italic) {
                 s.italic = null
             } else {
-                s.text_el = s.italic = document.createElement("i")
-                s.container.appendChild(s.text_el)
+                s.text_el = s.italic = s.container.appendChild(document.createElement("i"))
             }
 
             continue
@@ -88,15 +86,13 @@ function addChunk(s, chunk) {
                 if (s.code_block) {
                     s.code_block = null
                 } else {
-                    if (s.last_inline_code) {
-                        s.container.removeChild(s.last_inline_code)
-                        s.last_inline_code = null
+                    if (s.last_inline_code === null) {
+                        throw new Error("last_inline_code should always exist when creating code block")
                     }
 
-                    const pre = document.createElement("pre")
-                    s.container.appendChild(pre)
-                    s.text_el = s.code_block = document.createElement("code")
-                    pre.appendChild(s.code_block)
+                    const pre = s.container.appendChild(document.createElement("pre"))
+                    s.text_el = s.code_block = pre.appendChild(s.last_inline_code)
+                    s.last_inline_code = null
                     s.code_block_lang = true
                 }
 
@@ -106,10 +102,10 @@ function addChunk(s, chunk) {
             if (!s.code_block) {
                 flush(s)
                 if (s.code_inline) {
+                    s.last_inline_code = s.code_inline
                     s.code_inline = null
                 } else {
-                    s.text_el = s.code_inline = document.createElement("code")
-                    s.container.appendChild(s.text_el)
+                    s.text_el = s.code_inline = s.container.appendChild(document.createElement("code"))
                     s.last_inline_code = null
                 }
             }
@@ -127,8 +123,7 @@ function addChunk(s, chunk) {
             }
 
             flush(s)
-            const br = document.createElement("br")
-            s.container.appendChild(br)
+            s.container.appendChild(document.createElement("br"))
             s.text = ""
             s.italic = null
             s.code_inline = null
@@ -148,8 +143,7 @@ function addChunk(s, chunk) {
     }
 
     if (!s.text_el) {
-        s.text_el = document.createElement("span")
-        s.container.appendChild(s.text_el)
+        s.text_el = s.container.appendChild(document.createElement("span"))
     }
     s.text_el.innerText = s.text
 }
