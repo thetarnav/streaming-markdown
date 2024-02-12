@@ -37,6 +37,7 @@ function MdStream(container) {
     this.backticks_count =/**@type {number       }*/(0)
     this.last_inline_code=/**@type {HTMLElement? }*/(null)
     this.code_block_lang =/**@type {boolean      }*/(false)
+    this.temp_span       =/**@type {HTMLElement  }*/(document.createElement("span"))
 }
 
 /**
@@ -47,14 +48,20 @@ function flush(s) {
         throw new Error("nodes_len should never below 0")
     }
     console.log(`flush: "${s.text}"`)
-    if (s.nodes_len === 0) {
-        if (s.text.length === 0) return
-        s.nodes_elem[0].appendChild(document.createElement("span")).innerText = s.text
-    } else {
-        s.nodes_elem[s.nodes_len].innerText = s.text
+    if (s.text.length > 0) {
+        s.nodes_elem[s.nodes_len].appendChild(document.createElement("span")).innerText = s.text
+        s.text = ""
+    }
+}
+
+/**
+ * @param   {MdStream} s
+ * @returns {void    } */
+function endNode(s) {
+    flush(s)
+    if (s.nodes_len > 0) {
         s.nodes_len -= 1
     }
-    s.text = ""
 }
 
 /**
@@ -64,6 +71,7 @@ function flush(s) {
  * @param   {HTMLElement=} text_el      element to write text to
  * @returns {void        } */
 function addNode(s, type, container_el, text_el = container_el) {
+    flush(s)
     s.nodes_elem[s.nodes_len].appendChild(container_el)
     s.nodes_len += 1
     s.nodes_elem[s.nodes_len] = text_el
@@ -90,10 +98,9 @@ function addChunk(s, chunk) {
                 s.text += ch
                 continue
             case MdNodeType.Italic:
-                flush(s)
+                endNode(s)
                 continue
             default:
-                flush(s)
                 addNode(s, MdNodeType.Italic, document.createElement("i"))
                 continue
             }
@@ -108,20 +115,18 @@ function addChunk(s, chunk) {
                 }
 
                 s.last_inline_code = s.nodes_elem[s.nodes_len]
-                flush(s)
+                endNode(s)
                 continue
             }
             case MdNodeType.CodeBlock: {
                 if (s.backticks_count === 3) {
-                    flush(s)
+                    endNode(s)
                 } else if (!s.code_block_lang) {
                     s.text += ch
                 }
                 continue
             }
             default: {
-                flush(s)
-
                 if (s.backticks_count === 3) {
                     if (s.last_inline_code === null) {
                         throw new Error("last_inline_code should always exist when creating code block")
@@ -152,7 +157,7 @@ function addChunk(s, chunk) {
                 }
                 continue
             default: 
-                flush(s)
+                endNode(s)
                 s.nodes_elem[s.nodes_len].appendChild(document.createElement("br"))
                 s.text = ""
                 continue
@@ -165,12 +170,7 @@ function addChunk(s, chunk) {
         }
     }
 
-    if (s.text.length > 0) {
-        if (s.nodes_len === 0) {
-            addNode(s, MdNodeType.Text, document.createElement("span"))
-        }
-        s.nodes_elem[s.nodes_len].innerText = s.text
-    }
+    s.nodes_elem[s.nodes_len].appendChild(s.temp_span).innerText = s.text
 }
 
 main()
