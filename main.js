@@ -41,13 +41,14 @@ class MdStream {
  * @returns {void}
  */
 function flush(s) {
-    if (s.text.length === 0) return
-    if (!s.text_el) {
-        s.text_el = document.createElement("span")
-        s.container.appendChild(s.text_el)
-    }
     console.log(`flush: "${s.text}"`)
-    s.text_el.innerText = s.text
+    if (s.text.length !== 0) {
+        if (!s.text_el) {
+            s.text_el = document.createElement("span")
+            s.container.appendChild(s.text_el)
+        }
+        s.text_el.innerText = s.text
+    }
     s.text = ""
     s.text_el = null
 }
@@ -126,7 +127,9 @@ function addChunk(s, chunk) {
             }
 
             flush(s)
-            s.text = "\n"
+            const br = document.createElement("br")
+            s.container.appendChild(br)
+            s.text = ""
             s.italic = null
             s.code_inline = null
             s.last_inline_code = null
