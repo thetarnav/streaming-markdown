@@ -4,6 +4,8 @@
 
 `println("Hello, **Worl
 
+just **bold** things
+
 *italic **bold** italic*
 **bold *italic* bold**
 
