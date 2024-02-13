@@ -4,7 +4,7 @@ async function main() {
     const source_md_res = await fetch(location.origin + '/source.md')
     const source_md = await source_md_res.text()
 
-    const container = document.createElement('div')
+    const container = document.createElement('main')
     document.body.appendChild(container)
 
     const stream = new MdStream(container)
@@ -17,6 +17,8 @@ async function main() {
         addChunk(stream, chunk)
         await new Promise(resolve => setTimeout(resolve, delay))
     }
+
+    finish(stream)
 }
 
 /** @enum {(typeof MdNodeType)[keyof typeof MdNodeType]} */
@@ -89,6 +91,10 @@ function addNode(s, type, container_el, text_el = container_el) {
  * @returns {void    } */
 function addChunk(s, chunk) {
     console.log(`chunk: "${chunk}"`)
+
+    if (s.nodes_len === 0) {
+        addNode(s, MdNodeType.Text, document.createElement("p"))
+    }
 
     let i = 0,
         char = s.last_char,
@@ -204,20 +210,27 @@ function addChunk(s, chunk) {
             }
         }
         case '\n': {
-            switch (s.nodes_type[s.nodes_len]) {
-            case MdNodeType.CodeBlock:
+            if (s.nodes_type[s.nodes_len] === MdNodeType.CodeBlock) {
                 if (s.code_block_lang) {
                     s.code_block_lang = false
                 } else {
                     s.text += char
                 }
                 continue
-            default: 
-                endNode(s)
-                s.nodes_elem[s.nodes_len].appendChild(document.createElement("br"))
-                s.text = ""
-                continue
             }
+
+            if (last_char === '\n') {
+                endNode(s)
+                addNode(s, MdNodeType.Text, document.createElement("p"))
+            } else {
+                while (s.nodes_len > 1) {
+                    endNode(s)
+                }
+                flush(s)
+                s.nodes_elem[s.nodes_len].appendChild(document.createElement("br"))
+            }
+
+            continue
         }
         default: 
             if (!s.code_block_lang) s.text += char
@@ -227,6 +240,16 @@ function addChunk(s, chunk) {
 
     s.last_char = char
     s.nodes_elem[s.nodes_len].appendChild(s.temp_span).innerText = s.text
+}
+
+/**
+ * @param   {MdStream} s 
+ * @returns {void    } */
+function finish(s) {
+    s.nodes_elem[s.nodes_len].removeChild(s.temp_span)
+    while (s.nodes_len > 0) {
+        endNode(s)
+    }
 }
 
 main()
