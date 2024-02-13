@@ -52,7 +52,6 @@ function flush(s) {
         s.nodes_len >= 0,
         "nodes_len should never below 0",
     )
-    console.log(`flush: "${s.text}"`)
     if (s.text.length > 0) {
         s.nodes_elem[s.nodes_len].appendChild(document.createTextNode(s.text))
         s.text = ""
@@ -90,8 +89,6 @@ function addNode(s, type, container_el, text_el = container_el) {
  * @param   {string  } chunk 
  * @returns {void    } */
 function addChunk(s, chunk) {
-    console.log(`chunk: "${chunk}"`)
-
     if (s.nodes_len === 0) {
         addNode(s, MdNodeType.Text, document.createElement("p"))
     }
