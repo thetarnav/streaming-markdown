@@ -52,7 +52,7 @@ function flush(s) {
     )
     console.log(`flush: "${s.text}"`)
     if (s.text.length > 0) {
-        s.nodes_elem[s.nodes_len].appendChild(document.createElement("span")).innerText = s.text
+        s.nodes_elem[s.nodes_len].appendChild(document.createTextNode(s.text))
         s.text = ""
     }
 }

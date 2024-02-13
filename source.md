@@ -1,4 +1,4 @@
-# @solid-primitives/transition-group
+# Streaming Markdown
 
 *Provides reactive primitives for implementing transition effects on a group of elements, or your own `<Transition**>` and `<TransitionGroup>` components.*
 
