@@ -1,7 +1,7 @@
 // @ts-check
 
 async function main() {
-    const source_md_res = await fetch(location.origin + '/source.md')
+    const source_md_res = await fetch(location.href + '/source.md')
     const source_md = await source_md_res.text()
 
     const container = document.createElement('main')
