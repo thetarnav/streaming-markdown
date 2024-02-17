@@ -47,8 +47,8 @@ function end_node(s) {
 }
 
 /**
- * @param   {Stream    } s
- * @param   {Node_Type  } type
+ * @param   {Stream      } s
+ * @param   {Node_Type   } type
  * @param   {HTMLElement } container_el element to append to parent
  * @param   {HTMLElement=} text_el      element to write text to
  * @returns {void        } */
@@ -58,6 +58,27 @@ function add_node(s, type, container_el, text_el = container_el) {
     s.nodes_len += 1
     s.nodes_elem[s.nodes_len] = text_el
     s.nodes_type[s.nodes_len] = type
+}
+
+
+/**
+ * @param   {Stream } s
+ * @returns {boolean} */
+function check_newline(s) {
+    if (s.source[s.index] !== '\n') return false
+
+    if (s.source[s.index-1] === '\n') {
+        end_node(s)
+        add_node(s, Node_Type.Text, document.createElement("p"))
+    } else {
+        while (s.nodes_len > 1) {
+            end_node(s)
+        }
+        flush(s)
+        s.nodes_elem[s.nodes_len].appendChild(document.createElement("br"))
+    }
+
+    return true
 }
 
 /**
@@ -75,7 +96,6 @@ export function puch_chunk(s, chunk) {
     
     while (s.index < s.source.length) {
         const char = s.source[s.index]
-        s.pending_text += char
 
         switch (s.nodes_type[s.nodes_len]) {
         case Node_Type.Code_Block:
@@ -95,21 +115,22 @@ export function puch_chunk(s, chunk) {
                                char === '`'
             ) {
                 s.code_block_lang = null
-                s.pending_text = s.pending_text.slice(0, -4)
+                s.pending_text = s.pending_text.slice(0, -3)
                 end_node(s)
+                break
             }
 
+            s.pending_text += char
             break
         case Node_Type.Code_Inline:
             if (char === '`') {
-                s.pending_text = s.pending_text.slice(0, -1)
                 end_node(s)
                 break
             }
-            if (char === '\n') {
-                end_node(s)
-                break
-            }
+
+            if (check_newline(s)) break
+
+            s.pending_text += char
             break
         default:
             if (s.source[s.index-3] === '\n' &&
@@ -118,30 +139,25 @@ export function puch_chunk(s, chunk) {
                                char === '`'
             ) {
                 s.code_block_lang = ""
-                s.pending_text = s.pending_text.slice(0, -4)
+                s.pending_text = s.pending_text.slice(0, -3)
                 const pre  = document.createElement("pre")
                 const code = pre.appendChild(document.createElement("code"))
                 add_node(s, Node_Type.Code_Block, pre, code)
                 break
             }
 
-            if (s.pending_text[s.pending_text.length-2] === '`' &&
+            if (s.pending_text[s.pending_text.length-1] === '`' &&
                 char !== '`' && char !== '\n'
             ) {
-                s.pending_text = s.pending_text.slice(0, -2)
+                s.pending_text = s.pending_text.slice(0, -1)
                 add_node(s, Node_Type.Code_Inline, document.createElement("code"))
                 s.pending_text += char
                 break
             }
 
-            if (s.source[s.index-1] === '\n' &&
-                char === '\n'
-            ) {
-                end_node(s)
-                add_node(s, Node_Type.Text, document.createElement("p"))
-                break
-            }
+            if (check_newline(s)) break
 
+            s.pending_text += char
             break
         }
 
