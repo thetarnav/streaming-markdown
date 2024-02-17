@@ -16,8 +16,7 @@ export function Stream(container) {
     this.nodes_elem      =/**@type {HTMLElement[]}*/([container     ,,,,,])
     this.nodes_type      =/**@type {Node_Type[]  }*/([Node_Type.Text,,,,,])
     this.nodes_len       =/**@type {number       }*/(0)
-    this.pending         =/**@type {Node_Type    }*/(Node_Type.Text)
-    this.pending_text    =/**@type {string       }*/("")
+    this.text            =/**@type {string       }*/("")
     this.code_block_lang =/**@type {string | null}*/(null)
     this.temp_span       =/**@type {HTMLElement  }*/(document.createElement("span"))
 }
@@ -30,9 +29,9 @@ function flush(s) {
         s.nodes_len >= 0,
         "nodes_len should never below 0",
     )
-    if (s.pending_text.length > 0) {
-        s.nodes_elem[s.nodes_len].appendChild(document.createTextNode(s.pending_text))
-        s.pending_text = ""
+    if (s.text.length > 0) {
+        s.nodes_elem[s.nodes_len].appendChild(document.createTextNode(s.text))
+        s.text = ""
     }
 }
 
@@ -82,9 +81,57 @@ function check_newline(s) {
 }
 
 /**
+ * @param   {Stream } s
+ * @returns {boolean} */
+function check_code_inline(s) {
+    if (// check text, not source, to not match ending backticks
+        s.text[s.text.length-1] === '`' &&
+        s.source[s.index  ] !== '`' &&
+        s.source[s.index  ] !== '\n'
+    ) {
+        s.text = s.text.slice(0, -1)
+        add_node(s, Node_Type.Code_Inline, document.createElement("code"))
+        s.text = s.source[s.index]
+        return true
+    }
+    return false
+}
+
+/**
+ * @param   {Stream } s
+ * @returns {boolean} */
+function check_italic(s) {
+    const char = s.source[s.index]
+    if (s.text[s.text.length-1] === '*' &&
+        char !== '*' &&
+        char !== '\n'
+    ) {
+        s.text = s.text.slice(0, -1)
+        add_node(s, Node_Type.Italic, document.createElement("em"))
+        s.text = char
+        return true
+    }
+    return false
+}
+
+/**
+ * @param   {Stream } s
+ * @returns {boolean} */
+function check_bold(s) {
+    if (s.text[s.text.length-1] === '*' &&
+        s.source[s.index  ] === '*'
+    ) {
+        s.text = s.text.slice(0, -1)
+        add_node(s, Node_Type.Bold, document.createElement("strong"))
+        return true
+    }
+    return false
+}
+
+/**
  * @param   {Stream} s 
- * @param   {string  } chunk 
- * @returns {void    } */
+ * @param   {string} chunk 
+ * @returns {void  } */
 export function puch_chunk(s, chunk) {
     if (s.nodes_len === 0) {
         add_node(s, Node_Type.Text, document.createElement("p"))
@@ -115,12 +162,12 @@ export function puch_chunk(s, chunk) {
                                char === '`'
             ) {
                 s.code_block_lang = null
-                s.pending_text = s.pending_text.slice(0, -3)
+                s.text = s.text.slice(0, -3)
                 end_node(s)
                 break
             }
 
-            s.pending_text += char
+            s.text += char
             break
         case Node_Type.Code_Inline:
             if (char === '`') {
@@ -130,7 +177,35 @@ export function puch_chunk(s, chunk) {
 
             if (check_newline(s)) break
 
-            s.pending_text += char
+            s.text += char
+            break
+        case Node_Type.Bold:
+            if (s.source[s.index-1] === '*' && char === '*') {
+                s.text = s.text.slice(0, -1)
+                end_node(s)
+                break
+            }
+
+            if (check_code_inline(s)) break
+            if (check_italic(s)) break
+            if (check_newline(s)) break
+
+            s.text += char
+            break
+        case Node_Type.Italic: // TODO _italic_
+            if (s.source[s.index-1] === '*' && char !== '*') {
+                end_node(s)
+                s.index -= 1 // reprocess char
+                break
+            }
+
+            if (check_code_inline(s)) break
+            if (check_bold(s)) break
+            if (check_newline(s)) break
+
+            if (char !== '*') {
+                s.text += char
+            }
             break
         default:
             if (s.source[s.index-3] === '\n' &&
@@ -139,34 +214,26 @@ export function puch_chunk(s, chunk) {
                                char === '`'
             ) {
                 s.code_block_lang = ""
-                s.pending_text = s.pending_text.slice(0, -3)
+                s.text = ""
                 const pre  = document.createElement("pre")
                 const code = pre.appendChild(document.createElement("code"))
                 add_node(s, Node_Type.Code_Block, pre, code)
                 break
             }
 
-            if (s.pending_text[s.pending_text.length-1] === '`' &&
-                char !== '`' && char !== '\n'
-            ) {
-                s.pending_text = s.pending_text.slice(0, -1)
-                add_node(s, Node_Type.Code_Inline, document.createElement("code"))
-                s.pending_text += char
-                break
-            }
-
+            if (check_code_inline(s)) break
+            if (check_bold(s)) break
+            if (check_italic(s)) break
             if (check_newline(s)) break
 
-            s.pending_text += char
+            s.text += char
             break
         }
-
-        console.log(`char: "${char}"`)
 
         s.index += 1
     }
 
-    s.nodes_elem[s.nodes_len].appendChild(s.temp_span).innerText = s.pending_text
+    s.nodes_elem[s.nodes_len].appendChild(s.temp_span).innerText = s.text
 }
 
 /**
