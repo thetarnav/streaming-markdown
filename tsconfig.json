@@ -1,0 +1,32 @@
+{
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+		"newLine": "LF",
+		"types": [],
+
+		/* JS */
+		/*
+		Solves "Cannot write file '.../.js' because it would overwrite input file."
+		*/
+		"outDir": "types",
+		"allowJs": true,
+		"checkJs": true,
+		"skipLibCheck": false,
+		"maxNodeModuleJsDepth": 1,
+
+		/* Linting */
+		"strict": true,
+		"isolatedModules": true,
+		"moduleDetection": "force",
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"noFallthroughCasesInSwitch": true,
+		"verbatimModuleSyntax": true,
+		"useDefineForClassFields": true,
+	},
+	"exclude": ["node_modules", "/types"],
+}
