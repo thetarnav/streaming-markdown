@@ -23,7 +23,7 @@ export function Stream(container) {
 
 /**
  * @param   {Stream} s 
- * @returns {void    } */
+ * @returns {void  } */
 function flush(s) {
     console.assert(
         s.nodes_len >= 0,
@@ -37,7 +37,7 @@ function flush(s) {
 
 /**
  * @param   {Stream} s
- * @returns {void    } */
+ * @returns {void  } */
 function end_node(s) {
     flush(s)
     if (s.nodes_len > 0) {
@@ -238,7 +238,7 @@ export function puch_chunk(s, chunk) {
 
 /**
  * @param   {Stream} s 
- * @returns {void    } */
+ * @returns {void  } */
 export function end(s) {
     s.nodes_elem[s.nodes_len].removeChild(s.temp_span)
     while (s.nodes_len > 0) {
