@@ -28,7 +28,7 @@ Then, you can start streaming markdown to the `Stream` by calling `write` functi
 md_stream.write(stream, "# Streaming Markdown\n\n")
 ```
 
-*Call `write` as many times as needed to stream the markdown.*
+*You can write as **many times** as needed to stream the markdown.*
 
 The parser is optimistic. When it sees the start of an inline code block or code block, it will immediately style the element accordingly.
 
