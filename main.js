@@ -14,7 +14,7 @@ async function main() {
         const length = Math.floor(Math.random() * 20) + 1
         const delay  = Math.floor(Math.random() * 80) + 10
         const chunk  = source_md.slice(i, i += length)
-        md_stream.puch_chunk(stream, chunk)
+        md_stream.write(stream, chunk)
         await new Promise(resolve => setTimeout(resolve, delay))
     }
 

@@ -22,6 +22,13 @@ export function Stream(container) {
 }
 
 /**
+ * @param   {HTMLElement} container
+ * @returns {Stream     } */
+export function stream(container) {
+    return new Stream(container)
+}
+
+/**
  * @param   {Stream} s 
  * @returns {void  } */
 function flush(s) {
@@ -39,6 +46,7 @@ function flush(s) {
  * @param   {Stream} s
  * @returns {void  } */
 function end_node(s) {
+    console.log(`end_node: ${s.nodes_type[s.nodes_len]}, text: "${s.text}", len: ${s.nodes_len}`)
     flush(s)
     if (s.nodes_len > 0) {
         s.nodes_len -= 1
@@ -52,11 +60,28 @@ function end_node(s) {
  * @param   {HTMLElement=} text_el      element to write text to
  * @returns {void        } */
 function add_node(s, type, container_el, text_el = container_el) {
-    flush(s)
+    if (s.text.length > 0) {
+        s.nodes_elem[s.nodes_len].appendChild(document.createTextNode(s.text))
+        s.text = ""
+    }
+
     s.nodes_elem[s.nodes_len].appendChild(container_el)
     s.nodes_len += 1
     s.nodes_elem[s.nodes_len] = text_el
     s.nodes_type[s.nodes_len] = type
+}
+
+/**
+ * @param   {Stream} s
+ * @returns {void  } */
+function ensure_paragraph(s) {
+    if (s.nodes_len > 0) return
+
+    const p = document.createElement("p")
+    s.nodes_elem[s.nodes_len].appendChild(p)
+    s.nodes_len += 1
+    s.nodes_elem[s.nodes_len] = p
+    s.nodes_type[s.nodes_len] = Node_Type.Text
 }
 
 
@@ -65,18 +90,16 @@ function add_node(s, type, container_el, text_el = container_el) {
  * @returns {boolean} */
 function check_newline(s) {
     if (s.source[s.index] !== '\n') return false
-
+    
     if (s.source[s.index-1] === '\n') {
         end_node(s)
-        add_node(s, Node_Type.Text, document.createElement("p"))
     } else {
-        while (s.nodes_len > 1) {
-            end_node(s)
+        if (s.text.length > 0) {
+            ensure_paragraph(s)
+            flush(s)
         }
-        flush(s)
-        s.nodes_elem[s.nodes_len].appendChild(document.createElement("br"))
+        s.nodes_len = Math.min(s.nodes_len, 1)
     }
-
     return true
 }
 
@@ -90,6 +113,7 @@ function check_code_inline(s) {
         s.source[s.index  ] !== '\n'
     ) {
         s.text = s.text.slice(0, -1)
+        ensure_paragraph(s)
         add_node(s, Node_Type.Code_Inline, document.createElement("code"))
         s.text = s.source[s.index]
         return true
@@ -106,6 +130,7 @@ function check_em(s) {
         char !== '*' && char !== '\n'
     ) {
         s.text = s.text.slice(0, -1)
+        ensure_paragraph(s)
         add_node(s, Node_Type.Em, document.createElement("em"))
         s.text = char
         return true
@@ -121,6 +146,7 @@ function check_strong(s) {
         s.source[s.index] === '*'
     ) {
         s.text = s.text.slice(0, -1)
+        ensure_paragraph(s)
         add_node(s, Node_Type.Strong, document.createElement("strong"))
         return true
     }
@@ -131,13 +157,7 @@ function check_strong(s) {
  * @param   {Stream} s 
  * @param   {string} chunk 
  * @returns {void  } */
-export function puch_chunk(s, chunk) {
-    if (s.nodes_len === 0) {
-        add_node(s, Node_Type.Text, document.createElement("p"))
-    }
-
-    console.log(`chunk: "${chunk}"`)
-
+export function write(s, chunk) {
     s.source += chunk
     
     while (s.index < s.source.length) {
@@ -185,9 +205,10 @@ export function puch_chunk(s, chunk) {
                 break
             }
 
-            if (check_code_inline(s)) break
-            if (check_em(s)) break
-            if (check_newline(s)) break
+            if (check_code_inline(s) ||
+                check_em(s) ||
+                check_newline(s)
+            ) break
 
             s.text += char
             break
@@ -199,9 +220,10 @@ export function puch_chunk(s, chunk) {
                 break
             }
 
-            if (check_code_inline(s)) break
-            if (check_strong(s)) break
-            if (check_newline(s)) break
+            if (check_code_inline(s) ||
+                check_strong(s) ||
+                check_newline(s)
+            ) break
 
             s.text += char
             break
@@ -219,10 +241,11 @@ export function puch_chunk(s, chunk) {
                 break
             }
 
-            if (check_code_inline(s)) break
-            if (check_strong(s)) break
-            if (check_em(s)) break
-            if (check_newline(s)) break
+            if (check_code_inline(s) ||
+                check_strong(s) ||
+                check_em(s) ||
+                check_newline(s)
+            ) break
 
             s.text += char
             break
