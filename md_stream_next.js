@@ -1,8 +1,8 @@
 /** @enum {(typeof Node_Type)[keyof typeof Node_Type]} */
 const Node_Type = /** @type {const} */({
     Text:        0,
-    Italic:      1,
-    Bold:        2,
+    Em:          1,
+    Strong:      2,
     Code_Inline: 3,
     Code_Block:  4,
     Heading:     5,
@@ -84,7 +84,7 @@ function check_newline(s) {
  * @param   {Stream } s
  * @returns {boolean} */
 function check_code_inline(s) {
-    if (// check text, not source, to not match ending backticks
+    if (// checking text, not source, to not match ending backticks
         s.text[s.text.length-1] === '`' &&
         s.source[s.index  ] !== '`' &&
         s.source[s.index  ] !== '\n'
@@ -100,14 +100,13 @@ function check_code_inline(s) {
 /**
  * @param   {Stream } s
  * @returns {boolean} */
-function check_italic(s) {
+function check_em(s) {
     const char = s.source[s.index]
     if (s.text[s.text.length-1] === '*' &&
-        char !== '*' &&
-        char !== '\n'
+        char !== '*' && char !== '\n'
     ) {
         s.text = s.text.slice(0, -1)
-        add_node(s, Node_Type.Italic, document.createElement("em"))
+        add_node(s, Node_Type.Em, document.createElement("em"))
         s.text = char
         return true
     }
@@ -117,12 +116,12 @@ function check_italic(s) {
 /**
  * @param   {Stream } s
  * @returns {boolean} */
-function check_bold(s) {
+function check_strong(s) {
     if (s.text[s.text.length-1] === '*' &&
-        s.source[s.index  ] === '*'
+        s.source[s.index] === '*'
     ) {
         s.text = s.text.slice(0, -1)
-        add_node(s, Node_Type.Bold, document.createElement("strong"))
+        add_node(s, Node_Type.Strong, document.createElement("strong"))
         return true
     }
     return false
@@ -179,33 +178,32 @@ export function puch_chunk(s, chunk) {
 
             s.text += char
             break
-        case Node_Type.Bold:
-            if (s.source[s.index-1] === '*' && char === '*') {
+        case Node_Type.Strong:
+            if (s.text[s.text.length-1] === '*' && char === '*') {
                 s.text = s.text.slice(0, -1)
                 end_node(s)
                 break
             }
 
             if (check_code_inline(s)) break
-            if (check_italic(s)) break
+            if (check_em(s)) break
             if (check_newline(s)) break
 
             s.text += char
             break
-        case Node_Type.Italic: // TODO _italic_
-            if (s.source[s.index-1] === '*' && char !== '*') {
+        case Node_Type.Em: // TODO _italic_
+            if (s.text[s.text.length-1] === '*' && char !== '*') {
+                s.text = s.text.slice(0, -1)
                 end_node(s)
                 s.index -= 1 // reprocess char
                 break
             }
 
             if (check_code_inline(s)) break
-            if (check_bold(s)) break
+            if (check_strong(s)) break
             if (check_newline(s)) break
 
-            if (char !== '*') {
-                s.text += char
-            }
+            s.text += char
             break
         default:
             if (s.source[s.index-3] === '\n' &&
@@ -222,8 +220,8 @@ export function puch_chunk(s, chunk) {
             }
 
             if (check_code_inline(s)) break
-            if (check_bold(s)) break
-            if (check_italic(s)) break
+            if (check_strong(s)) break
+            if (check_em(s)) break
             if (check_newline(s)) break
 
             s.text += char
