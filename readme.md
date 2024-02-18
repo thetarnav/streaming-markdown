@@ -17,15 +17,15 @@ pnpm add streaming-markdown
 Create new markdown `Stream` by calling `stream` function with the `HTMLElement` to render to.
 
 ```js
-import * as md_stream from 'streaming-markdown'
+import * as md_stream from "streaming-markdown"
 
-const stream = md_stream.stream(document.getElementById('markdown'))
+const stream = md_stream.stream(document.getElementById("markdown"))
 ```
 
-Then, you can start streaming markdown to the `Stream` by calling `write` method with the chunk of markdown string.
+Then, you can start streaming markdown to the `Stream` by calling `write` function with the chunk of markdown string.
 
 ```js
-stream.write('# Streaming Markdown\n\n')
+md_stream.write(stream, "# Streaming Markdown\n\n")
 ```
 
 *Call `write` as many times as needed to stream the markdown.*
