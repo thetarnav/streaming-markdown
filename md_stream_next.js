@@ -107,15 +107,16 @@ function check_newline(s) {
  * @param   {Stream } s
  * @returns {boolean} */
 function check_code_inline(s) {
+    const char = s.source[s.index]
+
     if (// checking text, not source, to not match ending backticks
         s.text[s.text.length-1] === '`' &&
-        s.source[s.index  ] !== '`' &&
-        s.source[s.index  ] !== '\n'
+        char !== '`' && char !== '\n'
     ) {
         s.text = s.text.slice(0, -1)
         ensure_paragraph(s)
         add_node(s, Node_Type.Code_Inline, document.createElement("code"))
-        s.text = s.source[s.index]
+        s.text = char
         return true
     }
     return false
@@ -126,6 +127,7 @@ function check_code_inline(s) {
  * @returns {boolean} */
 function check_em(s) {
     const char = s.source[s.index]
+
     if (s.text[s.text.length-1] === '*' &&
         char !== '*' && char !== '\n'
     ) {
