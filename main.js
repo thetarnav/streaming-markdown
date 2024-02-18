@@ -1,7 +1,7 @@
 import * as md_stream from './md_stream_next.js'
 
 async function main() {
-    const source_md_res = await fetch(location.href + '/source.md')
+    const source_md_res = await fetch(location.href + '/readme.md')
     const source_md = await source_md_res.text()
 
     const container = document.createElement('main')
