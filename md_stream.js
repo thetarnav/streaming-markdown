@@ -1,12 +1,14 @@
 /** @enum {(typeof Node_Type)[keyof typeof Node_Type]} */
 const Node_Type = /** @type {const} */({
-    Text:        0,
-    Em:          1,
-    Strong:      2,
-    Code_Inline: 3,
-    Code_Block:  4,
-    Heading:     5,
-    Link:        6,
+    Text:        1,
+    Em_Ast:      2,
+    Em_Und:      4,
+    Strong_Ast:  8,
+    Strong_Und:  16,
+    Code_Inline: 32,
+    Code_Block:  64,
+    Heading:     128,
+    Link:        256,
 })
 
 /** @param {HTMLElement} container */
@@ -17,7 +19,7 @@ export function Stream(container) {
     this.nodes_type      =/**@type {Node_Type[]  }*/([Node_Type.Text,,,,,])
     this.nodes_len       =/**@type {number       }*/(0)
     this.text            =/**@type {string       }*/("")
-    this.code_block_lang =/**@type {string | null}*/(null)
+    this.code_block_lang =/**@type {string | null}*/(null) // TODO remove
     this.temp_span       =/**@type {HTMLElement  }*/(document.createElement("span"))
 }
 
@@ -126,7 +128,7 @@ function check_code_inline(s) {
 /**
  * @param   {Stream } s
  * @returns {boolean} */
-function check_em(s) {
+function check_em_ast(s) {
     const char = s.source[s.index]
 
     if (s.text[s.text.length-1] === '*' &&
@@ -134,7 +136,7 @@ function check_em(s) {
     ) {
         s.text = s.text.slice(0, -1)
         ensure_paragraph(s)
-        add_node(s, Node_Type.Em, document.createElement("em"))
+        add_node(s, Node_Type.Em_Ast, document.createElement("em"))
         s.text = char
         return true
     }
@@ -144,13 +146,46 @@ function check_em(s) {
 /**
  * @param   {Stream } s
  * @returns {boolean} */
-function check_strong(s) {
+function check_em_und(s) {
+    const char = s.source[s.index]
+
+    if (s.text[s.text.length-1] === '_' &&
+        char !== '_' && char !== '\n'
+    ) {
+        s.text = s.text.slice(0, -1)
+        ensure_paragraph(s)
+        add_node(s, Node_Type.Em_Und, document.createElement("em"))
+        s.text = char
+        return true
+    }
+    return false
+}
+
+/**
+ * @param   {Stream } s
+ * @returns {boolean} */
+function check_strong_ast(s) {
     if (s.text[s.text.length-1] === '*' &&
         s.source[s.index] === '*'
     ) {
         s.text = s.text.slice(0, -1)
         ensure_paragraph(s)
-        add_node(s, Node_Type.Strong, document.createElement("strong"))
+        add_node(s, Node_Type.Strong_Ast, document.createElement("strong"))
+        return true
+    }
+    return false
+}
+
+/**
+ * @param   {Stream } s
+ * @returns {boolean} */
+function check_strong_und(s) {
+    if (s.text[s.text.length-1] === '_' &&
+        s.source[s.index] === '_'
+    ) {
+        s.text = s.text.slice(0, -1)
+        ensure_paragraph(s)
+        add_node(s, Node_Type.Strong_Und, document.createElement("strong"))
         return true
     }
     return false
@@ -202,7 +237,7 @@ export function write(s, chunk) {
 
             s.text += char
             continue
-        case Node_Type.Strong:
+        case Node_Type.Strong_Ast:
             if (s.text[s.text.length-1] === '*' && char === '*') {
                 s.text = s.text.slice(0, -1)
                 end_node(s)
@@ -210,13 +245,31 @@ export function write(s, chunk) {
             }
 
             if (check_code_inline(s) ||
-                check_em(s) ||
+                check_strong_und(s) ||
+                check_em_ast(s) ||
+                check_em_und(s) ||
                 check_newline(s)
             ) continue
 
             s.text += char
             continue
-        case Node_Type.Em: // TODO _italic_
+        case Node_Type.Strong_Und:
+            if (s.text[s.text.length-1] === '_' && char === '_') {
+                s.text = s.text.slice(0, -1)
+                end_node(s)
+                continue
+            }
+
+            if (check_code_inline(s) ||
+                check_strong_ast(s) ||
+                check_em_und(s) ||
+                check_em_ast(s) ||
+                check_newline(s)
+            ) continue
+
+            s.text += char
+            continue
+        case Node_Type.Em_Ast:
             if (s.text[s.text.length-1] === '*' && char !== '*') {
                 s.text = s.text.slice(0, -1)
                 end_node(s)
@@ -225,7 +278,26 @@ export function write(s, chunk) {
             }
 
             if (check_code_inline(s) ||
-                check_strong(s) ||
+                check_strong_ast(s) ||
+                check_strong_und(s) ||
+                check_em_und(s) ||
+                check_newline(s)
+            ) continue
+
+            s.text += char
+            continue
+        case Node_Type.Em_Und:
+            if (s.text[s.text.length-1] === '_' && char !== '_') {
+                s.text = s.text.slice(0, -1)
+                end_node(s)
+                s.index -= 1 // reprocess char
+                continue
+            }
+
+            if (check_code_inline(s) ||
+                check_strong_ast(s) ||
+                check_strong_und(s) ||
+                check_em_ast(s) ||
                 check_newline(s)
             ) continue
 
@@ -233,8 +305,8 @@ export function write(s, chunk) {
             continue
         case Node_Type.Heading:
             if (check_code_inline(s) ||
-                check_strong(s) ||
-                check_em(s) ||
+                check_strong_ast(s) ||
+                check_em_ast(s) ||
                 check_newline(s)
             ) continue
 
@@ -285,8 +357,10 @@ export function write(s, chunk) {
             }
 
             if (check_code_inline(s) ||
-                check_strong(s) ||
-                check_em(s) ||
+                check_strong_ast(s) ||
+                check_strong_und(s) ||
+                check_em_ast(s) ||
+                check_em_und(s) ||
                 check_newline(s)
             ) continue
 

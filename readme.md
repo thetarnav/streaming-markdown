@@ -60,8 +60,8 @@ md_stream.end(stream)
 - [x] `inline code` with backticks
 - [x] *italic* with single asterisks
 - [x] **Bold** with double asterisks
-- [ ] _italic_ with underscores
-- [ ] __Bold__ with double underscores
+- [x] _italic_ with underscores
+- [x] __Bold__ with double underscores
 - [ ] Escape characters (e.g. \* or \_)
 - [ ] Links
 - [ ] Images
