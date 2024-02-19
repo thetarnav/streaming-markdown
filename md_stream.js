@@ -1,5 +1,5 @@
-/** @enum {(typeof Node_Type)[keyof typeof Node_Type]} */
-const Node_Type = /** @type {const} */({
+/** @enum {(typeof Token_Type)[keyof typeof Token_Type]} */
+const Token_Type = /** @type {const} */({
     Text:        1,
     Em_Ast:      2,
     Em_Und:      4,
@@ -13,12 +13,12 @@ const Node_Type = /** @type {const} */({
 
 /** @param {HTMLElement} container */
 export function Stream(container) {
-    this.source          =/**@type {string       }*/("")
-    this.index           =/**@type {number       }*/(0)
-    this.nodes_elem      =/**@type {HTMLElement[]}*/([container     ,,,,,])
-    this.nodes_type      =/**@type {Node_Type[]  }*/([Node_Type.Text,,,,,])
-    this.nodes_len       =/**@type {number       }*/(0)
-    this.text            =/**@type {string       }*/("")
+    this.txt             =/**@type {string       }*/("")
+    this.src             =/**@type {string       }*/("")
+    this.src_idx         =/**@type {number       }*/(0)
+    this.tokens_elem     =/**@type {HTMLElement[]}*/([container     ,,,,,])
+    this.tokens_type     =/**@type {Token_Type[]  }*/([Token_Type.Text,,,,,])
+    this.tokens_len      =/**@type {number       }*/(0)
     this.code_block_lang =/**@type {string | null}*/(null) // TODO remove
     this.temp_span       =/**@type {HTMLElement  }*/(document.createElement("span"))
 }
@@ -36,54 +36,54 @@ export function stream(container) {
  * @returns {void  } */
 function flush(s) {
     console.assert(
-        s.nodes_len >= 0,
+        s.tokens_len >= 0,
         "nodes_len should never below 0",
     )
-    if (s.text.length > 0) {
-        s.nodes_elem[s.nodes_len].appendChild(document.createTextNode(s.text))
-        s.text = ""
+    if (s.txt.length > 0) {
+        s.tokens_elem[s.tokens_len].appendChild(document.createTextNode(s.txt))
+        s.txt = ""
     }
 }
 
 /**
  * @param   {Stream} s
  * @returns {void  } */
-function end_node(s) {
+function end_token(s) {
     flush(s)
-    if (s.nodes_len > 0) {
-        s.nodes_len -= 1
+    if (s.tokens_len > 0) {
+        s.tokens_len -= 1
     }
 }
 
 /**
  * @param   {Stream      } s
- * @param   {Node_Type   } type
+ * @param   {Token_Type  } type
  * @param   {HTMLElement } container_el element to append to parent
  * @param   {HTMLElement=} text_el      element to write text to
  * @returns {void        } */
-function add_node(s, type, container_el, text_el = container_el) {
-    if (s.text.length > 0) {
-        s.nodes_elem[s.nodes_len].appendChild(document.createTextNode(s.text))
-        s.text = ""
+function add_token(s, type, container_el, text_el = container_el) {
+    if (s.txt.length > 0) {
+        s.tokens_elem[s.tokens_len].appendChild(document.createTextNode(s.txt))
+        s.txt = ""
     }
 
-    s.nodes_elem[s.nodes_len].appendChild(container_el)
-    s.nodes_len += 1
-    s.nodes_elem[s.nodes_len] = text_el
-    s.nodes_type[s.nodes_len] = type
+    s.tokens_elem[s.tokens_len].appendChild(container_el)
+    s.tokens_len += 1
+    s.tokens_elem[s.tokens_len] = text_el
+    s.tokens_type[s.tokens_len] = type
 }
 
 /**
  * @param   {Stream} s
  * @returns {void  } */
 function add_paragraph(s) {
-    if (s.nodes_len > 0) return
+    if (s.tokens_len > 0) return
 
     const p = document.createElement("p")
-    s.nodes_elem[s.nodes_len].appendChild(p)
-    s.nodes_len += 1
-    s.nodes_elem[s.nodes_len] = p
-    s.nodes_type[s.nodes_len] = Node_Type.Text
+    s.tokens_elem[s.tokens_len].appendChild(p)
+    s.tokens_len += 1
+    s.tokens_elem[s.tokens_len] = p
+    s.tokens_type[s.tokens_len] = Token_Type.Text
 }
 
 /**
@@ -92,17 +92,20 @@ function add_paragraph(s) {
  * @param   {string} chunk 
  * @returns {void  } */
 export function write(s, chunk) {
-    s.source += chunk
+    s.src += chunk
     
-    for (;s.index < s.source.length; s.index += 1) {
-        const char = s.source[s.index]
-        const curr_node = s.nodes_type[s.nodes_len]
+    for (; s.src_idx < s.src.length; s.src_idx += 1)
+    {
+        const last_txt_char = s.txt[s.txt.length-1]
+        const last_src_char = s.src[s.src_idx-1]
+        const char          = s.src[s.src_idx]
+        const in_token      = s.tokens_type[s.tokens_len]
 
         /*
         Token specific checks
         */
-        switch (curr_node) {
-        case Node_Type.Code_Block:
+        switch (in_token) {
+        case Token_Type.Code_Block:
             if (s.code_block_lang !== null) {
                 if (char === '\n') {
                     s.code_block_lang = null
@@ -112,95 +115,95 @@ export function write(s, chunk) {
                 continue
             }
 
-            if (s.index >= 3 &&
-                s.source[s.index-3] === '\n' &&
-                s.source[s.index-2] === '`' &&
-                s.source[s.index-1] === '`' &&
-                               char === '`'
+            if (s.src_idx >= 3 &&
+                s.src[s.src_idx-3] === '\n' &&
+                s.src[s.src_idx-2] === '`' &&
+                     last_src_char === '`' &&
+                              char === '`'
             ) {
                 s.code_block_lang = null
-                s.text = s.text.slice(0, -3)
-                end_node(s)
+                s.txt = s.txt.slice(0, -3)
+                end_token(s)
                 continue
             }
 
-            s.text += char
+            s.txt += char
             continue
-        case Node_Type.Code_Inline:
+        case Token_Type.Code_Inline:
             if (char === '`') {
-                end_node(s)
+                end_token(s)
                 continue
             }
             break
-        case Node_Type.Strong_Ast:
-            if (s.text[s.text.length-1] === '*' && char === '*') {
-                s.text = s.text.slice(0, -1)
-                end_node(s)
+        case Token_Type.Strong_Ast:
+            if (last_txt_char === '*' && char === '*') {
+                s.txt = s.txt.slice(0, -1)
+                end_token(s)
                 continue
             }
             break
-        case Node_Type.Strong_Und:
-            if (s.text[s.text.length-1] === '_' && char === '_') {
-                s.text = s.text.slice(0, -1)
-                end_node(s)
+        case Token_Type.Strong_Und:
+            if (last_txt_char === '_' && char === '_') {
+                s.txt = s.txt.slice(0, -1)
+                end_token(s)
                 continue
             }
             break
-        case Node_Type.Em_Ast:
-            if (s.text[s.text.length-1] === '*' && char !== '*') {
-                s.text = s.text.slice(0, -1)
-                end_node(s)
-                s.index -= 1 // reprocess char
+        case Token_Type.Em_Ast:
+            if (last_txt_char === '*' && char !== '*') {
+                s.txt = s.txt.slice(0, -1)
+                end_token(s)
+                s.src_idx -= 1 // reprocess char
                 continue
             }
             break
-        case Node_Type.Em_Und:
-            if (s.text[s.text.length-1] === '_' && char !== '_') {
-                s.text = s.text.slice(0, -1)
-                end_node(s)
-                s.index -= 1 // reprocess char
+        case Token_Type.Em_Und:
+            if (last_txt_char === '_' && char !== '_') {
+                s.txt = s.txt.slice(0, -1)
+                end_token(s)
+                s.src_idx -= 1 // reprocess char
                 continue
             }
             break
-        case Node_Type.Text: // top level checks
-            if (s.nodes_len === 0) {
-                switch (s.text) {
+        case Token_Type.Text: // top level checks
+            if (s.tokens_len === 0) {
+                switch (s.txt) {
                 case "# ":
-                    s.text = ""
-                    add_node(s, Node_Type.Heading, document.createElement("h1"))
-                    s.text = char
+                    s.txt = ""
+                    add_token(s, Token_Type.Heading, document.createElement("h1"))
+                    s.txt = char
                     continue
                 case "## ":
-                    s.text = ""
-                    add_node(s, Node_Type.Heading, document.createElement("h2"))
-                    s.text = char
+                    s.txt = ""
+                    add_token(s, Token_Type.Heading, document.createElement("h2"))
+                    s.txt = char
                     continue
                 case "### ":
-                    s.text = ""
-                    add_node(s, Node_Type.Heading, document.createElement("h3"))
-                    s.text = char
+                    s.txt = ""
+                    add_token(s, Token_Type.Heading, document.createElement("h3"))
+                    s.txt = char
                     continue
                 case "#### ":
-                    s.text = ""
-                    add_node(s, Node_Type.Heading, document.createElement("h4"))
-                    s.text = char
+                    s.txt = ""
+                    add_token(s, Token_Type.Heading, document.createElement("h4"))
+                    s.txt = char
                     continue
                 case "##### ":
-                    s.text = ""
-                    add_node(s, Node_Type.Heading, document.createElement("h5"))
-                    s.text = char
+                    s.txt = ""
+                    add_token(s, Token_Type.Heading, document.createElement("h5"))
+                    s.txt = char
                     continue
                 case "###### ":
-                    s.text = ""
-                    add_node(s, Node_Type.Heading, document.createElement("h6"))
-                    s.text = char
+                    s.txt = ""
+                    add_token(s, Token_Type.Heading, document.createElement("h6"))
+                    s.txt = char
                     continue
                 case "```": {
                     s.code_block_lang = ""
-                    s.text = ""
+                    s.txt = ""
                     const pre  = document.createElement("pre")
                     const code = pre.appendChild(document.createElement("code"))
-                    add_node(s, Node_Type.Code_Block, pre, code)
+                    add_token(s, Token_Type.Code_Block, pre, code)
                     continue
                 }
                 }
@@ -214,86 +217,86 @@ export function write(s, chunk) {
 
         /* Newline */
         if (char === '\n') {
-            if (s.source[s.index-1] === '\n') {
-                end_node(s)
+            if (last_src_char === '\n') {
+                end_token(s)
             } else {
-                if (s.text.length > 0) {
+                if (s.txt.length > 0) {
                     add_paragraph(s)
                     flush(s)
                 }
-                s.nodes_len = Math.min(s.nodes_len, 1)
+                s.tokens_len = Math.min(s.tokens_len, 1)
             }
             continue
         }
 
-        if (curr_node === Node_Type.Code_Inline) {
-            s.text += char
+        if (in_token === Token_Type.Code_Inline) {
+            s.txt += char
             continue
         }
 
         /* `Code Inline` */
         if (// checking text, not source, to not match ending backticks
-            s.text[s.text.length-1] === '`' &&
+            last_txt_char === '`' &&
             char !== '`' && char !== '\n'
         ) {
-            s.text = s.text.slice(0, -1)
+            s.txt = s.txt.slice(0, -1)
             add_paragraph(s)
-            add_node(s, Node_Type.Code_Inline, document.createElement("code"))
-            s.text = char
+            add_token(s, Token_Type.Code_Inline, document.createElement("code"))
+            s.txt = char
             continue
         }
 
         /* **Strong** */
-        if (curr_node !== Node_Type.Strong_Ast &&
-            s.text[s.text.length-1] === '*' &&
+        if (in_token !== Token_Type.Strong_Ast &&
+            last_txt_char === '*' &&
             char === '*'
         ) {
-            s.text = s.text.slice(0, -1)
+            s.txt = s.txt.slice(0, -1)
             add_paragraph(s)
-            add_node(s, Node_Type.Strong_Ast, document.createElement("strong"))
+            add_token(s, Token_Type.Strong_Ast, document.createElement("strong"))
             continue
         }
         
         /* __Strong__ */
-        if (curr_node !== Node_Type.Strong_Und &&
-            s.text[s.text.length-1] === '_' &&
+        if (in_token !== Token_Type.Strong_Und &&
+            last_txt_char === '_' &&
             char === '_'
         ) {
-            s.text = s.text.slice(0, -1)
+            s.txt = s.txt.slice(0, -1)
             add_paragraph(s)
-            add_node(s, Node_Type.Strong_Und, document.createElement("strong"))
+            add_token(s, Token_Type.Strong_Und, document.createElement("strong"))
             continue
         }
 
         /* *Em* */
-        if (curr_node !== Node_Type.Em_Ast &&
-            s.text[s.text.length-1] === '*' &&
+        if (in_token !== Token_Type.Em_Ast &&
+            last_txt_char === '*' &&
             char !== '*' && char !== '\n'
         ) {
-            s.text = s.text.slice(0, -1)
+            s.txt = s.txt.slice(0, -1)
             add_paragraph(s)
-            add_node(s, Node_Type.Em_Ast, document.createElement("em"))
-            s.text = char
+            add_token(s, Token_Type.Em_Ast, document.createElement("em"))
+            s.txt = char
             continue
         }
         
         /* _Em_ */
-        if (curr_node !== Node_Type.Em_Und &&
-            s.text[s.text.length-1] === '_' &&
+        if (in_token !== Token_Type.Em_Und &&
+            last_txt_char === '_' &&
             char !== '_' && char !== '\n'
         ) {
-            s.text = s.text.slice(0, -1)
+            s.txt = s.txt.slice(0, -1)
             add_paragraph(s)
-            add_node(s, Node_Type.Em_Und, document.createElement("em"))
-            s.text = char
+            add_token(s, Token_Type.Em_Und, document.createElement("em"))
+            s.txt = char
             continue
         }
 
-        s.text += char
+        s.txt += char
     }
 
     // TODO: temp paragraph
-    s.nodes_elem[s.nodes_len].appendChild(s.temp_span).innerText = s.text
+    s.tokens_elem[s.tokens_len].appendChild(s.temp_span).innerText = s.txt
 }
 
 /**
@@ -301,8 +304,8 @@ export function write(s, chunk) {
  * @param   {Stream} s 
  * @returns {void  } */
 export function end(s) { // TODO: reset state
-    s.nodes_elem[s.nodes_len].removeChild(s.temp_span)
-    while (s.nodes_len > 0) {
-        end_node(s)
+    s.tokens_elem[s.tokens_len].removeChild(s.temp_span)
+    while (s.tokens_len > 0) {
+        end_token(s)
     }
 }
