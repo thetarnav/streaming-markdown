@@ -1,11 +1,11 @@
-import * as md_stream from "./md_stream_next.js"
+import * as md_stream from "./md_stream.js"
 
 async function main() {
     const source_md_res = await fetch(location.href + "/readme.md")
     const source_md = await source_md_res.text()
 
     const container = /** @type {HTMLElement} */(document.getElementById("markdown"))
-    const stream = new md_stream.Stream(container)
+    const stream = md_stream.stream(container)
 
     let i = 0
     while (i < source_md.length) {
