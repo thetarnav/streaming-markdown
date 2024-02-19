@@ -15,9 +15,9 @@ const Token_Type = /** @type {const} */({
 export function Stream(container) {
     this.txt             =/**@type {string       }*/("")
     this.src             =/**@type {string       }*/("")
-    this.src_idx         =/**@type {number       }*/(0)
-    this.tokens_elem     =/**@type {HTMLElement[]}*/([container     ,,,,,])
-    this.tokens_type     =/**@type {Token_Type[]  }*/([Token_Type.Text,,,,,])
+    this.idx             =/**@type {number       }*/(0)
+    this.tokens_elem     =/**@type {HTMLElement[]}*/([container      ,,,,,])
+    this.tokens_type     =/**@type {Token_Type[] }*/([Token_Type.Text,,,,,])
     this.tokens_len      =/**@type {number       }*/(0)
     this.code_block_lang =/**@type {string | null}*/(null) // TODO remove
     this.temp_span       =/**@type {HTMLElement  }*/(document.createElement("span"))
@@ -94,12 +94,13 @@ function add_paragraph(s) {
 export function write(s, chunk) {
     s.src += chunk
     
-    for (; s.src_idx < s.src.length; s.src_idx += 1)
+    for (; s.idx < s.src.length; s.idx += 1)
     {
-        const last_txt_char = s.txt[s.txt.length-1]
-        const last_src_char = s.src[s.src_idx-1]
-        const char          = s.src[s.src_idx]
-        const in_token      = s.tokens_type[s.tokens_len]
+        const last_last_txt_char = s.txt[s.txt.length-2]
+        const last_txt_char      = s.txt[s.txt.length-1]
+        const last_src_char      = s.src[s.idx-1]
+        const char               = s.src[s.idx]
+        const in_token           = s.tokens_type[s.tokens_len]
 
         /*
         Token specific checks
@@ -115,11 +116,11 @@ export function write(s, chunk) {
                 continue
             }
 
-            if (s.src_idx >= 3 &&
-                s.src[s.src_idx-3] === '\n' &&
-                s.src[s.src_idx-2] === '`' &&
-                     last_src_char === '`' &&
-                              char === '`'
+            if (s.txt.length >= 4 &&
+                '\n'=== s.txt[s.txt.length-3] &&
+                '`' === last_last_txt_char &&
+                '`' === last_txt_char &&
+                '`' === char
             ) {
                 s.code_block_lang = null
                 s.txt = s.txt.slice(0, -3)
@@ -130,38 +131,68 @@ export function write(s, chunk) {
             s.txt += char
             continue
         case Token_Type.Code_Inline:
-            if (char === '`') {
+            if ('`' === char) {
                 end_token(s)
                 continue
             }
             break
         case Token_Type.Strong_Ast:
-            if (last_txt_char === '*' && char === '*') {
+            if ('*' === last_txt_char &&
+                '*' === char
+            ) {
                 s.txt = s.txt.slice(0, -1)
                 end_token(s)
                 continue
             }
             break
         case Token_Type.Strong_Und:
-            if (last_txt_char === '_' && char === '_') {
+            if ('_' === last_txt_char &&
+                '_' === char
+            ) {
                 s.txt = s.txt.slice(0, -1)
                 end_token(s)
                 continue
             }
             break
         case Token_Type.Em_Ast:
-            if (last_txt_char === '*' && char !== '*') {
+            if ('*' !== last_last_txt_char &&
+                '*' === last_txt_char &&
+                '*' !== char
+            ) {
                 s.txt = s.txt.slice(0, -1)
                 end_token(s)
-                s.src_idx -= 1 // reprocess char
+                s.idx -= 1
+                continue
+            }
+            // Special case for ***strong*em***
+            if ('*' === last_last_txt_char &&
+                '*' === last_txt_char &&
+                '*' === char
+            ) {
+                s.txt = s.txt.slice(0, -2)
+                end_token(s)
+                s.idx -= 2
                 continue
             }
             break
         case Token_Type.Em_Und:
-            if (last_txt_char === '_' && char !== '_') {
+            if ('_' !== last_last_txt_char &&
+                '_' === last_txt_char &&
+                '_' !== char
+            ) {
                 s.txt = s.txt.slice(0, -1)
                 end_token(s)
-                s.src_idx -= 1 // reprocess char
+                s.idx -= 1
+                continue
+            }
+            // Special case for ___strong_em___
+            if ('_' === last_last_txt_char &&
+                '_' === last_txt_char &&
+                '_' === char
+            ) {
+                s.txt = s.txt.slice(0, -2)
+                end_token(s)
+                s.idx -= 2
                 continue
             }
             break
@@ -216,8 +247,8 @@ export function write(s, chunk) {
         */
 
         /* Newline */
-        if (char === '\n') {
-            if (last_src_char === '\n') {
+        if ('\n' === char) {
+            if ('\n' === last_src_char) {
                 end_token(s)
             } else {
                 if (s.txt.length > 0) {
@@ -236,8 +267,9 @@ export function write(s, chunk) {
 
         /* `Code Inline` */
         if (// checking text, not source, to not match ending backticks
-            last_txt_char === '`' &&
-            char !== '`' && char !== '\n'
+            '`' === last_txt_char &&
+            '`' !== char &&
+            '\n'!== char
         ) {
             s.txt = s.txt.slice(0, -1)
             add_paragraph(s)
@@ -248,47 +280,55 @@ export function write(s, chunk) {
 
         /* **Strong** */
         if (in_token !== Token_Type.Strong_Ast &&
-            last_txt_char === '*' &&
-            char === '*'
+            '*' === last_last_txt_char &&
+            '*' === last_txt_char &&
+            '*' !== char &&
+            '\n'!== char
         ) {
-            s.txt = s.txt.slice(0, -1)
+            s.txt = s.txt.slice(0, -2)
             add_paragraph(s)
             add_token(s, Token_Type.Strong_Ast, document.createElement("strong"))
+            s.idx -= 1
             continue
         }
         
         /* __Strong__ */
         if (in_token !== Token_Type.Strong_Und &&
-            last_txt_char === '_' &&
-            char === '_'
+            '_' === last_last_txt_char &&
+            '_' === last_txt_char &&
+            '_' !== char &&
+            '\n'!== char 
         ) {
-            s.txt = s.txt.slice(0, -1)
+            s.txt = s.txt.slice(0, -2)
             add_paragraph(s)
             add_token(s, Token_Type.Strong_Und, document.createElement("strong"))
+            s.idx -= 1
             continue
         }
 
         /* *Em* */
         if (in_token !== Token_Type.Em_Ast &&
-            last_txt_char === '*' &&
-            char !== '*' && char !== '\n'
+            '*' === last_txt_char &&
+            '*' !== char &&
+            '\n'!== char
         ) {
             s.txt = s.txt.slice(0, -1)
             add_paragraph(s)
             add_token(s, Token_Type.Em_Ast, document.createElement("em"))
-            s.txt = char
+            s.idx -= 1
             continue
         }
         
         /* _Em_ */
         if (in_token !== Token_Type.Em_Und &&
-            last_txt_char === '_' &&
-            char !== '_' && char !== '\n'
+            '_' === last_txt_char &&
+            '_' !== char &&
+            '\n'!== char
         ) {
             s.txt = s.txt.slice(0, -1)
             add_paragraph(s)
             add_token(s, Token_Type.Em_Und, document.createElement("em"))
-            s.txt = char
+            s.idx -= 1
             continue
         }
 

@@ -8,7 +8,7 @@
 npm install streaming-markdown
 ```
 
-*Or just copy [the source file](https://github.com/thetarnav/streaming-markdown/blob/main/md_stream.js) to your project*
+*Or just copy **`md_stream.js`** to your project.*
 
 ## Usage
 
