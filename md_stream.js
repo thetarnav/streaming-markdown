@@ -109,13 +109,10 @@ function add_paragraph(s) {
  * @param   {string} chunk 
  * @returns {void  } */
 export function write(s, chunk) {
-    s.src += chunk
-    
-    for (; s.idx < s.src.length; s.idx += 1)
+    for (s.src += chunk; s.idx < s.src.length; s.idx += 1)
     {
         const last_last_txt_char = s.txt[s.txt.length-2]
         const last_txt_char      = s.txt[s.txt.length-1]
-        const last_src_char      = s.src[s.idx-1]
         const char               = s.src[s.idx]
         const in_token           = s.tokens_type[s.tokens_len]
 
@@ -265,7 +262,7 @@ export function write(s, chunk) {
 
         /* Newline */
         if ('\n' === char) {
-            if ('\n' === last_src_char) {
+            if ('\n' === s.src[s.idx-1]) {
                 end_token(s)
             } else {
                 if (s.txt.length > 0) {
@@ -351,6 +348,5 @@ export function write(s, chunk) {
         s.txt += char
     }
 
-    // TODO: temp paragraph
     s.tokens_elem[s.tokens_len].appendChild(s.temp_span).innerText = s.txt
 }
