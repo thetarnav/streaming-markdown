@@ -52,10 +52,6 @@ export function end(s) {
  * @param   {Stream} s 
  * @returns {void  } */
 function flush(s) {
-    console.assert(
-        s.tokens_len >= 0,
-        "nodes_len should never below 0",
-    )
     if (s.txt.length > 0) {
         s.tokens_elem[s.tokens_len].appendChild(document.createTextNode(s.txt))
         s.txt = ""
