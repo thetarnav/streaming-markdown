@@ -19,7 +19,7 @@ Create new markdown `Stream` by calling `stream` function with the `HTMLElement`
 ```js
 import * as md_stream from "streaming-markdown"
 
-const stream = md_stream.stream(document.getElementById("markdown"))
+const stream = md_stream.make(document.getElementById("markdown"))
 ```
 
 ### `write` function

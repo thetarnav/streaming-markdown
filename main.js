@@ -5,7 +5,7 @@ async function main() {
     const source_txt = await source_res.text()
 
     const container = /** @type {HTMLElement} */(document.getElementById("markdown"))
-    const stream = md_stream.stream(container)
+    const stream = md_stream.make(container)
 
     let i = 0
     while (i < source_txt.length) {

@@ -27,7 +27,7 @@ export function Stream(container) {
  * Makes a new Stream object.
  * @param   {HTMLElement} container
  * @returns {Stream     } */
-export function stream(container) {
+export function make(container) {
     return new Stream(container)
 }
 
@@ -266,8 +266,7 @@ export function write(s, chunk) {
         }
 
         /* `Code Inline` */
-        if (// checking text, not source, to not match ending backticks
-            '`' === last_txt_char &&
+        if ('`' === last_txt_char &&
             '`' !== char &&
             '\n'!== char
         ) {
