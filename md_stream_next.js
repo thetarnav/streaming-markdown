@@ -162,7 +162,7 @@ function check_strong(s) {
 export function write(s, chunk) {
     s.source += chunk
     
-    while (s.index < s.source.length) {
+    for (;s.index < s.source.length; s.index += 1) {
         const char = s.source[s.index]
 
         switch (s.nodes_type[s.nodes_len]) {
@@ -173,7 +173,7 @@ export function write(s, chunk) {
                 } else {
                     s.code_block_lang += char
                 }
-                break
+                continue
             }
 
             if (s.index >= 3 &&
@@ -185,84 +185,122 @@ export function write(s, chunk) {
                 s.code_block_lang = null
                 s.text = s.text.slice(0, -3)
                 end_node(s)
-                break
+                continue
             }
 
             s.text += char
-            break
+            continue
         case Node_Type.Code_Inline:
             if (char === '`') {
                 end_node(s)
-                break
+                continue
             }
 
-            if (check_newline(s)) break
+            if (check_newline(s)) continue
 
             s.text += char
-            break
+            continue
         case Node_Type.Strong:
             if (s.text[s.text.length-1] === '*' && char === '*') {
                 s.text = s.text.slice(0, -1)
                 end_node(s)
-                break
+                continue
             }
 
             if (check_code_inline(s) ||
                 check_em(s) ||
                 check_newline(s)
-            ) break
+            ) continue
 
             s.text += char
-            break
+            continue
         case Node_Type.Em: // TODO _italic_
             if (s.text[s.text.length-1] === '*' && char !== '*') {
                 s.text = s.text.slice(0, -1)
                 end_node(s)
                 s.index -= 1 // reprocess char
-                break
+                continue
             }
 
             if (check_code_inline(s) ||
                 check_strong(s) ||
                 check_newline(s)
-            ) break
+            ) continue
 
             s.text += char
-            break
+            continue
+        case Node_Type.Heading:
+            if (check_code_inline(s) ||
+                check_strong(s) ||
+                check_em(s) ||
+                check_newline(s)
+            ) continue
+
+            s.text += char
+            continue
         default:
-            if (s.source[s.index-3] === '\n' &&
-                s.source[s.index-2] === '`' &&
-                s.source[s.index-1] === '`' &&
-                               char === '`'
-            ) {
-                s.code_block_lang = ""
-                s.text = ""
-                const pre  = document.createElement("pre")
-                const code = pre.appendChild(document.createElement("code"))
-                add_node(s, Node_Type.Code_Block, pre, code)
-                break
+            if (s.nodes_len === 0) {
+                switch (s.text) {
+                case "# ":
+                    s.text = ""
+                    add_node(s, Node_Type.Heading, document.createElement("h1"))
+                    s.text = char
+                    continue
+                case "## ":
+                    s.text = ""
+                    add_node(s, Node_Type.Heading, document.createElement("h2"))
+                    s.text = char
+                    continue
+                case "### ":
+                    s.text = ""
+                    add_node(s, Node_Type.Heading, document.createElement("h3"))
+                    s.text = char
+                    continue
+                case "#### ":
+                    s.text = ""
+                    add_node(s, Node_Type.Heading, document.createElement("h4"))
+                    s.text = char
+                    continue
+                case "##### ":
+                    s.text = ""
+                    add_node(s, Node_Type.Heading, document.createElement("h5"))
+                    s.text = char
+                    continue
+                case "###### ":
+                    s.text = ""
+                    add_node(s, Node_Type.Heading, document.createElement("h6"))
+                    s.text = char
+                    continue
+                case "```": {
+                    s.code_block_lang = ""
+                    s.text = ""
+                    const pre  = document.createElement("pre")
+                    const code = pre.appendChild(document.createElement("code"))
+                    add_node(s, Node_Type.Code_Block, pre, code)
+                    continue
+                }
+                }
             }
 
             if (check_code_inline(s) ||
                 check_strong(s) ||
                 check_em(s) ||
                 check_newline(s)
-            ) break
+            ) continue
 
             s.text += char
-            break
+            continue
         }
-
-        s.index += 1
     }
 
+    // TODO: temp paragraph
     s.nodes_elem[s.nodes_len].appendChild(s.temp_span).innerText = s.text
 }
 
 /**
  * @param   {Stream} s 
  * @returns {void  } */
-export function end(s) {
+export function end(s) { // TODO: reset state
     s.nodes_elem[s.nodes_len].removeChild(s.temp_span)
     while (s.nodes_len > 0) {
         end_node(s)
