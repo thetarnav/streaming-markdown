@@ -32,6 +32,23 @@ export function make(container) {
 }
 
 /**
+ * Finish rendering the markdown. Resets the state of the stream and flushes any remaining text.
+ * @param   {Stream} s 
+ * @returns {void  } */
+export function end(s) {
+    s.tokens_elem[s.tokens_len].removeChild(s.temp_span)
+    flush(s)
+    s.idx = 0
+    s.src = ""
+    s.txt = ""
+    s.code_block_lang = null
+    for (let i = 1; i <= s.tokens_len; i += 1) {
+        s.tokens_elem[i] = s.tokens_type[i] = /**@type {*}*/(null)
+    }
+    s.tokens_len = 0
+}
+
+/**
  * @param   {Stream} s 
  * @returns {void  } */
 function flush(s) {
@@ -336,15 +353,4 @@ export function write(s, chunk) {
 
     // TODO: temp paragraph
     s.tokens_elem[s.tokens_len].appendChild(s.temp_span).innerText = s.txt
-}
-
-/**
- * Finish rendering the markdown. Resets the state of the stream and flushes any remaining text.
- * @param   {Stream} s 
- * @returns {void  } */
-export function end(s) { // TODO: reset state
-    s.tokens_elem[s.tokens_len].removeChild(s.temp_span)
-    while (s.tokens_len > 0) {
-        end_token(s)
-    }
 }
