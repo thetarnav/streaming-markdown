@@ -87,110 +87,6 @@ function ensure_paragraph(s) {
     s.nodes_type[s.nodes_len] = Node_Type.Text
 }
 
-
-/**
- * @param   {Stream } s
- * @returns {boolean} */
-function check_newline(s) {
-    if (s.source[s.index] !== '\n') return false
-    
-    if (s.source[s.index-1] === '\n') {
-        end_node(s)
-    } else {
-        if (s.text.length > 0) {
-            ensure_paragraph(s)
-            flush(s)
-        }
-        s.nodes_len = Math.min(s.nodes_len, 1)
-    }
-    return true
-}
-
-/**
- * @param   {Stream } s
- * @returns {boolean} */
-function check_code_inline(s) {
-    const char = s.source[s.index]
-
-    if (// checking text, not source, to not match ending backticks
-        s.text[s.text.length-1] === '`' &&
-        char !== '`' && char !== '\n'
-    ) {
-        s.text = s.text.slice(0, -1)
-        ensure_paragraph(s)
-        add_node(s, Node_Type.Code_Inline, document.createElement("code"))
-        s.text = char
-        return true
-    }
-    return false
-}
-
-/**
- * @param   {Stream } s
- * @returns {boolean} */
-function check_em_ast(s) {
-    const char = s.source[s.index]
-
-    if (s.text[s.text.length-1] === '*' &&
-        char !== '*' && char !== '\n'
-    ) {
-        s.text = s.text.slice(0, -1)
-        ensure_paragraph(s)
-        add_node(s, Node_Type.Em_Ast, document.createElement("em"))
-        s.text = char
-        return true
-    }
-    return false
-}
-
-/**
- * @param   {Stream } s
- * @returns {boolean} */
-function check_em_und(s) {
-    const char = s.source[s.index]
-
-    if (s.text[s.text.length-1] === '_' &&
-        char !== '_' && char !== '\n'
-    ) {
-        s.text = s.text.slice(0, -1)
-        ensure_paragraph(s)
-        add_node(s, Node_Type.Em_Und, document.createElement("em"))
-        s.text = char
-        return true
-    }
-    return false
-}
-
-/**
- * @param   {Stream } s
- * @returns {boolean} */
-function check_strong_ast(s) {
-    if (s.text[s.text.length-1] === '*' &&
-        s.source[s.index] === '*'
-    ) {
-        s.text = s.text.slice(0, -1)
-        ensure_paragraph(s)
-        add_node(s, Node_Type.Strong_Ast, document.createElement("strong"))
-        return true
-    }
-    return false
-}
-
-/**
- * @param   {Stream } s
- * @returns {boolean} */
-function check_strong_und(s) {
-    if (s.text[s.text.length-1] === '_' &&
-        s.source[s.index] === '_'
-    ) {
-        s.text = s.text.slice(0, -1)
-        ensure_paragraph(s)
-        add_node(s, Node_Type.Strong_Und, document.createElement("strong"))
-        return true
-    }
-    return false
-}
-
 /**
  * Parse and render another chunk of markdown.
  * @param   {Stream} s 
@@ -201,8 +97,12 @@ export function write(s, chunk) {
     
     for (;s.index < s.source.length; s.index += 1) {
         const char = s.source[s.index]
+        const curr_node = s.nodes_type[s.nodes_len]
 
-        switch (s.nodes_type[s.nodes_len]) {
+        /*
+        Token specific checks
+        */
+        switch (curr_node) {
         case Node_Type.Code_Block:
             if (s.code_block_lang !== null) {
                 if (char === '\n') {
@@ -232,43 +132,21 @@ export function write(s, chunk) {
                 end_node(s)
                 continue
             }
-
-            if (check_newline(s)) continue
-
-            s.text += char
-            continue
+            break
         case Node_Type.Strong_Ast:
             if (s.text[s.text.length-1] === '*' && char === '*') {
                 s.text = s.text.slice(0, -1)
                 end_node(s)
                 continue
             }
-
-            if (check_code_inline(s) ||
-                check_strong_und(s) ||
-                check_em_ast(s) ||
-                check_em_und(s) ||
-                check_newline(s)
-            ) continue
-
-            s.text += char
-            continue
+            break
         case Node_Type.Strong_Und:
             if (s.text[s.text.length-1] === '_' && char === '_') {
                 s.text = s.text.slice(0, -1)
                 end_node(s)
                 continue
             }
-
-            if (check_code_inline(s) ||
-                check_strong_ast(s) ||
-                check_em_und(s) ||
-                check_em_ast(s) ||
-                check_newline(s)
-            ) continue
-
-            s.text += char
-            continue
+            break
         case Node_Type.Em_Ast:
             if (s.text[s.text.length-1] === '*' && char !== '*') {
                 s.text = s.text.slice(0, -1)
@@ -276,16 +154,7 @@ export function write(s, chunk) {
                 s.index -= 1 // reprocess char
                 continue
             }
-
-            if (check_code_inline(s) ||
-                check_strong_ast(s) ||
-                check_strong_und(s) ||
-                check_em_und(s) ||
-                check_newline(s)
-            ) continue
-
-            s.text += char
-            continue
+            break
         case Node_Type.Em_Und:
             if (s.text[s.text.length-1] === '_' && char !== '_') {
                 s.text = s.text.slice(0, -1)
@@ -293,26 +162,8 @@ export function write(s, chunk) {
                 s.index -= 1 // reprocess char
                 continue
             }
-
-            if (check_code_inline(s) ||
-                check_strong_ast(s) ||
-                check_strong_und(s) ||
-                check_em_ast(s) ||
-                check_newline(s)
-            ) continue
-
-            s.text += char
-            continue
-        case Node_Type.Heading:
-            if (check_code_inline(s) ||
-                check_strong_ast(s) ||
-                check_em_ast(s) ||
-                check_newline(s)
-            ) continue
-
-            s.text += char
-            continue
-        default:
+            break
+        case Node_Type.Text: // top level checks
             if (s.nodes_len === 0) {
                 switch (s.text) {
                 case "# ":
@@ -355,18 +206,91 @@ export function write(s, chunk) {
                 }
                 }
             }
+            break
+        }
 
-            if (check_code_inline(s) ||
-                check_strong_ast(s) ||
-                check_strong_und(s) ||
-                check_em_ast(s) ||
-                check_em_und(s) ||
-                check_newline(s)
-            ) continue
+        /*
+        Common checks
+        */
 
+        /* Newline */
+        if (char === '\n') {
+            if (s.source[s.index-1] === '\n') {
+                end_node(s)
+            } else {
+                if (s.text.length > 0) {
+                    ensure_paragraph(s)
+                    flush(s)
+                }
+                s.nodes_len = Math.min(s.nodes_len, 1)
+            }
+            continue
+        }
+
+        if (curr_node === Node_Type.Code_Inline) {
             s.text += char
             continue
         }
+
+        /* `Code Inline` */
+        if (// checking text, not source, to not match ending backticks
+            s.text[s.text.length-1] === '`' &&
+            char !== '`' && char !== '\n'
+        ) {
+            s.text = s.text.slice(0, -1)
+            ensure_paragraph(s)
+            add_node(s, Node_Type.Code_Inline, document.createElement("code"))
+            s.text = char
+            continue
+        }
+
+        /* **Strong** */
+        if (curr_node !== Node_Type.Strong_Ast &&
+            s.text[s.text.length-1] === '*' &&
+            char === '*'
+        ) {
+            s.text = s.text.slice(0, -1)
+            ensure_paragraph(s)
+            add_node(s, Node_Type.Strong_Ast, document.createElement("strong"))
+            continue
+        }
+        
+        /* __Strong__ */
+        if (curr_node !== Node_Type.Strong_Und &&
+            s.text[s.text.length-1] === '_' &&
+            char === '_'
+        ) {
+            s.text = s.text.slice(0, -1)
+            ensure_paragraph(s)
+            add_node(s, Node_Type.Strong_Und, document.createElement("strong"))
+            continue
+        }
+
+        /* *Em* */
+        if (curr_node !== Node_Type.Em_Ast &&
+            s.text[s.text.length-1] === '*' &&
+            char !== '*' && char !== '\n'
+        ) {
+            s.text = s.text.slice(0, -1)
+            ensure_paragraph(s)
+            add_node(s, Node_Type.Em_Ast, document.createElement("em"))
+            s.text = char
+            continue
+        }
+        
+        /* _Em_ */
+        if (curr_node !== Node_Type.Em_Und &&
+            s.text[s.text.length-1] === '_' &&
+            char !== '_' && char !== '\n'
+        ) {
+            s.text = s.text.slice(0, -1)
+            ensure_paragraph(s)
+            add_node(s, Node_Type.Em_Und, document.createElement("em"))
+            s.text = char
+            continue
+        }
+
+        s.text += char
     }
 
     // TODO: temp paragraph
