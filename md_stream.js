@@ -49,7 +49,6 @@ function flush(s) {
  * @param   {Stream} s
  * @returns {void  } */
 function end_node(s) {
-    console.log(`end_node: ${s.nodes_type[s.nodes_len]}, text: "${s.text}", len: ${s.nodes_len}`)
     flush(s)
     if (s.nodes_len > 0) {
         s.nodes_len -= 1
@@ -77,7 +76,7 @@ function add_node(s, type, container_el, text_el = container_el) {
 /**
  * @param   {Stream} s
  * @returns {void  } */
-function ensure_paragraph(s) {
+function add_paragraph(s) {
     if (s.nodes_len > 0) return
 
     const p = document.createElement("p")
@@ -219,7 +218,7 @@ export function write(s, chunk) {
                 end_node(s)
             } else {
                 if (s.text.length > 0) {
-                    ensure_paragraph(s)
+                    add_paragraph(s)
                     flush(s)
                 }
                 s.nodes_len = Math.min(s.nodes_len, 1)
@@ -238,7 +237,7 @@ export function write(s, chunk) {
             char !== '`' && char !== '\n'
         ) {
             s.text = s.text.slice(0, -1)
-            ensure_paragraph(s)
+            add_paragraph(s)
             add_node(s, Node_Type.Code_Inline, document.createElement("code"))
             s.text = char
             continue
@@ -250,7 +249,7 @@ export function write(s, chunk) {
             char === '*'
         ) {
             s.text = s.text.slice(0, -1)
-            ensure_paragraph(s)
+            add_paragraph(s)
             add_node(s, Node_Type.Strong_Ast, document.createElement("strong"))
             continue
         }
@@ -261,7 +260,7 @@ export function write(s, chunk) {
             char === '_'
         ) {
             s.text = s.text.slice(0, -1)
-            ensure_paragraph(s)
+            add_paragraph(s)
             add_node(s, Node_Type.Strong_Und, document.createElement("strong"))
             continue
         }
@@ -272,7 +271,7 @@ export function write(s, chunk) {
             char !== '*' && char !== '\n'
         ) {
             s.text = s.text.slice(0, -1)
-            ensure_paragraph(s)
+            add_paragraph(s)
             add_node(s, Node_Type.Em_Ast, document.createElement("em"))
             s.text = char
             continue
@@ -284,7 +283,7 @@ export function write(s, chunk) {
             char !== '_' && char !== '\n'
         ) {
             s.text = s.text.slice(0, -1)
-            ensure_paragraph(s)
+            add_paragraph(s)
             add_node(s, Node_Type.Em_Und, document.createElement("em"))
             s.text = char
             continue
