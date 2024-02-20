@@ -9,11 +9,11 @@ export type Update_Token_Node<TData, TNode> =
 export type Render_Temp_Text<TData, TNode> =
     (data: TData, node: TNode, text: string) => void
 
-export interface Renderer<TData, TNode> {
-    data: TData
-    create_node: Create_Token_Node<TData, TNode>
-    update_node: Update_Token_Node<TData, TNode>
-    render_temp_text: Render_Temp_Text<TData, TNode>
+export type Renderer<TData, TNode> = {
+    data            : TData
+    create_node     : Create_Token_Node<TData, TNode>
+    update_node     : Update_Token_Node<TData, TNode>
+    render_temp_text: Render_Temp_Text <TData, TNode>
 }
 
 export type Default_Renderer_Data = {
