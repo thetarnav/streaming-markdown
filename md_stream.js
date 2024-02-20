@@ -1,24 +1,24 @@
 export const
-    ROOT        = 1,
-    PARAGRAPH   = 2,
-    HEADING_1   = 4,
-    HEADING_2   = 8,
-    HEADING_3   = 16,
-    HEADING_4   = 32,
-    HEADING_5   = 64,
-    HEADING_6   = 128,
-    ITALIC_AST  = 256,
-    ITALIC_UND  = 512,
-    STRONG_AST  = 1024,
-    STRONG_UND  = 2048,
-    CODE        = 4096,
-    CODE_BLOCK  = 8192,
+    ROOT       = 1,
+    PARAGRAPH  = 2,
+    HEADING_1  = 4,
+    HEADING_2  = 8,
+    HEADING_3  = 16,
+    HEADING_4  = 32,
+    HEADING_5  = 64,
+    HEADING_6  = 128,
+    ITALIC_AST = 256,
+    ITALIC_UND = 512,
+    STRONG_AST = 1024,
+    STRONG_UND = 2048,
+    CODE       = 4096,
+    CODE_BLOCK = 8192,
     /** HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6 */
-    HEADING     = 252,
+    HEADING    = 252,
     /** ITALIC_AST | ITALIC_UND */
-    ITALIC      = 768,
+    ITALIC     = 768,
     /** STRONG_AST | STRONG_UND */
-    STRONG      = 3072
+    STRONG     = 3072
 
 /** @enum {(typeof Token_Type)[keyof typeof Token_Type]} */
 export const Token_Type = /** @type {const} */({
@@ -61,30 +61,32 @@ export function token_type_to_string(type) {
 }
 
 /**
- * @typedef {unknown} Token_Node 
+ * @typedef {unknown} Token_Node
  * 
  * @typedef {Token_Node | null} Maybe_Token_Node 
  * 
+ * @typedef {unknown} Renderer_Data
+ * 
  * @callback Create_Token_Node
- * @param   {unknown         } data
+ * @param   {Renderer_Data   } data
  * @param   {Token_Type      } type
  * @param   {Maybe_Token_Node} parent
  * @returns {Token_Node}
  * 
  * @callback Update_Token_Node
- * @param   {unknown   } data
- * @param   {Token_Node} node
- * @param   {string    } text
+ * @param   {Renderer_Data} data
+ * @param   {Token_Node   } node
+ * @param   {string       } text
  * @returns {void}
  * 
  * @callback Render_Temp_Text
- * @param   {unknown   } data
- * @param   {Token_Node} node
- * @param   {string    } text
+ * @param   {Renderer_Data} data
+ * @param   {Token_Node   } node
+ * @param   {string       } text
  * @returns {void}
  * 
  * @typedef  {object           } Renderer
- * @property {unknown          } data             User data.
+ * @property {Renderer_Data    } data             User data.
  * @property {Create_Token_Node} create_node      Create a new token node.
  * @property {Update_Token_Node} update_node      Add a text chunk to a token node.
  * @property {Render_Temp_Text } render_temp_text Render temporary text.
