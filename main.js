@@ -1,4 +1,4 @@
-import * as mds from "./md_stream.js"
+import * as mds from "./lib/mds.js"
 
 async function main() {
     const source_res = await fetch(location.href + "/readme.md")
@@ -6,7 +6,7 @@ async function main() {
 
     const container = /** @type {HTMLElement} */(document.getElementById("markdown"))
     const renderer = mds.default_renderer(container)
-    const stream = mds.make(renderer)
+    const stream = mds.parser(renderer)
 
     let i = 0
     while (i < source_txt.length) {

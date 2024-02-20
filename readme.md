@@ -8,7 +8,7 @@
 npm install streaming-markdown
 ```
 
-*Or just copy **`md_stream.js`** to your project.*
+*Or just copy **`lib/`** dir to your project.*
 
 ## Usage
 
@@ -17,9 +17,9 @@ npm install streaming-markdown
 Create new markdown `Stream` by calling `stream` function with the `HTMLElement` to render to.
 
 ```js
-import * as md_stream from "streaming-markdown"
+import * as mds from "streaming-markdown"
 
-const stream = md_stream.make(document.getElementById("markdown"))
+const stream = mds.make(document.getElementById("markdown"))
 ```
 
 ### `write` function
@@ -27,7 +27,7 @@ const stream = md_stream.make(document.getElementById("markdown"))
 Then, you can start streaming markdown to the `Stream` by calling `write` function with the chunk of markdown string.
 
 ```js
-md_stream.write(stream, "# Streaming Markdown\n\n")
+mds.write(stream, "# Streaming Markdown\n\n")
 ```
 
 *You can write as **many times** as needed to stream the markdown.*
@@ -48,7 +48,7 @@ Finally, you can end the stream by calling `end` function.
 It will reset the `Stream` state and flush the remaining markdown.
 
 ```js
-md_stream.end(stream)
+mds.end(stream)
 ```
 
 ## TODO
