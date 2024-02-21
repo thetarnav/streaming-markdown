@@ -5,7 +5,7 @@
 		"moduleResolution": "NodeNext",
 		"lib": ["ESNext", "DOM", "DOM.Iterable"],
 		"newLine": "LF",
-		"types": [],
+		"types": ["node"],
 
 		/* JS */
 		/*
