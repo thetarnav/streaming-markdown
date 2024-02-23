@@ -50,8 +50,13 @@ function test_update_node(data, node, text) {
 }
 /** @type {Test_Render_Temp_Text} */
 function test_render_temp_text(data, node, text) {
-	data.temp_text = text
-	data.temp_text_node = node
+	if (node === null || text === "") {
+		data.temp_text      = ""
+		data.temp_text_node = null
+	} else {
+		data.temp_text      = text
+		data.temp_text_node = node
+	}
 }
 
 const content_1 = "Hello, World!"
@@ -97,7 +102,7 @@ for (let level = 1; level <= 6; level += 1) {
 			}]
 		})
 		assert.equal(renderer.data.temp_text, "")
-		assert.equal(renderer.data.temp_text_node, renderer.data.root.children[0])
+		assert.equal(renderer.data.temp_text_node, null)
 	})
 
 	t.test(`Heading_${level} with Emphasis`, () => {
@@ -144,6 +149,109 @@ for (let level = 1; level <= 6; level += 1) {
 			}]
 		})
 		assert.equal(renderer.data.temp_text, "")
-		assert.equal(renderer.data.temp_text_node, renderer.data.root.children[0])
+		assert.equal(renderer.data.temp_text_node, null)
 	})
 }
+
+t.test("Empty Code_Block", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, "```\n")
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Code_Block,
+			children: []
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+
+	mds.write(parser, "```")
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Code_Block,
+			children: [""]
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Code_Block,
+			children: [""]
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+})
+
+t.test("Code_Block", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, "```\n")
+	mds.write(parser, content_1 + "\n")
+	mds.write(parser, "```")
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Code_Block,
+			children: [content_1]
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Code_Block,
+			children: [content_1]
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+})
+
+t.test("Code_Block with language", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, "```js\n")
+	mds.write(parser, content_1 + "\n")
+	mds.write(parser, "```")
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Code_Block,
+			children: [content_1]
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Code_Block,
+			children: [content_1]
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+})
