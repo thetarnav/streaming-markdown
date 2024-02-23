@@ -17,7 +17,9 @@ async function main() {
         await new Promise(resolve => setTimeout(resolve, delay))
     }
 
+	// TODO abstract
     mds.end(stream)
+	renderer.data.temp.parentElement?.removeChild(renderer.data.temp)
 }
 
 main()
