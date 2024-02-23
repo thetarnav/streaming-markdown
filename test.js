@@ -96,11 +96,11 @@ for (let level = 1; level <= 6; level += 1) {
 				children: [content_1]
 			}]
 		})
-		assert.equal(renderer.data.temp_text, content_1)
+		assert.equal(renderer.data.temp_text, "")
 		assert.equal(renderer.data.temp_text_node, renderer.data.root.children[0])
 	})
 
-	t.test(`Heading_${level}_With_Emphasis`, () => {
+	t.test(`Heading_${level} with Emphasis`, () => {
 		const renderer = test_renderer()
 		const parser = mds.parser(renderer)
 
@@ -128,7 +128,7 @@ for (let level = 1; level <= 6; level += 1) {
 				}]
 			}]
 		})
-		assert.equal(renderer.data.temp_text, content_2) // TODO ending '*' is being added to temp_text
+		assert.equal(renderer.data.temp_text, content_2 + "*")
 		assert.equal(renderer.data.temp_text_node, renderer.data.root.children[0].children[1])
 
 		mds.end(parser)
@@ -143,7 +143,7 @@ for (let level = 1; level <= 6; level += 1) {
 				}]
 			}]
 		})
-		assert.equal(renderer.data.temp_text, content_2)
-		assert.equal(renderer.data.temp_text_node, renderer.data.root.children[0].children[1])
+		assert.equal(renderer.data.temp_text, "")
+		assert.equal(renderer.data.temp_text_node, renderer.data.root.children[0])
 	})
 }
