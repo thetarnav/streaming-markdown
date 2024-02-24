@@ -153,6 +153,7 @@ export function write(s, chunk) {
         const last_last_txt_char = s.txt[s.txt.length-2]
         const last_last_src_char = s.src[s.idx-2]
         const last_txt_char      = s.txt[s.txt.length-1]
+		const last_src_char      = s.src[s.idx-1]
         const char               = s.src[s.idx]
         const in_token           = s.tokens_type[s.tokens_len]
 
@@ -333,12 +334,11 @@ export function write(s, chunk) {
 				add_paragraph(s)
 				flush(s)
 			}
-			s.tokens_len = Math.min(s.tokens_len, 1)
 			continue
 		}
-		if ('\n' === s.src[s.idx-1]) {
-			if ('\n' === s.src[s.idx-2]) {
-				end_token(s)
+		if ('\n' === last_src_char) {
+			if ('\n' === last_last_src_char) {
+				s.tokens_len = 0
 			} else {
 				s.renderer.update_node(s.renderer.data, s.tokens_node[s.tokens_len], '\n')
 			}

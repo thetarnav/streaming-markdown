@@ -182,6 +182,27 @@ t.test("Line Breaks", () => {
 	assert.equal(renderer.data.temp_text_node, null)
 })
 
+t.test("Line Breaks with Italic", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, "*" + content_1 + "\n" + content_2 + "*")
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : mds.Token_Type.Italic_Ast,
+				children: [content_1, "\n", content_2]
+			}],
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+})
+
 t.test("Paragraphs", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)

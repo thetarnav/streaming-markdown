@@ -55,7 +55,7 @@ mds.end(stream)
 
 - [x] Paragraphs
 - [x] Line breaks
-    - [ ] Line breaks don't end emphasis
+    - [x] Single line breaks don't end tokens
 - [x] Headers
 - [x] code block with triple backticks
 - [x] `inline code` with backticks
