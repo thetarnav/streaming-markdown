@@ -1,4 +1,4 @@
-import * as mds from "./lib/mds.js"
+import * as mds from "./mds.js"
 
 async function main() {
     const source_res = await fetch("readme.md")
