@@ -19,7 +19,7 @@ Create new markdown `Stream` by calling `stream` function with the `HTMLElement`
 ```js
 import * as mds from "streaming-markdown"
 
-const stream = mds.make(document.getElementById("markdown"))
+const stream = mds.make(document.getElementById(`markdown`))
 ```
 
 ### `write` function
@@ -63,7 +63,7 @@ mds.end(stream)
 - [x] **Bold** with double asterisks
 - [x] _italic_ with underscores
 - [x] __Bold__ with double underscores
-- [ ] Escape characters (e.g. \* or \_)
+- [x] Escape characters (e.g. \* or \_ with \\* or \\_)
 - [ ] Links
 - [ ] Images
 - [ ] Lists

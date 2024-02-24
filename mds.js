@@ -110,6 +110,7 @@ export function end(s) {
  * @param   {Parser} s
  * @returns {void  } */
 export function flush(s) {
+	if (s.txt.length === 0) return
 	s.renderer.update_node(s.renderer.data, s.tokens_node[s.tokens_len], s.txt)
 	s.txt = ""
 }
@@ -150,9 +151,24 @@ export function write(s, chunk) {
     for (s.src += chunk; s.idx < s.src.length; s.idx += 1)
     {
         const last_last_txt_char = s.txt[s.txt.length-2]
+        const last_last_src_char = s.src[s.idx-2]
         const last_txt_char      = s.txt[s.txt.length-1]
         const char               = s.src[s.idx]
         const in_token           = s.tokens_type[s.tokens_len]
+
+		/*
+		Escape character
+		*/
+		if (in_token !== CODE_BLOCK &&
+			in_token !== CODE &&
+			last_txt_char === '\\' &&
+			last_last_src_char !== '\\' &&
+			('\\' === char || '*' === char || '_' === char || '`' === char)
+		) {
+			s.txt = s.txt.slice(0, -1)
+			s.txt += char
+			continue
+		}
 
         /*
         Token specific checks
@@ -192,7 +208,8 @@ export function write(s, chunk) {
             }
             break
         case STRONG_AST:
-            if ('*' === last_txt_char &&
+            if ('\\'!== last_last_src_char &&
+				'*' === last_txt_char &&
                 '*' === char
             ) {
                 s.txt = s.txt.slice(0, -1)
@@ -202,7 +219,8 @@ export function write(s, chunk) {
             }
             break
         case STRONG_UND:
-            if ('_' === last_txt_char &&
+            if ('\\'!== last_last_src_char &&
+				'_' === last_txt_char &&
                 '_' === char
             ) {
                 s.txt = s.txt.slice(0, -1)
@@ -212,7 +230,8 @@ export function write(s, chunk) {
             }
             break
         case ITALIC_AST:
-            if ('*' !== last_last_txt_char &&
+            if ('\\'!== last_last_src_char &&
+				'*' !== last_last_txt_char &&
                 '*' === last_txt_char &&
                 '*' !== char
             ) {
@@ -223,7 +242,8 @@ export function write(s, chunk) {
                 continue
             }
             // Special case for ***strong*em***
-            if ('*' === last_last_txt_char &&
+            if ('\\'!== s.src[s.idx-3] &&
+				'*' === last_last_txt_char &&
                 '*' === last_txt_char &&
                 '*' === char
             ) {
@@ -235,7 +255,8 @@ export function write(s, chunk) {
             }
             break
         case ITALIC_UND:
-            if ('_' !== last_last_txt_char &&
+            if ('\\'!== last_last_src_char &&
+				'_' !== last_last_txt_char &&
                 '_' === last_txt_char &&
                 '_' !== char
             ) {
@@ -246,7 +267,8 @@ export function write(s, chunk) {
                 continue
             }
             // Special case for ___strong_em___
-            if ('_' === last_last_txt_char &&
+            if ('\\'!== s.src[s.idx-3] &&
+				'_' === last_last_txt_char &&
                 '_' === last_txt_char &&
                 '_' === char
             ) {
@@ -328,7 +350,8 @@ export function write(s, chunk) {
         }
 
         /* `Code Inline` */
-        if ('`' === last_txt_char &&
+        if ('\\'!== last_last_src_char &&
+			'`' === last_txt_char &&
             '`' !== char &&
             '\n'!== char
         ) {
@@ -342,6 +365,7 @@ export function write(s, chunk) {
 
         /* **Strong** */
         if (in_token !== STRONG_AST &&
+			'\\'!== s.src[s.idx-4] &&
             '*' === last_last_txt_char &&
             '*' === last_txt_char &&
             '*' !== char &&
@@ -357,6 +381,7 @@ export function write(s, chunk) {
 
         /* __Strong__ */
         if (in_token !== STRONG_UND &&
+			'\\'!== s.src[s.idx-4] &&
             '_' === last_last_txt_char &&
             '_' === last_txt_char &&
             '_' !== char &&
@@ -372,6 +397,7 @@ export function write(s, chunk) {
 
         /* *Em* */
         if (in_token !== ITALIC_AST &&
+			'\\'!== last_last_src_char &&
             '*' === last_txt_char &&
             '*' !== char &&
             '\n'!== char
@@ -386,6 +412,7 @@ export function write(s, chunk) {
 
         /* _Em_ */
         if (in_token !== ITALIC_UND &&
+			'\\'!== last_last_src_char &&
             '_' === last_txt_char &&
             '_' !== char &&
             '\n'!== char

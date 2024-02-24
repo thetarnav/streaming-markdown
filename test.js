@@ -105,7 +105,7 @@ for (let level = 1; level <= 6; level += 1) {
 		assert.equal(renderer.data.temp_text_node, null)
 	})
 
-	t.test(`Heading_${level} with Emphasis`, () => {
+	t.test(`Heading_${level} with Italic`, () => {
 		const renderer = test_renderer()
 		const parser = mds.parser(renderer)
 
@@ -203,6 +203,27 @@ t.test("Paragraphs", () => {
 	assert.equal(renderer.data.temp_text_node, null)
 })
 
+t.test("Paragraph with Italic", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, "*" + content_1 + "*")
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : mds.Token_Type.Italic_Ast,
+				children: [content_1]
+			}],
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+})
+
 t.test("Empty Code_Block", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
@@ -225,7 +246,7 @@ t.test("Empty Code_Block", () => {
 		type    : mds.Token_Type.Root,
 		children: [{
 			type    : mds.Token_Type.Code_Block,
-			children: [""]
+			children: []
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
@@ -237,7 +258,7 @@ t.test("Empty Code_Block", () => {
 		type    : mds.Token_Type.Root,
 		children: [{
 			type    : mds.Token_Type.Code_Block,
-			children: [""]
+			children: []
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
@@ -300,6 +321,118 @@ t.test("Code_Block with language", () => {
 		children: [{
 			type    : mds.Token_Type.Code_Block,
 			children: [content_1]
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+})
+
+for (const token of [
+	mds.Token_Type.Italic_Ast,
+	mds.Token_Type.Italic_Und,
+	mds.Token_Type.Strong_Ast,
+	mds.Token_Type.Strong_Und,
+]) {
+	/** @type {string} */
+	let char
+	/** @type {string} */
+	let escaped
+	switch (token) {
+		case mds.Token_Type.Italic_Ast: char = "*" ; escaped = "\\*"   ; break
+		case mds.Token_Type.Italic_Und: char = "_" ; escaped = "\\_"   ; break
+		case mds.Token_Type.Strong_Ast: char = "**"; escaped = "\\*\\*"; break
+		case mds.Token_Type.Strong_Und: char = "__"; escaped = "\\_\\_"; break
+		default: throw new Error("Invalid token")
+	}
+
+	t.test(`Escape ${mds.token_type_to_string(token)} Begin`, () => {
+		const renderer = test_renderer()
+		const parser = mds.parser(renderer)
+
+		mds.write(parser, escaped + content_1)
+		mds.end(parser)
+
+		assert.deepEqual(renderer.data.root, {
+			type    : mds.Token_Type.Root,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: [char + content_1]
+			}]
+		})
+		assert.equal(renderer.data.temp_text, "")
+		assert.equal(renderer.data.temp_text_node, null)
+	})
+
+	t.test(`Escape ${mds.token_type_to_string(token)} End`, () => {
+		const renderer = test_renderer()
+		const parser = mds.parser(renderer)
+
+		mds.write(parser, char + content_1 + escaped)
+		mds.end(parser)
+
+		assert.deepEqual(renderer.data.root, {
+			type    : mds.Token_Type.Root,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: [{
+					type    : token,
+					children: [content_1 + char]
+				}]
+			}]
+		})
+		assert.equal(renderer.data.temp_text, "")
+		assert.equal(renderer.data.temp_text_node, null)
+	})
+}
+
+t.test("Escape Backtick", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, "\\`" + content_1)
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: ["`" + content_1]
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+})
+
+t.test("Escape Backslash", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, "\\\\" + content_1)
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: ["\\" + content_1]
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+})
+
+t.test("Escape normal char", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, "\\a" + content_1)
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: ["\\a" + content_1]
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
