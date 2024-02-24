@@ -1,7 +1,7 @@
 import * as mds from "./lib/mds.js"
 
 async function main() {
-    const source_res = await fetch(location.href + "/readme.md")
+    const source_res = await fetch("readme.md")
     const source_txt = await source_res.text()
 
     const container = /** @type {HTMLElement} */(document.getElementById("markdown"))
