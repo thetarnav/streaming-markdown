@@ -153,6 +153,56 @@ for (let level = 1; level <= 6; level += 1) {
 	})
 }
 
+t.test("Line Breaks", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, content_1 + "\n" + content_2)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: [content_1, "\n"],
+		}]
+	})
+	assert.equal(renderer.data.temp_text, content_2)
+	assert.equal(renderer.data.temp_text_node, renderer.data.root.children[0])
+
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: [content_1, "\n", content_2],
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+})
+
+t.test("Paragraphs", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, content_1 + "\n" + "\n" + content_2)
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: [content_1],
+		}, {
+			type    : mds.Token_Type.Paragraph,
+			children: [content_2],
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_text_node, null)
+})
+
 t.test("Empty Code_Block", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)

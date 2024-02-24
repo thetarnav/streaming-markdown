@@ -1,4 +1,4 @@
-# Streaming Markdown
+# Streaming *Markdown*
 
 **Experiment making a streaming makdown renderer *à la ChatGPT.***
 
@@ -54,7 +54,8 @@ mds.end(stream)
 ## TODO
 
 - [x] Paragraphs
-- [ ] Line breaks
+- [x] Line breaks
+    - [ ] Line breaks don't end emphasis
 - [x] Headers
 - [x] code block with triple backticks
 - [x] `inline code` with backticks
