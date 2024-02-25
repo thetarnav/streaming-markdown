@@ -4,36 +4,38 @@ import * as assert from "node:assert/strict"
 import * as mds    from "./mds.js"
 
 /**
- * @typedef {object} Test_Renderer_Data
+ * @typedef {(string | Test_Renderer_Node)[]} Test_Renderer_Children
+ * 
+ * @typedef  {object} Test_Renderer_Data
  * @property {Test_Renderer_Node | null} root
- * @property {string} temp_text
- * @property {Test_Renderer_Node | null} temp_text_node
+ * @property {string                   } temp_text
+ * @property {Test_Renderer_Node | null} temp_node
  *
- * @typedef {object} Test_Renderer_Node
- * @property {mds.Token_Type} type
- * @property {(string | Test_Renderer_Node)[]} children
+ * @typedef  {object} Test_Renderer_Node
+ * @property {mds.Token_Type        } type
+ * @property {Test_Renderer_Children} children
  *
  * @typedef {mds.Renderer         <Test_Renderer_Data, Test_Renderer_Node>} Test_Renderer
- * @typedef {mds.Create_Token_Node<Test_Renderer_Data, Test_Renderer_Node>} Test_Create_Node
- * @typedef {mds.Update_Token_Node<Test_Renderer_Data, Test_Renderer_Node>} Test_Update_Node
- * @typedef {mds.Render_Temp_Text <Test_Renderer_Data, Test_Renderer_Node>} Test_Render_Temp_Text
+ * @typedef {mds.Renderer_Add_Node<Test_Renderer_Data, Test_Renderer_Node>} Test_Add_Node
+ * @typedef {mds.Renderer_Add_Text<Test_Renderer_Data, Test_Renderer_Node>} Test_Add_Text
+ * @typedef {mds.Renderer_Add_Temp<Test_Renderer_Data, Test_Renderer_Node>} Test_Add_Temp
  */
 
 /** @returns {Test_Renderer} */
 function test_renderer() {
     return {
-        data: {
-			root          : null,
-			temp_text     : "",
-			temp_text_node: null
+		add_node: test_add_node,
+        add_text: test_add_text,
+        add_temp: test_add_temp,
+        data    : {
+			root     : null,
+			temp_text: "",
+			temp_node: null
 		},
-        create_node     : test_create_node,
-        update_node     : test_update_node,
-        render_temp_text: test_render_temp_text,
     }
 }
-/** @type {Test_Create_Node} */
-function test_create_node(data, type, parent) {
+/** @type {Test_Add_Node} */
+function test_add_node(data, type, parent) {
 	/** @type {Test_Renderer_Node} */
     const node = {type, children: []}
 	if (parent === null) {
@@ -44,18 +46,18 @@ function test_create_node(data, type, parent) {
 	}
 	return node
 }
-/** @type {Test_Update_Node} */
-function test_update_node(data, node, text) {
+/** @type {Test_Add_Text} */
+function test_add_text(data, node, text) {
 	node.children.push(text)
 }
-/** @type {Test_Render_Temp_Text} */
-function test_render_temp_text(data, node, text) {
+/** @type {Test_Add_Temp} */
+function test_add_temp(data, node, text) {
 	if (node === null || text === "") {
 		data.temp_text      = ""
-		data.temp_text_node = null
+		data.temp_node = null
 	} else {
 		data.temp_text      = text
-		data.temp_text_node = node
+		data.temp_node = node
 	}
 }
 
@@ -90,7 +92,7 @@ for (let level = 1; level <= 6; level += 1) {
 			}]
 		})
 		assert.equal(renderer.data.temp_text, content_1)
-		assert.equal(renderer.data.temp_text_node, renderer.data.root.children[0])
+		assert.equal(renderer.data.temp_node, renderer.data.root.children[0])
 
 		mds.end(parser)
 
@@ -102,7 +104,7 @@ for (let level = 1; level <= 6; level += 1) {
 			}]
 		})
 		assert.equal(renderer.data.temp_text, "")
-		assert.equal(renderer.data.temp_text_node, null)
+		assert.equal(renderer.data.temp_node, null)
 	})
 
 	t.test(`Heading_${level} with Italic`, () => {
@@ -119,7 +121,7 @@ for (let level = 1; level <= 6; level += 1) {
 			}]
 		})
 		assert.equal(renderer.data.temp_text, content_1)
-		assert.equal(renderer.data.temp_text_node, renderer.data.root.children[0])
+		assert.equal(renderer.data.temp_node, renderer.data.root.children[0])
 
 		mds.write(parser, " *" + content_2 + "*")
 
@@ -134,7 +136,7 @@ for (let level = 1; level <= 6; level += 1) {
 			}]
 		})
 		assert.equal(renderer.data.temp_text, content_2 + "*")
-		assert.equal(renderer.data.temp_text_node, renderer.data.root.children[0].children[1])
+		assert.equal(renderer.data.temp_node, renderer.data.root.children[0].children[1])
 
 		mds.end(parser)
 
@@ -149,7 +151,7 @@ for (let level = 1; level <= 6; level += 1) {
 			}]
 		})
 		assert.equal(renderer.data.temp_text, "")
-		assert.equal(renderer.data.temp_text_node, null)
+		assert.equal(renderer.data.temp_node, null)
 	})
 }
 
@@ -167,7 +169,7 @@ t.test("Line Breaks", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, content_2)
-	assert.equal(renderer.data.temp_text_node, renderer.data.root.children[0])
+	assert.equal(renderer.data.temp_node, renderer.data.root.children[0])
 
 	mds.end(parser)
 
@@ -179,7 +181,7 @@ t.test("Line Breaks", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 })
 
 t.test("Line Breaks with Italic", () => {
@@ -200,7 +202,7 @@ t.test("Line Breaks with Italic", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 })
 
 t.test("Paragraphs", () => {
@@ -221,7 +223,7 @@ t.test("Paragraphs", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 })
 
 t.test("Paragraph with Italic", () => {
@@ -242,7 +244,7 @@ t.test("Paragraph with Italic", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 })
 
 t.test("Empty Code_Block", () => {
@@ -259,7 +261,7 @@ t.test("Empty Code_Block", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 
 	mds.write(parser, "```")
 
@@ -271,7 +273,7 @@ t.test("Empty Code_Block", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 
 	mds.end(parser)
 
@@ -283,7 +285,7 @@ t.test("Empty Code_Block", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 })
 
 t.test("Code_Block", () => {
@@ -302,7 +304,7 @@ t.test("Code_Block", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 
 	mds.end(parser)
 
@@ -314,7 +316,7 @@ t.test("Code_Block", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 })
 
 t.test("Code_Block with language", () => {
@@ -333,7 +335,7 @@ t.test("Code_Block with language", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 
 	mds.end(parser)
 
@@ -345,7 +347,7 @@ t.test("Code_Block with language", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 })
 
 for (const token of [
@@ -381,7 +383,7 @@ for (const token of [
 			}]
 		})
 		assert.equal(renderer.data.temp_text, "")
-		assert.equal(renderer.data.temp_text_node, null)
+		assert.equal(renderer.data.temp_node, null)
 	})
 
 	t.test(`Escape ${mds.token_type_to_string(token)} End`, () => {
@@ -402,7 +404,7 @@ for (const token of [
 			}]
 		})
 		assert.equal(renderer.data.temp_text, "")
-		assert.equal(renderer.data.temp_text_node, null)
+		assert.equal(renderer.data.temp_node, null)
 	})
 }
 
@@ -421,7 +423,7 @@ t.test("Escape Backtick", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 })
 
 t.test("Escape Backslash", () => {
@@ -439,7 +441,7 @@ t.test("Escape Backslash", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 })
 
 t.test("Escape normal char", () => {
@@ -457,5 +459,5 @@ t.test("Escape normal char", () => {
 		}]
 	})
 	assert.equal(renderer.data.temp_text, "")
-	assert.equal(renderer.data.temp_text_node, null)
+	assert.equal(renderer.data.temp_node, null)
 })

@@ -66,7 +66,7 @@ export function token_type_to_string(type) {
 
 /** @param {import("./types.js").Renderer<any, any>} renderer */
 export function Parser(renderer) {
-    const root = renderer.create_node(renderer.data, ROOT, null)
+    const root = renderer.add_node(renderer.data, ROOT, null)
     this.renderer        = renderer
     this.txt             =/**@type {string       }*/("")
     this.src             =/**@type {string       }*/("")
@@ -113,7 +113,7 @@ export function end(s) {
  * @returns {void  } */
 export function flush(s) {
 	if (s.txt.length === 0) return
-	s.renderer.update_node(s.renderer.data, s.nodes[s.len], s.txt)
+	s.renderer.add_text(s.renderer.data, s.nodes[s.len], s.txt)
 	s.txt = ""
 }
 
@@ -131,7 +131,7 @@ export function end_token(s) {
 export function add_token(s, type) {
     const parent = s.nodes[s.len]
     s.len += 1
-    s.nodes[s.len] = s.renderer.create_node(s.renderer.data, type, parent)
+    s.nodes[s.len] = s.renderer.add_node(s.renderer.data, type, parent)
     s.types[s.len] = type
 }
 
@@ -340,7 +340,7 @@ export function write(s, chunk) {
 			if ('\n' === last_last_src_char) {
 				s.len = 0
 			} else {
-				s.renderer.update_node(s.renderer.data, s.nodes[s.len], '\n')
+				s.renderer.add_text(s.renderer.data, s.nodes[s.len], '\n')
 			}
 		}
 
@@ -428,16 +428,16 @@ export function write(s, chunk) {
         s.txt += char
     }
 
-    s.renderer.render_temp_text(s.renderer.data, s.nodes[s.len], s.txt)
+    s.renderer.add_temp(s.renderer.data, s.nodes[s.len], s.txt)
 }
 
 /**
- * @typedef {import("./types.js").Default_Renderer} Default_Renderer
- * @typedef {import("./types.js").Default_Renderer_Data} Default_Renderer_Data
- * @typedef {import("./types.js").Default_Renderer_Node} Default_Renderer_Node
- * @typedef {import("./types.js").Default_Renderer_Create_Node} Default_Renderer_Create_Node
- * @typedef {import("./types.js").Default_Renderer_Update_Node} Default_Renderer_Update_Node
- * @typedef {import("./types.js").Default_Renderer_Render_Temp_Text} Default_Renderer_Render_Temp_Text
+ * @typedef {import("./types.js").Default_Renderer         } Default_Renderer
+ * @typedef {import("./types.js").Default_Renderer_Data    } Default_Renderer_Data
+ * @typedef {import("./types.js").Default_Renderer_Node    } Default_Renderer_Node
+ * @typedef {import("./types.js").Default_Renderer_Add_Node} Default_Renderer_Add_Node
+ * @typedef {import("./types.js").Default_Renderer_Add_Text} Default_Renderer_Add_Text
+ * @typedef {import("./types.js").Default_Renderer_Add_Temp} Default_Renderer_Add_Temp
  */
 
 /**
@@ -445,18 +445,18 @@ export function write(s, chunk) {
  * @returns {Default_Renderer} */
 export function default_renderer(root) {
     return {
-        create_node     : default_create_node,
-        update_node     : default_update_node,
-        render_temp_text: default_render_temp_text,
-        data            : {
+        add_node: default_add_node,
+        add_text: default_add_text,
+        add_temp: default_add_temp,
+        data    : {
             root: root,
             temp: document.createElement("span"),
         },
     }
 }
 
-/** @type {Default_Renderer_Create_Node} */
-export function default_create_node(data, type, parent) {
+/** @type {Default_Renderer_Add_Node} */
+export function default_add_node(data, type, parent) {
     /**@type {HTMLElement}*/ let elem
     /**@type {HTMLElement}*/ let slot
 
@@ -488,8 +488,8 @@ export function default_create_node(data, type, parent) {
     return {elem, slot}
 }
 
-/** @type {Default_Renderer_Update_Node} */
-export function default_update_node(data, node, text) {
+/** @type {Default_Renderer_Add_Text} */
+export function default_add_text(data, node, text) {
 	switch (text) {
 	case ""  : break
 	case "\n": node.slot.appendChild(document.createElement("br")); break
@@ -497,7 +497,7 @@ export function default_update_node(data, node, text) {
 	}
 }
 
-/** @type {Default_Renderer_Render_Temp_Text} */
-export function default_render_temp_text(data, node, text) {
+/** @type {Default_Renderer_Add_Temp} */
+export function default_add_temp(data, node, text) {
     node.slot.appendChild(data.temp).innerText = text
 }
