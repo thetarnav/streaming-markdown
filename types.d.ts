@@ -1,5 +1,16 @@
 import {Token_Type} from './mds.js'
 
+export type Parser = {
+	renderer       : Any_Renderer
+	txt            : string
+	src            : string
+	idx            : number
+	nodes          : any[]
+	types          : Token_Type[]
+	len            : number
+	code_block_lang: string | null
+}
+
 export type Renderer_Add_Node<TData, TNode> =
     (data: TData, type: Token_Type, parent: TNode | null) => TNode
 
@@ -15,6 +26,8 @@ export type Renderer<TData, TNode> = {
     add_text: Renderer_Add_Text<TData, TNode>
     add_temp: Renderer_Add_Temp <TData, TNode>
 }
+
+export type Any_Renderer = Renderer<any, any>
 
 export type Default_Renderer_Data = {
     root: HTMLElement

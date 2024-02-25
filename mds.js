@@ -64,25 +64,27 @@ export function token_type_to_string(type) {
     }
 }
 
-/** @param {import("./types.js").Renderer<any, any>} renderer */
-export function Parser(renderer) {
-    const root = renderer.add_node(renderer.data, ROOT, null)
-    this.renderer        = renderer
-    this.txt             =/**@type {string       }*/("")
-    this.src             =/**@type {string       }*/("")
-    this.idx             =/**@type {number       }*/(0)
-    this.nodes           =/**@type {any[]        }*/([root,,,,,])
-    this.types           =/**@type {Token_Type[] }*/([ROOT,,,,,])
-    this.len             =/**@type {number       }*/(0)
-    this.code_block_lang =/**@type {string | null}*/(null) // TODO remove
-}
+/** 
+ * @typedef {import("./types.js").Any_Renderer} Any_Renderer
+ * @typedef {import("./types.js").Parser      } Parser
+ */
 
 /**
  * Makes a new Stream object.
- * @param   {import("./types.js").Renderer<any, any>} renderer
- * @returns {Parser} */
+ * @param   {Any_Renderer} renderer
+ * @returns {Parser      } */
 export function parser(renderer) {
-    return new Parser(renderer)
+	const root = renderer.add_node(renderer.data, ROOT, null)
+    return {
+		renderer       : renderer,
+		txt            : "",
+		src            : "",
+		idx            : 0,
+		nodes          : /**@type {*}*/([root,,,,,]),
+		types          : /**@type {*}*/([ROOT,,,,,]),
+		len            : 0,
+		code_block_lang: null, // TODO remove
+	}
 }
 
 /**
@@ -433,7 +435,6 @@ export function write(s, chunk) {
 
 /**
  * @typedef {import("./types.js").Default_Renderer         } Default_Renderer
- * @typedef {import("./types.js").Default_Renderer_Data    } Default_Renderer_Data
  * @typedef {import("./types.js").Default_Renderer_Node    } Default_Renderer_Node
  * @typedef {import("./types.js").Default_Renderer_Add_Node} Default_Renderer_Add_Node
  * @typedef {import("./types.js").Default_Renderer_Add_Text} Default_Renderer_Add_Text
