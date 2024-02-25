@@ -160,7 +160,7 @@ export function write(s, chunk) {
 		/*
 		Escape character
 		*/
-		if (in_token & CODE &&
+		if (in_token ^ CODE &&
 			last_txt_char === '\\' &&
 			last_last_src_char !== '\\' &&
 			('\\' === char || '*' === char || '_' === char || '`' === char)
