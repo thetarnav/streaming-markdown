@@ -491,13 +491,9 @@ export function default_create_node(data, type, parent) {
 /** @type {Default_Renderer_Update_Node} */
 export function default_update_node(data, node, text) {
 	switch (text) {
-	case "":
-		break
-	case "\n":
-		node.slot.appendChild(document.createElement("br"))
-		break
-	default:
-		node.slot.appendChild(document.createTextNode(text))
+	case ""  : break
+	case "\n": node.slot.appendChild(document.createElement("br")); break
+	default  : node.slot.appendChild(document.createTextNode(text))
 	}
 }
 
