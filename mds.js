@@ -455,10 +455,8 @@ export function default_renderer(root) {
 
 /** @type {Default_Renderer_Create_Node} */
 export function default_create_node(data, type, parent) {
-    /** @type {HTMLElement} */
-    let elem
-    /** @type {HTMLElement} */
-    let slot
+    /**@type {HTMLElement}*/ let elem
+    /**@type {HTMLElement}*/ let slot
 
     switch (type) {
     case ROOT:
