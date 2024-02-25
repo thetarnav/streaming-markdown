@@ -13,8 +13,8 @@ async function main() {
         const length = Math.floor(Math.random() * 20) + 1
         const delay  = Math.floor(Math.random() * 80) + 10
         const chunk  = source_txt.slice(i, i += length)
-        mds.write(stream, chunk)
         await new Promise(resolve => setTimeout(resolve, delay))
+        mds.write(stream, chunk)
     }
 
 	// TODO abstract

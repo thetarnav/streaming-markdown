@@ -6,8 +6,12 @@
 	"type": "module",
 	"devDependencies": {
 		"@types/node": "^20.11.19",
-		"typescript": "^5.3.3"
+		"@types/ws": "^8.5.10",
+		"typescript": "^5.3.3",
+		"ws": "^8.16.0"
 	},
 	"packageManager": "npm@10.4.0+sha256.0e4e5986526a578a6cdc5647cf862efba03dfcb063672f90bc525433b893fba9",
-	"engines": {"node": ">=20"}
+	"engines": {
+		"node": ">=20"
+	}
 }
