@@ -1,43 +1,45 @@
 export * from "./types.js"
 
 export const
-    ROOT       = 1,
-    PARAGRAPH  = 2,
-    HEADING_1  = 4,
-    HEADING_2  = 8,
-    HEADING_3  = 16,
-    HEADING_4  = 32,
-    HEADING_5  = 64,
-    HEADING_6  = 128,
-    ITALIC_AST = 256,
-    ITALIC_UND = 512,
-    STRONG_AST = 1024,
-    STRONG_UND = 2048,
-    CODE       = 4096,
-    CODE_BLOCK = 8192,
-    /** HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6 */
-    HEADING    = 252,
-    /** ITALIC_AST | ITALIC_UND */
-    ITALIC     = 768,
-    /** STRONG_AST | STRONG_UND */
-    STRONG     = 3072
+    ROOT        = 1,
+    PARAGRAPH   = 2,
+    HEADING_1   = 4,
+    HEADING_2   = 8,
+    HEADING_3   = 16,
+    HEADING_4   = 32,
+    HEADING_5   = 64,
+    HEADING_6   = 128,
+    ITALIC_AST  = 256,
+    ITALIC_UND  = 512,
+    STRONG_AST  = 1024,
+    STRONG_UND  = 2048,
+    CODE_INLINE = 4096,
+    CODE_BLOCK  = 8192,
+	/** `CODE_INLINE | CODE_BLOCK` */
+	CODE        = 12288,
+    /** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
+    HEADING     = 252,
+    /** `ITALIC_AST | ITALIC_UND` */
+    ITALIC      = 768,
+    /** `STRONG_AST | STRONG_UND` */
+    STRONG      = 3072
 
 /** @enum {(typeof Token_Type)[keyof typeof Token_Type]} */
 export const Token_Type = /** @type {const} */({
-    Root:       ROOT,
-    Italic_Ast: ITALIC_AST,
-    Italic_Und: ITALIC_UND,
-    Strong_Ast: STRONG_AST,
-    Strong_Und: STRONG_UND,
-    Code:       CODE,
-    Code_Block: CODE_BLOCK,
-    Paragraph:  PARAGRAPH,
-    Heading_1:  HEADING_1,
-    Heading_2:  HEADING_2,
-    Heading_3:  HEADING_3,
-    Heading_4:  HEADING_4,
-    Heading_5:  HEADING_5,
-    Heading_6:  HEADING_6,
+    Root:        ROOT,
+    Italic_Ast:  ITALIC_AST,
+    Italic_Und:  ITALIC_UND,
+    Strong_Ast:  STRONG_AST,
+    Strong_Und:  STRONG_UND,
+    Code_Inline: CODE_INLINE,
+    Code_Block:  CODE_BLOCK,
+    Paragraph:   PARAGRAPH,
+    Heading_1:   HEADING_1,
+    Heading_2:   HEADING_2,
+    Heading_3:   HEADING_3,
+    Heading_4:   HEADING_4,
+    Heading_5:   HEADING_5,
+    Heading_6:   HEADING_6,
 })
 
 /**
@@ -57,7 +59,7 @@ export function token_type_to_string(type) {
     case ITALIC_UND: return "Italic_Und"
     case STRONG_AST: return "Strong_Ast"
     case STRONG_UND: return "Strong_Und"
-    case CODE:       return "Code"
+    case CODE_INLINE:return "Code_Inline"
     case CODE_BLOCK: return "Code_Block"
     }
 }
@@ -158,8 +160,7 @@ export function write(s, chunk) {
 		/*
 		Escape character
 		*/
-		if (in_token !== CODE_BLOCK &&
-			in_token !== CODE &&
+		if (in_token & CODE &&
 			last_txt_char === '\\' &&
 			last_last_src_char !== '\\' &&
 			('\\' === char || '*' === char || '_' === char || '`' === char)
@@ -199,7 +200,7 @@ export function write(s, chunk) {
 
             s.txt += char
             continue
-        case CODE:
+        case CODE_INLINE:
             if ('`' === char) {
                 flush(s)
                 end_token(s)
@@ -342,7 +343,7 @@ export function write(s, chunk) {
 			}
 		}
 
-        if (in_token === CODE) {
+        if (in_token === CODE_INLINE) {
             s.txt += char
             continue
         }
@@ -356,7 +357,7 @@ export function write(s, chunk) {
             s.txt = s.txt.slice(0, -1)
             add_paragraph(s)
             flush(s)
-            add_token(s, CODE)
+            add_token(s, CODE_INLINE)
             s.txt = char
             continue
         }
@@ -473,7 +474,7 @@ export function default_create_node(data, type, parent) {
     case ITALIC_UND: elem = slot = document.createElement("em")    ;break
     case STRONG_AST:
     case STRONG_UND: elem = slot = document.createElement("strong");break
-    case CODE:       elem = slot = document.createElement("code")  ;break
+    case CODE_INLINE:elem = slot = document.createElement("code")  ;break
     case CODE_BLOCK:
         elem = document.createElement("pre")
         slot = elem.appendChild(document.createElement("code"))
