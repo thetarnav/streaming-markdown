@@ -70,7 +70,7 @@ export function token_type_to_string(type) {
  */
 
 /**
- * Makes a new Stream object.
+ * Makes a new Parser object.
  * @param   {Any_Renderer} renderer
  * @returns {Parser      } */
 export function parser(renderer) {
