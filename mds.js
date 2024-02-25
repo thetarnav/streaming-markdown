@@ -161,8 +161,8 @@ export function write(s, chunk) {
 		Escape character
 		*/
 		if (in_token ^ CODE &&
-			last_txt_char === '\\' &&
-			last_last_src_char !== '\\' &&
+			'\\' === last_txt_char &&
+			'\\' !== last_last_src_char &&
 			('\\' === char || '*' === char || '_' === char || '`' === char)
 		) {
 			s.txt = s.txt.slice(0, -1)
@@ -184,12 +184,13 @@ export function write(s, chunk) {
                 continue
             }
 
-            if (char === '`' &&
-				s.txt === "``" ||
-				(s.txt.length >= 4 &&
-                '\n'=== s.txt[s.txt.length-3] &&
-                '`' === last_last_txt_char &&
-                '`' === last_txt_char)
+            if ('`' === char && (
+					"``" === s.txt || (
+						'\n'=== s.txt[s.txt.length-3] &&
+						'`' === last_last_txt_char &&
+						'`' === last_txt_char
+					)
+				)
             ) {
                 s.code_block_lang = null
                 s.txt = s.txt.slice(0, -3)
