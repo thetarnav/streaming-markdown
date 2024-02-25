@@ -65,13 +65,13 @@ export function token_type_to_string(type) {
 /** @param {import("./types.js").Renderer<any, any>} renderer */
 export function Parser(renderer) {
     const root = renderer.create_node(renderer.data, ROOT, null)
-    this.renderer = renderer
+    this.renderer        = renderer
     this.txt             =/**@type {string       }*/("")
     this.src             =/**@type {string       }*/("")
     this.idx             =/**@type {number       }*/(0)
-    this.tokens_node     =/**@type {any[]        }*/([root,,,,,])
-    this.tokens_type     =/**@type {Token_Type[] }*/([ROOT,,,,,])
-    this.tokens_len      =/**@type {number       }*/(0)
+    this.nodes           =/**@type {any[]        }*/([root,,,,,])
+    this.types           =/**@type {Token_Type[] }*/([ROOT,,,,,])
+    this.len             =/**@type {number       }*/(0)
     this.code_block_lang =/**@type {string | null}*/(null) // TODO remove
 }
 
@@ -102,8 +102,8 @@ export function end(s) {
     s.src = ""
     s.txt = ""
     s.code_block_lang = null
-    s.tokens_node.fill(null)
-    s.tokens_len = 0
+    s.nodes.fill(null)
+    s.len = 0
 }
 
 /**
@@ -111,7 +111,7 @@ export function end(s) {
  * @returns {void  } */
 export function flush(s) {
 	if (s.txt.length === 0) return
-	s.renderer.update_node(s.renderer.data, s.tokens_node[s.tokens_len], s.txt)
+	s.renderer.update_node(s.renderer.data, s.nodes[s.len], s.txt)
 	s.txt = ""
 }
 
@@ -119,9 +119,7 @@ export function flush(s) {
  * @param   {Parser} s
  * @returns {void  } */
 export function end_token(s) {
-    if (s.tokens_len > 0) {
-        s.tokens_len -= 1
-    }
+    s.len = Math.max(0, s.len-1)
 }
 
 /**
@@ -129,17 +127,17 @@ export function end_token(s) {
  * @param   {Token_Type} type
  * @returns {void      } */
 export function add_token(s, type) {
-    const parent = s.tokens_node[s.tokens_len]
-    s.tokens_len += 1
-    s.tokens_node[s.tokens_len] = s.renderer.create_node(s.renderer.data, type, parent)
-    s.tokens_type[s.tokens_len] = type
+    const parent = s.nodes[s.len]
+    s.len += 1
+    s.nodes[s.len] = s.renderer.create_node(s.renderer.data, type, parent)
+    s.types[s.len] = type
 }
 
 /**
  * @param   {Parser} s
  * @returns {void  } */
 export function add_paragraph(s) {
-    if (s.tokens_len === 0) add_token(s, PARAGRAPH)
+    if (s.len === 0) add_token(s, PARAGRAPH)
 }
 
 /**
@@ -155,7 +153,7 @@ export function write(s, chunk) {
         const last_txt_char      = s.txt[s.txt.length-1]
 		const last_src_char      = s.src[s.idx-1]
         const char               = s.src[s.idx]
-        const in_token           = s.tokens_type[s.tokens_len]
+        const in_token           = s.types[s.len]
 
 		/*
 		Escape character
@@ -338,9 +336,9 @@ export function write(s, chunk) {
 		}
 		if ('\n' === last_src_char) {
 			if ('\n' === last_last_src_char) {
-				s.tokens_len = 0
+				s.len = 0
 			} else {
-				s.renderer.update_node(s.renderer.data, s.tokens_node[s.tokens_len], '\n')
+				s.renderer.update_node(s.renderer.data, s.nodes[s.len], '\n')
 			}
 		}
 
@@ -428,7 +426,7 @@ export function write(s, chunk) {
         s.txt += char
     }
 
-    s.renderer.render_temp_text(s.renderer.data, s.tokens_node[s.tokens_len], s.txt)
+    s.renderer.render_temp_text(s.renderer.data, s.nodes[s.len], s.txt)
 }
 
 /**
