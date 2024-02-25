@@ -4,11 +4,13 @@
 
 ## Installation
 
+Install [`streaming-markdown` package](https://www.npmjs.com/package/streaming-markdown) from npm.
+
 ```
 npm install streaming-markdown
 ```
 
-*Or just copy **`lib/`** dir to your project.*
+*Or just copy [**`mds.js`**](https://github.com/thetarnav/streaming-markdown/blob/main/mds.js) and [types](https://github.com/thetarnav/streaming-markdown/blob/main/types.d.ts) to your project.*
 
 ## Usage
 
@@ -64,7 +66,9 @@ mds.end(stream)
 - [x] _italic_ with underscores
 - [x] __Bold__ with double underscores
 - [x] Escape characters (e.g. \* or \_ with \\* or \\_)
-- [ ] Links
+- [x] \[Link\](url)
+    - [ ] href attr
+    - [ ] Escaping escaping bug: \\[Link\\](url)
 - [ ] Images
 - [ ] Lists
 - [ ] Blockquotes

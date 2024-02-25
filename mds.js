@@ -15,6 +15,7 @@ export const
     STRONG_UND  = 2048,
     CODE_INLINE = 4096,
     CODE_BLOCK  = 8192,
+	LINK		= 16384,
 	/** `CODE_INLINE | CODE_BLOCK` */
 	CODE        = 12288,
     /** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
@@ -27,12 +28,6 @@ export const
 /** @enum {(typeof Token_Type)[keyof typeof Token_Type]} */
 export const Token_Type = /** @type {const} */({
     Root:        ROOT,
-    Italic_Ast:  ITALIC_AST,
-    Italic_Und:  ITALIC_UND,
-    Strong_Ast:  STRONG_AST,
-    Strong_Und:  STRONG_UND,
-    Code_Inline: CODE_INLINE,
-    Code_Block:  CODE_BLOCK,
     Paragraph:   PARAGRAPH,
     Heading_1:   HEADING_1,
     Heading_2:   HEADING_2,
@@ -40,6 +35,13 @@ export const Token_Type = /** @type {const} */({
     Heading_4:   HEADING_4,
     Heading_5:   HEADING_5,
     Heading_6:   HEADING_6,
+    Italic_Ast:  ITALIC_AST,
+    Italic_Und:  ITALIC_UND,
+    Strong_Ast:  STRONG_AST,
+    Strong_Und:  STRONG_UND,
+    Code_Inline: CODE_INLINE,
+    Code_Block:  CODE_BLOCK,
+	Link:        LINK,
 })
 
 /**
@@ -61,6 +63,7 @@ export function token_type_to_string(type) {
     case STRONG_UND: return "Strong_Und"
     case CODE_INLINE:return "Code_Inline"
     case CODE_BLOCK: return "Code_Block"
+	case LINK:       return "Link"
     }
 }
 
@@ -84,6 +87,7 @@ export function parser(renderer) {
 		types          : /**@type {*}*/([ROOT,,,,,]),
 		len            : 0,
 		code_block_lang: null, // TODO remove
+		link_url	   : null,
 	}
 }
 
@@ -165,7 +169,12 @@ export function write(s, chunk) {
 		if (in_token ^ CODE &&
 			'\\' === last_txt_char &&
 			'\\' !== last_last_src_char &&
-			('\\' === char || '*' === char || '_' === char || '`' === char)
+			('\\' === char ||
+			 '*' === char ||
+			 '_' === char ||
+			 '`' === char ||
+			 '[' === char ||
+			 ']' === char)
 		) {
 			s.txt = s.txt.slice(0, -1)
 			s.txt += char
@@ -176,6 +185,49 @@ export function write(s, chunk) {
         Token specific checks
         */
         switch (in_token) {
+		case ROOT:
+            switch (s.txt) {
+            case "# ":
+                s.txt = ""
+                add_token(s, HEADING_1)
+                s.txt = char
+                continue
+            case "## ":
+                s.txt = ""
+                add_token(s, HEADING_2)
+                s.txt = char
+                continue
+            case "### ":
+                s.txt = ""
+                add_token(s, HEADING_3)
+                s.txt = char
+                continue
+            case "#### ":
+                s.txt = ""
+                add_token(s, HEADING_4)
+                s.txt = char
+                continue
+            case "##### ":
+                s.txt = ""
+                add_token(s, HEADING_5)
+                s.txt = char
+                continue
+            case "###### ":
+                s.txt = ""
+                add_token(s, HEADING_6)
+                s.txt = char
+                continue
+            case "```": {
+                s.code_block_lang = ""
+                s.txt = ""
+                add_token(s, CODE_BLOCK)
+				s.idx -= 1
+                continue
+            }
+            default:
+                break
+            }
+			break
         case CODE_BLOCK:
             if (s.code_block_lang !== null) {
                 if (char === '\n') {
@@ -282,48 +334,42 @@ export function write(s, chunk) {
                 continue
             }
             break
-        case ROOT:
-            switch (s.txt) {
-            case "# ":
-                s.txt = ""
-                add_token(s, HEADING_1)
-                s.txt = char
-                continue
-            case "## ":
-                s.txt = ""
-                add_token(s, HEADING_2)
-                s.txt = char
-                continue
-            case "### ":
-                s.txt = ""
-                add_token(s, HEADING_3)
-                s.txt = char
-                continue
-            case "#### ":
-                s.txt = ""
-                add_token(s, HEADING_4)
-                s.txt = char
-                continue
-            case "##### ":
-                s.txt = ""
-                add_token(s, HEADING_5)
-                s.txt = char
-                continue
-            case "###### ":
-                s.txt = ""
-                add_token(s, HEADING_6)
-                s.txt = char
-                continue
-            case "```": {
-                s.code_block_lang = ""
-                s.txt = ""
-                add_token(s, CODE_BLOCK)
-				s.idx -= 1
-                continue
-            }
-            default:
-                break
-            }
+		case LINK:
+			if (s.link_url === null) {
+				/*
+				[Link](url)
+				     ^
+				*/
+				if ('\\'!== last_last_src_char &&
+					']' === last_txt_char
+				) {
+					if ('(' === char) {
+						s.txt = s.txt.slice(0, -1)
+						flush(s)
+						s.link_url = ""
+					} else {
+						/* Bad link */
+						end_token(s)
+						s.idx -= 1
+					}
+					continue
+				}
+			} else {
+				/*
+				[Link](url)
+				          ^
+				*/
+				if (')' === char) {
+					// TODO
+					console.log("LINK URL:", s.link_url)
+					end_token(s)
+					s.link_url = null
+				} else {
+					s.link_url += char
+				}
+				continue
+			}
+			break	
         }
 
         /*
@@ -427,6 +473,21 @@ export function write(s, chunk) {
             continue
         }
 
+		/* [Link](url) */
+		if (in_token !== LINK &&
+			'\\'!== last_last_src_char &&
+			'[' === last_txt_char &&
+			']' !== char &&
+			'\n'!== char
+		) {
+			s.txt = s.txt.slice(0, -1)
+			add_paragraph(s)
+			flush(s)
+			add_token(s, LINK)
+			s.idx -= 1
+			continue
+		}
+
         s.txt += char
     }
 
@@ -481,6 +542,11 @@ export function default_add_node(data, type, parent) {
         elem = document.createElement("pre")
         slot = elem.appendChild(document.createElement("code"))
         break
+	case LINK:
+		const a = document.createElement("a")
+		a.href = "#" // TODO
+		elem = slot = a
+		break
     }
 
     // Only for Root the parent is null

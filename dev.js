@@ -73,6 +73,7 @@ function main() {
 			const reload_client = await reload_client_promise
 			void res.writeHead(200, {"Content-Type": "text/html; charset=UTF-8"})
 			void res.end(html + `<script>${reload_client}</script>`)
+			watchFile(index_html_path)
 			return
 		}
 	

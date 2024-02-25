@@ -9,6 +9,7 @@ export type Parser = {
 	types          : Token_Type[]
 	len            : number
 	code_block_lang: string | null
+	link_url	   : string | null
 }
 
 export type Renderer_Add_Node<TData, TNode> =

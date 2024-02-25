@@ -461,3 +461,87 @@ t.test("Escape normal char", () => {
 	assert.equal(renderer.data.temp_text, "")
 	assert.equal(renderer.data.temp_node, null)
 })
+
+t.test("Link", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, "[" + content_1 + "](https://example.com)")
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : mds.Token_Type.Link,
+				children: [content_1],
+			}]
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_node, null)
+})
+
+t.test("Link with code", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, "[`" + content_1 + "`](url)")
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : mds.Token_Type.Link,
+				children: [{
+					type    : mds.Token_Type.Code_Inline,
+					children: [content_1],
+				}],
+			}]
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_node, null)
+})
+
+t.test("Escaped link Begin", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, "\\[" + content_1 + "](url)")
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: ["[" + content_1 + "](url)"]
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_node, null)
+})
+
+t.test("Escaped link End", () => {
+	const renderer = test_renderer()
+	const parser = mds.parser(renderer)
+
+	mds.write(parser, "[" + content_1 + "\\](url)")
+	mds.end(parser)
+
+	assert.deepEqual(renderer.data.root, {
+		type    : mds.Token_Type.Root,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : mds.Token_Type.Link,
+				children: [content_1 + "](url)"],
+			}]
+		}]
+	})
+	assert.equal(renderer.data.temp_text, "")
+	assert.equal(renderer.data.temp_node, null)
+})
