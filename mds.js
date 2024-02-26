@@ -178,26 +178,26 @@ export function parser_write(p, chunk) {
 		switch (in_token) {
 		case ROOT: {
 			switch (pending_with_char) {
-				case "# ":      parser_add_token(p, HEADING_1)  ;continue
-				case "## ":     parser_add_token(p, HEADING_2)  ;continue
-				case "### ":    parser_add_token(p, HEADING_3)  ;continue
-				case "#### ":   parser_add_token(p, HEADING_4)  ;continue
-				case "##### ":  parser_add_token(p, HEADING_5)  ;continue
-				case "###### ": parser_add_token(p, HEADING_6)  ;continue
-				case "```":     parser_add_token(p, CODE_BLOCK) ;continue
-				case "#":
-				case "##":
-				case "###":
-				case "####":
-				case "#####":
-				case "######":
-				case "#######":
-				case "`":
-				case "``":
-					p.pending = pending_with_char
-					continue
-				case "\n":
-					continue
+			case "# ":      parser_add_token(p, HEADING_1)  ;continue
+			case "## ":     parser_add_token(p, HEADING_2)  ;continue
+			case "### ":    parser_add_token(p, HEADING_3)  ;continue
+			case "#### ":   parser_add_token(p, HEADING_4)  ;continue
+			case "##### ":  parser_add_token(p, HEADING_5)  ;continue
+			case "###### ": parser_add_token(p, HEADING_6)  ;continue
+			case "```":     parser_add_token(p, CODE_BLOCK) ;continue
+			case "#":
+			case "##":
+			case "###":
+			case "####":
+			case "#####":
+			case "######":
+			case "#######":
+			case "`":
+			case "``":
+				p.pending = pending_with_char
+				continue
+			case "\n":
+				continue
 			}
 
 			parser_add_token(p, PARAGRAPH)
