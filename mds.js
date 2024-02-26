@@ -99,7 +99,7 @@ export function parser(renderer) {
  * @returns {void  } */
 export function parser_end(p) {
 	// p.text += p.pending
-	write(p, "\n")
+	parser_write(p, "\n")
 	// p.text += p.pending
 	if (p.text.length > 0) {
 		// if (p.text[p.text.length-1] !== '\n') {
@@ -147,7 +147,7 @@ export function parser_add_token(p, type) {
 /**
  * @param   {Parser} p
  * @returns {void  } */
-export function add_paragraph(p) {
+export function parser_add_paragraph(p) {
     if (p.len === 0) parser_add_token(p, PARAGRAPH)
 }
 
@@ -167,7 +167,7 @@ function escape(char) {
  * @param   {Parser} p
  * @param   {string} chunk
  * @returns {void  } */
-export function write(p, chunk) {
+export function parser_write(p, chunk) {
     for (const char of chunk) {
         const in_token = p.types[p.len]
 		const pending_with_char = p.pending + char

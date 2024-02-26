@@ -14,22 +14,22 @@ npm install streaming-markdown
 
 ## Usage
 
-### `Stream` object
+### `Parser` object
 
-Create new markdown `Stream` by calling `stream` function with the `HTMLElement` to render to.
+Create new markdown `Parser` by calling `parser` function with the `HTMLElement` to render to.
 
 ```js
 import * as mds from "streaming-markdown"
 
-const stream = mds.make(document.getElementById(```markdown```))
+const parser = mds.parser(document.getElementById(```markdown```))
 ```
 
 ### `write` function
 
-Then, you can start streaming markdown to the `Stream` by calling `write` function with the chunk of markdown string.
+Then, you can start streaming markdown to the `Parser` by calling `parser_write` function with the chunk of markdown string.
 
 ```js
-mds.write(stream, "# Streaming Markdown\n\n")
+mds.parser_write(parser, "# Streaming Markdown\n\n")
 ```
 
 *You can write as **many times** as needed to stream the markdown.*
@@ -47,10 +47,10 @@ While the text is streamed in, the user should be able to select the text that h
 
 Finally, you can end the stream by calling `end` function.
 
-It will reset the `Stream` state and flush the remaining markdown.
+It will reset the `Parser` state and flush the remaining markdown.
 
 ```js
-mds.end(stream)
+mds.parser_end(parser)
 ```
 
 ## TODO

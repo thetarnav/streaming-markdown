@@ -94,7 +94,7 @@ for (let level = 1; level <= 6; level += 1) {
 		const renderer = test_renderer()
 		const parser = mds.parser(renderer)
 
-		mds.write(parser, "#".repeat(level) + " " + content_1)
+		mds.parser_write(parser, "#".repeat(level) + " " + content_1)
 		mds.parser_end(parser)
 
 		assert.deepEqual(renderer.data.root.children, [{
@@ -108,7 +108,7 @@ for (let level = 1; level <= 6; level += 1) {
 		const renderer = test_renderer()
 		const parser = mds.parser(renderer)
 
-		mds.write(parser, "#".repeat(level) + " " + content_1 + " *" + content_2 + "*")
+		mds.parser_write(parser, "#".repeat(level) + " " + content_1 + " *" + content_2 + "*")
 		mds.parser_end(parser)
 
 		assert.deepEqual(renderer.data.root.children, [{
@@ -126,7 +126,7 @@ t.test("Line Breaks", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, content_1 + "\n" + content_2)
+	mds.parser_write(parser, content_1 + "\n" + content_2)
 	mds.parser_end(parser)
 
 	assert.deepEqual(renderer.data.root.children, [{
@@ -140,7 +140,7 @@ t.test("Line Breaks with Italic", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, "*" + content_1 + "\n" + content_2 + "*")
+	mds.parser_write(parser, "*" + content_1 + "\n" + content_2 + "*")
 	mds.parser_end(parser)
 
 	assert.deepEqual(renderer.data.root.children, [{
@@ -157,7 +157,7 @@ t.test("Paragraphs", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, content_1 + "\n" + "\n" + content_2)
+	mds.parser_write(parser, content_1 + "\n" + "\n" + content_2)
 	mds.parser_end(parser)
 
 	assert.deepEqual(renderer.data.root.children, [{
@@ -174,7 +174,7 @@ t.test("Paragraph with Italic", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, "*" + content_1 + "*")
+	mds.parser_write(parser, "*" + content_1 + "*")
 	mds.parser_end(parser)
 
 	assert.deepEqual(renderer.data.root.children, [{
@@ -191,7 +191,7 @@ t.test("Empty Code_Block", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, "```\n")
+	mds.parser_write(parser, "```\n")
 
 	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Code_Block,
@@ -199,7 +199,7 @@ t.test("Empty Code_Block", () => {
 		}]
 	)
 
-	mds.write(parser, "```")
+	mds.parser_write(parser, "```")
 
 	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Code_Block,
@@ -220,9 +220,9 @@ t.test("Code_Block", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, "```\n")
-	mds.write(parser, content_1 + "\n")
-	mds.write(parser, "```")
+	mds.parser_write(parser, "```\n")
+	mds.parser_write(parser, content_1 + "\n")
+	mds.parser_write(parser, "```")
 
 	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Code_Block,
@@ -243,9 +243,9 @@ t.test("Code_Block with language", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, "```js\n")
-	mds.write(parser, content_1 + "\n")
-	mds.write(parser, "```")
+	mds.parser_write(parser, "```js\n")
+	mds.parser_write(parser, content_1 + "\n")
+	mds.parser_write(parser, "```")
 
 	assert.deepEqual(renderer.data.root.children, [{
 		type    : mds.Token_Type.Code_Block,
@@ -282,7 +282,7 @@ for (const token of [
 		const renderer = test_renderer()
 		const parser = mds.parser(renderer)
 
-		mds.write(parser, escaped + content_1)
+		mds.parser_write(parser, escaped + content_1)
 		mds.parser_end(parser)
 
 		assert.deepEqual(renderer.data.root.children, [{
@@ -296,7 +296,7 @@ for (const token of [
 		const renderer = test_renderer()
 		const parser = mds.parser(renderer)
 
-		mds.write(parser, char + content_1 + escaped)
+		mds.parser_write(parser, char + content_1 + escaped)
 		mds.parser_end(parser)
 
 		assert.deepEqual(renderer.data.root.children, [{
@@ -314,7 +314,7 @@ t.test("Escape Backtick", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, "\\`" + content_1)
+	mds.parser_write(parser, "\\`" + content_1)
 	mds.parser_end(parser)
 
 	assert.deepEqual(renderer.data.root.children, [{
@@ -328,7 +328,7 @@ t.test("Escape Backslash", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, "\\\\" + content_1)
+	mds.parser_write(parser, "\\\\" + content_1)
 	mds.parser_end(parser)
 
 	assert.deepEqual(renderer.data.root.children, [{
@@ -342,7 +342,7 @@ t.test("Escape normal char", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, "\\a")
+	mds.parser_write(parser, "\\a")
 	mds.parser_end(parser)
 
 	assert.deepEqual(renderer.data.root.children, [{
@@ -356,7 +356,7 @@ t.test("Link", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, "[" + content_1 + "](https://example.com)")
+	mds.parser_write(parser, "[" + content_1 + "](https://example.com)")
 	mds.parser_end(parser)
 
 	assert.deepEqual(renderer.data.root.children, [{
@@ -373,7 +373,7 @@ t.test("Link with code", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, "[`" + content_1 + "`](url)")
+	mds.parser_write(parser, "[`" + content_1 + "`](url)")
 	mds.parser_end(parser)
 
 	assert.deepEqual(renderer.data.root.children, [{
@@ -393,7 +393,7 @@ t.test("Escaped link Begin", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, "\\[" + content_1 + "](url)")
+	mds.parser_write(parser, "\\[" + content_1 + "](url)")
 	mds.parser_end(parser)
 
 	assert.deepEqual(renderer.data.root.children, [{
@@ -407,7 +407,7 @@ t.test("Escaped link End", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, "[" + content_1 + "\\](url)")
+	mds.parser_write(parser, "[" + content_1 + "\\](url)")
 	mds.parser_end(parser)
 
 	assert.deepEqual(renderer.data.root.children, [{

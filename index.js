@@ -7,7 +7,7 @@ async function main() {
     const container = /** @type {HTMLElement} */(document.getElementById("markdown"))
     const renderer = mds.default_renderer(container)
     // const renderer = mds.logger_renderer()
-    const stream = mds.parser(renderer)
+    const parser = mds.parser(renderer)
 
     let i = 0
     while (i < source_txt.length) {
@@ -15,10 +15,10 @@ async function main() {
         const delay  = Math.floor(Math.random() * 80) + 10
         const chunk  = source_txt.slice(i, i += length)
         await new Promise(resolve => setTimeout(resolve, delay))
-        mds.write(stream, chunk)
+        mds.parser_write(parser, chunk)
     }
 
-    mds.parser_end(stream)
+    mds.parser_end(parser)
 }
 
 main()
