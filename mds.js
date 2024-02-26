@@ -16,6 +16,10 @@ export const
     CODE_INLINE = 4096,
     CODE_BLOCK  = 8192,
 	LINK		= 16384,
+	/** `STRONG_AST | ITALIC_AST` */
+	ASTERISK 	= 1280,
+	/** `STRONG_UND | ITALIC_UND` */
+	UNDERSCORE 	= 2560,
 	/** `CODE_INLINE | CODE_BLOCK` */
 	CODE        = 12288,
     /** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
@@ -67,7 +71,7 @@ export function token_type_to_string(type) {
     }
 }
 
-/** 
+/**
  * @typedef {import("./types.js").Any_Renderer} Any_Renderer
  * @typedef {import("./types.js").Parser      } Parser
  */
@@ -77,429 +81,397 @@ export function token_type_to_string(type) {
  * @param   {Any_Renderer} renderer
  * @returns {Parser      } */
 export function parser(renderer) {
-	const root = renderer.add_node(renderer.data, ROOT, null)
+	renderer.add_node(ROOT, renderer.data) // ? Shouldn't the user call that?
     return {
 		renderer       : renderer,
-		txt            : "",
-		src            : "",
-		idx            : 0,
-		nodes          : /**@type {*}*/([root,,,,,]),
-		types          : /**@type {*}*/([ROOT,,,,,]),
+		text           : "",
+		pending		   : "",
+		types          : /**@type {*}*/([ROOT,,,,,]), // ? do I need the root still?
 		len            : 0,
-		code_block_lang: null, // TODO remove
-		link_url	   : null,
+		code_block_lang: "", // TODO remove
 	}
 }
 
 /**
  * Finish rendering the markdown.
  * Resets the state of the stream and flushes any remaining text.
- * @param   {Parser} s
+ * @param   {Parser} p
  * @returns {void  } */
-export function end(s) {
-    // TODO
-    // s.tokens_node[s.tokens_len].removeChild(s.temp_span)
-	if (s.txt.length > 0) {
-		if (s.txt[s.txt.length-1] !== '\n') {
-			write(s, "\n")
+export function end(p) {
+	if (p.text.length > 0) {
+		if (p.text[p.text.length-1] !== '\n') {
+			write(p, "\n")
 		} else {
-			flush(s)
+			p.renderer.add_text(p.text + p.pending, p.renderer.data)
 		}
 	}
-    s.idx = 0
-    s.src = ""
-    s.txt = ""
-    s.code_block_lang = null
-    s.nodes.fill(null)
-    s.len = 0
+    p.text = ""
+	p.pending = ""
+    p.code_block_lang = null
+    p.len = 0
 }
 
 /**
- * @param   {Parser} s
+ * @param   {Parser} p
  * @returns {void  } */
-export function flush(s) {
-	if (s.txt.length === 0) return
-	s.renderer.add_text(s.renderer.data, s.nodes[s.len], s.txt)
-	s.txt = ""
+export function parser_add_text(p) {
+	if (p.text.length === 0) return
+	p.renderer.add_text(p.text, p.renderer.data)
+	p.text = ""
 }
 
 /**
- * @param   {Parser} s
+ * @param   {Parser} p
  * @returns {void  } */
-export function end_token(s) {
-    s.len = Math.max(0, s.len-1)
+export function parser_end_token(p) {
+	p.len -= 1
+	p.renderer.end_node(p.renderer.data)
+	p.pending = ""
 }
 
 /**
- * @param   {Parser    } s
+ * @param   {Parser    } p
  * @param   {Token_Type} type
  * @returns {void      } */
-export function add_token(s, type) {
-    const parent = s.nodes[s.len]
-    s.len += 1
-    s.nodes[s.len] = s.renderer.add_node(s.renderer.data, type, parent)
-    s.types[s.len] = type
+export function parser_add_token(p, type) {
+	p.pending = ""
+    p.len += 1
+    p.types[p.len] = type
+    p.renderer.add_node(type, p.renderer.data)
 }
 
 /**
- * @param   {Parser} s
+ * @param   {Parser} p
  * @returns {void  } */
-export function add_paragraph(s) {
-    if (s.len === 0) add_token(s, PARAGRAPH)
+export function add_paragraph(p) {
+    if (p.len === 0) parser_add_token(p, PARAGRAPH)
+}
+
+/**
+ * @param   {string} char
+ * @returns {string} */
+function escape(char) {
+	const char_code = char.charCodeAt(0)
+	return char_code >= 48 &&
+		   char_code <= 90 &&
+		   char_code >= 97 &&
+		   char_code <= 122
+		? '\\' + char
+		: char
 }
 
 /**
  * Parse and render another chunk of markdown.
- * @param   {Parser} s
+ * @param   {Parser} p
  * @param   {string} chunk
  * @returns {void  } */
-export function write(s, chunk) {
-    for (s.src += chunk; s.idx < s.src.length; s.idx += 1)
-    {
-        const last_last_txt_char = s.txt[s.txt.length-2]
-        const last_last_src_char = s.src[s.idx-2]
-        const last_txt_char      = s.txt[s.txt.length-1]
-		const last_src_char      = s.src[s.idx-1]
-        const char               = s.src[s.idx]
-        const in_token           = s.types[s.len]
+export function write(p, chunk) {
+
+    for (const char of chunk) {
+        const in_token = p.types[p.len]
+		const pending_with_char = p.pending + char
 
 		/*
-		Escape character
+		Token specific checks
 		*/
-		if (in_token ^ CODE &&
-			'\\' === last_txt_char &&
-			'\\' !== last_last_src_char &&
-			('\\' === char ||
-			 '*' === char ||
-			 '_' === char ||
-			 '`' === char ||
-			 '[' === char ||
-			 ']' === char)
-		) {
-			s.txt = s.txt.slice(0, -1)
-			s.txt += char
-			continue
-		}
+		switch (in_token) {
+		case ROOT: {
+			console.assert(p.text === "", "Root should not have any text")
 
-        /*
-        Token specific checks
-        */
-        switch (in_token) {
-		case ROOT:
-            switch (s.txt) {
-            case "# ":
-                s.txt = ""
-                add_token(s, HEADING_1)
-                s.txt = char
-                continue
-            case "## ":
-                s.txt = ""
-                add_token(s, HEADING_2)
-                s.txt = char
-                continue
-            case "### ":
-                s.txt = ""
-                add_token(s, HEADING_3)
-                s.txt = char
-                continue
-            case "#### ":
-                s.txt = ""
-                add_token(s, HEADING_4)
-                s.txt = char
-                continue
-            case "##### ":
-                s.txt = ""
-                add_token(s, HEADING_5)
-                s.txt = char
-                continue
-            case "###### ":
-                s.txt = ""
-                add_token(s, HEADING_6)
-                s.txt = char
-                continue
-            case "```": {
-                s.code_block_lang = ""
-                s.txt = ""
-                add_token(s, CODE_BLOCK)
-				s.idx -= 1
-                continue
-            }
-            default:
-                break
-            }
-			break
-        case CODE_BLOCK:
-            if (s.code_block_lang !== null) {
-                if (char === '\n') {
-                    s.code_block_lang = null
-                } else {
-                    s.code_block_lang += char
-                }
-                continue
-            }
-
-            if ('`' === char && (
-					"``" === s.txt || (
-						'\n'=== s.txt[s.txt.length-3] &&
-						'`' === last_last_txt_char &&
-						'`' === last_txt_char
-					)
-				)
-            ) {
-                s.code_block_lang = null
-                s.txt = s.txt.slice(0, -3)
-                flush(s)
-                end_token(s)
-                continue
-            }
-
-            s.txt += char
-            continue
-        case CODE_INLINE:
-            if ('`' === char) {
-                flush(s)
-                end_token(s)
-                continue
-            }
-            break
-        case STRONG_AST:
-            if ('\\'!== last_last_src_char &&
-				'*' === last_txt_char &&
-                '*' === char
-            ) {
-                s.txt = s.txt.slice(0, -1)
-                flush(s)
-                end_token(s)
-                continue
-            }
-            break
-        case STRONG_UND:
-            if ('\\'!== last_last_src_char &&
-				'_' === last_txt_char &&
-                '_' === char
-            ) {
-                s.txt = s.txt.slice(0, -1)
-                flush(s)
-                end_token(s)
-                continue
-            }
-            break
-        case ITALIC_AST:
-            if ('\\'!== last_last_src_char &&
-				'*' !== last_last_txt_char &&
-                '*' === last_txt_char &&
-                '*' !== char
-            ) {
-                s.txt = s.txt.slice(0, -1)
-                flush(s)
-                end_token(s)
-                s.idx -= 1
-                continue
-            }
-            // Special case for ***strong*em***
-            if ('\\'!== s.src[s.idx-3] &&
-				'*' === last_last_txt_char &&
-                '*' === last_txt_char &&
-                '*' === char
-            ) {
-                s.txt = s.txt.slice(0, -2)
-                flush(s)
-                end_token(s)
-                s.idx -= 2
-                continue
-            }
-            break
-        case ITALIC_UND:
-            if ('\\'!== last_last_src_char &&
-				'_' !== last_last_txt_char &&
-                '_' === last_txt_char &&
-                '_' !== char
-            ) {
-                s.txt = s.txt.slice(0, -1)
-                flush(s)
-                end_token(s)
-                s.idx -= 1
-                continue
-            }
-            // Special case for ___strong_em___
-            if ('\\'!== s.src[s.idx-3] &&
-				'_' === last_last_txt_char &&
-                '_' === last_txt_char &&
-                '_' === char
-            ) {
-                s.txt = s.txt.slice(0, -2)
-                flush(s)
-                end_token(s)
-                s.idx -= 2
-                continue
-            }
-            break
-		case LINK:
-			if (s.link_url === null) {
-				/*
-				[Link](url)
-				     ^
-				*/
-				if ('\\'!== last_last_src_char &&
-					']' === last_txt_char
-				) {
-					if ('(' === char) {
-						s.txt = s.txt.slice(0, -1)
-						flush(s)
-						s.link_url = ""
-					} else {
-						/* Bad link */
-						end_token(s)
-						s.idx -= 1
-					}
-					continue
-				}
-			} else {
-				/*
-				[Link](url)
-				          ^
-				*/
-				if (')' === char) {
-					// TODO
-					console.log("LINK URL:", s.link_url)
-					end_token(s)
-					s.link_url = null
+			switch (p.pending) {
+			case "\\":
+				parser_add_token(p, PARAGRAPH)
+				p.text = escape(char)
+				p.pending = ""
+				continue
+			case "`":
+				if (char === "`") {
+					p.pending = pending_with_char
 				} else {
-					s.link_url += char
+					parser_add_token(p, CODE_INLINE)
+					p.pending = char
+				}
+				continue
+			case "*":
+				if (char === "*") {
+					p.pending = pending_with_char
+				} else {
+					parser_add_token(p, ITALIC_AST)
+					p.pending = char
+				}
+				continue
+			case "_":
+				if (char === "_") {
+					p.pending = pending_with_char
+				} else {
+					parser_add_token(p, ITALIC_UND)
+					p.pending = char
 				}
 				continue
 			}
-			break	
-        }
 
-        /*
-        Common checks
+			switch (pending_with_char) {
+				case "# ":      parser_add_token(p, HEADING_1)  ;continue
+				case "## ":     parser_add_token(p, HEADING_2)  ;continue
+				case "### ":    parser_add_token(p, HEADING_3)  ;continue
+				case "#### ":   parser_add_token(p, HEADING_4)  ;continue
+				case "##### ":  parser_add_token(p, HEADING_5)  ;continue
+				case "###### ": parser_add_token(p, HEADING_6)  ;continue
+				case "**":      parser_add_token(p, STRONG_AST) ;continue
+				case "__":      parser_add_token(p, STRONG_UND) ;continue
+				case "[":       parser_add_token(p, LINK)       ;continue
+				case "```":     parser_add_token(p, CODE_BLOCK) ;continue
+				case "#":
+				case "##":
+				case "###":
+				case "####":
+				case "#####":
+				case "######":
+				case "#######":
+				case "`":
+				case "``":
+					p.pending = pending_with_char
+					continue
+				case "\n":
+					continue
+			}
+
+			parser_add_token(p, PARAGRAPH)
+			p.text = p.pending
+			p.pending = char
+			continue
+		}
+		case CODE_BLOCK: {
+			switch (pending_with_char) {
+			case "```":
+				p.code_block_lang = ""
+				parser_add_text(p)
+				parser_end_token(p)
+				continue
+			case "``":
+			case "`":
+				p.pending = pending_with_char
+				continue
+			}
+
+			if (p.code_block_lang === null) {
+				p.text += pending_with_char
+				p.pending = ""
+			} else {
+				p.code_block_lang = '\n' === char ? null : p.code_block_lang + char
+			}
+
+			continue
+		}
+		case CODE_INLINE: {
+			if ("\n" === p.pending) {
+				parser_add_text(p)
+
+				switch (char) {
+				case '\n':
+					while (p.len > 0) parser_end_token(p)
+					continue
+				case '`':
+					p.renderer.add_text('\n', p.renderer.data)
+					parser_end_token(p)
+					continue
+				default:
+					p.renderer.add_text('\n', p.renderer.data)
+					continue
+				}
+			}
+
+			switch (char) {
+			case '\n':
+				p.pending = "\n"
+				continue
+			case '`':
+				p.text += p.pending
+				p.pending = ""
+				parser_add_text(p)
+				parser_end_token(p)
+				continue
+			default:
+				p.text += p.pending + char
+				p.pending = ""
+				continue
+			}
+		}
+		case STRONG_AST:
+			if ("*" === p.pending) {
+				parser_add_text(p)
+				if ('*' === char) {
+					parser_end_token(p)
+				} else {
+					parser_add_token(p, ITALIC_AST)
+					p.pending = char
+				}
+				continue
+			}
+            break
+        case STRONG_UND:
+            if ("_" === p.pending) {
+				parser_add_text(p)
+				if ('_' === char) {
+					parser_end_token(p)
+				} else {
+					parser_add_token(p, ITALIC_UND)
+					p.pending = char
+				}
+				continue
+			}
+			break
+        case ITALIC_AST:
+			if ("*" === p.pending) {
+				parser_add_text(p)
+				if ('*' === char) {
+					parser_add_token(p, STRONG_AST)
+				} else {
+					parser_end_token(p)
+					p.pending = char
+				}
+				continue
+			}
+			break
+        case ITALIC_UND:
+            if ("_" === p.pending) {
+				parser_add_text(p)
+				if ('_' === char) {
+					parser_add_token(p, STRONG_UND)
+				} else {
+					parser_end_token(p)
+					p.pending = char
+				}
+				continue
+			}
+            break
+		case LINK:
+			if (']' === p.pending) {
+				/*
+				[Link](url)
+					 ^
+				*/
+				parser_add_text(p)
+				if ('(' === char) {
+					p.pending = pending_with_char
+				} else {
+					parser_end_token(p)
+					p.pending = char
+				}
+				continue
+			}
+			if (p.pending[0] === "]" &&
+				p.pending[1] === "(") {
+				/*
+				[Link](url)
+						  ^
+				*/
+				if (')' === char) {
+					parser_end_token(p)
+				} else {
+					p.pending += char
+				}
+				continue
+			}
+			break
+		}
+
+		/*
+        Escape character
         */
+		if ("\\" === p.pending) {
+			p.text += escape(char)
+			p.pending = ""
+			continue
+		}
 
         /* Newline */
-        if ('\n' === char) {
-			if (s.txt.length > 0) {
-				add_paragraph(s)
-				flush(s)
+		if ('\n' === p.pending[0]) {
+			parser_add_text(p)
+			if ('\n' === char) {
+				while (p.len > 0) parser_end_token(p)
+			} else {
+				p.renderer.add_text('\n', p.renderer.data)
+				p.pending = char
 			}
 			continue
 		}
-		if ('\n' === last_src_char) {
-			if ('\n' === last_last_src_char) {
-				s.len = 0
-			} else {
-				s.renderer.add_text(s.renderer.data, s.nodes[s.len], '\n')
+
+        /* `Code Inline` */
+        if ('`' === p.pending &&
+			"\n"!== char &&
+			'`' !== char
+		) {
+            parser_add_text(p)
+            parser_add_token(p, CODE_INLINE)
+            p.pending = char
+            continue
+        }
+
+        if (in_token ^ ASTERISK) {
+			/* **Strong** */
+			if ("**" === pending_with_char) {
+				parser_add_text(p)
+				parser_add_token(p, STRONG_AST)
+				continue
+			}
+			/* *Em* */
+			if ("*" === p.pending &&
+				"\n"!== char
+			) {
+				parser_add_text(p)
+				parser_add_token(p, ITALIC_AST)
+				p.pending = char
+				continue
 			}
 		}
 
-        if (in_token === CODE_INLINE) {
-            s.txt += char
-            continue
-        }
-
-        /* `Code Inline` */
-        if ('\\'!== last_last_src_char &&
-			'`' === last_txt_char &&
-            '`' !== char &&
-            '\n'!== char
-        ) {
-            s.txt = s.txt.slice(0, -1)
-            add_paragraph(s)
-            flush(s)
-            add_token(s, CODE_INLINE)
-            s.txt = char
-            continue
-        }
-
-        /* **Strong** */
-        if (in_token !== STRONG_AST &&
-			'\\'!== s.src[s.idx-4] &&
-            '*' === last_last_txt_char &&
-            '*' === last_txt_char &&
-            '*' !== char &&
-            '\n'!== char
-        ) {
-            s.txt = s.txt.slice(0, -2)
-            add_paragraph(s)
-            flush(s)
-            add_token(s, STRONG_AST)
-            s.idx -= 1
-            continue
-        }
-
-        /* __Strong__ */
-        if (in_token !== STRONG_UND &&
-			'\\'!== s.src[s.idx-4] &&
-            '_' === last_last_txt_char &&
-            '_' === last_txt_char &&
-            '_' !== char &&
-            '\n'!== char
-        ) {
-            s.txt = s.txt.slice(0, -2)
-            add_paragraph(s)
-            flush(s)
-            add_token(s, STRONG_UND)
-            s.idx -= 1
-            continue
-        }
-
-        /* *Em* */
-        if (in_token !== ITALIC_AST &&
-			'\\'!== last_last_src_char &&
-            '*' === last_txt_char &&
-            '*' !== char &&
-            '\n'!== char
-        ) {
-            s.txt = s.txt.slice(0, -1)
-            add_paragraph(s)
-            flush(s)
-            add_token(s, ITALIC_AST)
-            s.idx -= 1
-            continue
-        }
-
-        /* _Em_ */
-        if (in_token !== ITALIC_UND &&
-			'\\'!== last_last_src_char &&
-            '_' === last_txt_char &&
-            '_' !== char &&
-            '\n'!== char
-        ) {
-            s.txt = s.txt.slice(0, -1)
-            add_paragraph(s)
-            flush(s)
-            add_token(s, ITALIC_UND)
-            s.idx -= 1
-            continue
-        }
+		if (in_token ^ UNDERSCORE) {
+			/* __Strong__ */
+			if ("__" === pending_with_char) {
+				parser_add_text(p)
+				parser_add_token(p, STRONG_UND)
+				continue
+			}
+			/* _Em_ */
+			if ("_" === p.pending &&
+				"\n"!== char
+			) {
+				parser_add_text(p)
+				parser_add_token(p, ITALIC_UND)
+				p.pending = char
+				continue
+			}
+		}
 
 		/* [Link](url) */
 		if (in_token !== LINK &&
-			'\\'!== last_last_src_char &&
-			'[' === last_txt_char &&
-			']' !== char &&
-			'\n'!== char
+			"[" === p.pending &&
+			"\n"!== char &&
+			"]" !== char
 		) {
-			s.txt = s.txt.slice(0, -1)
-			add_paragraph(s)
-			flush(s)
-			add_token(s, LINK)
-			s.idx -= 1
+			parser_add_text(p)
+			parser_add_token(p, LINK)
+			p.pending = char
 			continue
 		}
-
-        s.txt += char
+		
+		/*
+		No check hit
+		*/
+		p.text += p.pending
+		p.pending = char
     }
 
-    s.renderer.add_temp(s.renderer.data, s.nodes[s.len], s.txt)
+    parser_add_text(p)
 }
 
 /**
  * @typedef {import("./types.js").Default_Renderer         } Default_Renderer
  * @typedef {import("./types.js").Default_Renderer_Node    } Default_Renderer_Node
  * @typedef {import("./types.js").Default_Renderer_Add_Node} Default_Renderer_Add_Node
+ * @typedef {import("./types.js").Default_Renderer_End_Node} Default_Renderer_End_Node
  * @typedef {import("./types.js").Default_Renderer_Add_Text} Default_Renderer_Add_Text
- * @typedef {import("./types.js").Default_Renderer_Add_Temp} Default_Renderer_Add_Temp
  */
 
 /**
@@ -508,63 +480,94 @@ export function write(s, chunk) {
 export function default_renderer(root) {
     return {
         add_node: default_add_node,
+        end_node: default_end_node,
         add_text: default_add_text,
-        add_temp: default_add_temp,
         data    : {
-            root: root,
-            temp: document.createElement("span"),
+            node: {
+				slot  : root,
+				parent: null,
+			},
         },
     }
 }
 
 /** @type {Default_Renderer_Add_Node} */
-export function default_add_node(data, type, parent) {
-    /**@type {HTMLElement}*/ let elem
+export function default_add_node(type, data) {
+    /**@type {HTMLElement}*/ let mount
     /**@type {HTMLElement}*/ let slot
 
     switch (type) {
     case ROOT:
-        elem = slot = data.root
-        return {elem, slot}
-    case PARAGRAPH:  elem = slot = document.createElement("p")     ;break
-    case HEADING_1:  elem = slot = document.createElement("h1")    ;break
-    case HEADING_2:  elem = slot = document.createElement("h2")    ;break
-    case HEADING_3:  elem = slot = document.createElement("h3")    ;break
-    case HEADING_4:  elem = slot = document.createElement("h4")    ;break
-    case HEADING_5:  elem = slot = document.createElement("h5")    ;break
-    case HEADING_6:  elem = slot = document.createElement("h6")    ;break
+		return // node is already root
+    case PARAGRAPH:  mount = slot = document.createElement("p")     ;break
+    case HEADING_1:  mount = slot = document.createElement("h1")    ;break
+    case HEADING_2:  mount = slot = document.createElement("h2")    ;break
+    case HEADING_3:  mount = slot = document.createElement("h3")    ;break
+    case HEADING_4:  mount = slot = document.createElement("h4")    ;break
+    case HEADING_5:  mount = slot = document.createElement("h5")    ;break
+    case HEADING_6:  mount = slot = document.createElement("h6")    ;break
     case ITALIC_AST:
-    case ITALIC_UND: elem = slot = document.createElement("em")    ;break
+    case ITALIC_UND: mount = slot = document.createElement("em")    ;break
     case STRONG_AST:
-    case STRONG_UND: elem = slot = document.createElement("strong");break
-    case CODE_INLINE:elem = slot = document.createElement("code")  ;break
+    case STRONG_UND: mount = slot = document.createElement("strong");break
+    case CODE_INLINE:mount = slot = document.createElement("code")  ;break
+	case LINK:       mount = slot = document.createElement("a")     ;break
     case CODE_BLOCK:
-        elem = document.createElement("pre")
-        slot = elem.appendChild(document.createElement("code"))
+        mount = document.createElement("pre")
+        slot = mount.appendChild(document.createElement("code"))
         break
-	case LINK:
-		const a = document.createElement("a")
-		a.href = "#" // TODO
-		elem = slot = a
-		break
     }
 
-    // Only for Root the parent is null
-    /**@type {Default_Renderer_Node}*/(parent).elem.appendChild(elem)
-
-    return {elem, slot}
-}
-
-/** @type {Default_Renderer_Add_Text} */
-export function default_add_text(data, node, text) {
-	switch (text) {
-	case ""  : break
-	case "\n": node.slot.appendChild(document.createElement("br")); break
-	default  : node.slot.appendChild(document.createTextNode(text))
+    data.node.slot.appendChild(mount)
+    data.node = {
+		slot: slot,
+		parent: data.node,
 	}
 }
 
-/** @type {Default_Renderer_Add_Temp} */
-export function default_add_temp(data, node, text) {
-    node.slot.appendChild(data.temp).innerText = text
+/** @type {Default_Renderer_End_Node} */
+export function default_end_node(data) {
+	data.node = /**@type {Default_Renderer_Node}*/(data.node.parent)
+}
+
+/** @type {Default_Renderer_Add_Text} */
+export function default_add_text(text, data) {
+	switch (text) {
+	case ""  : break
+	case "\n": data.node.slot.appendChild(document.createElement("br")); break
+	default  : data.node.slot.appendChild(document.createTextNode(text))
+	}
+}
+
+
+/**
+ * @typedef {import("./types.js").Logger_Renderer         } Logger_Renderer
+ * @typedef {import("./types.js").Logger_Renderer_Add_Node} Logger_Renderer_Add_Node
+ * @typedef {import("./types.js").Logger_Renderer_End_Node} Logger_Renderer_End_Node
+ * @typedef {import("./types.js").Logger_Renderer_Add_Text} Logger_Renderer_Add_Text
+ */
+
+/** @returns {Logger_Renderer} */
+export function logger_renderer() {
+	return {
+		data: undefined,
+		add_node: logger_add_node,
+		end_node: logger_end_node,
+		add_text: logger_add_text,
+	}
+}
+
+/** @type {Logger_Renderer_Add_Node} */
+export function logger_add_node(type, data) {
+	console.log("add_node:", token_type_to_string(type))
+}
+
+/** @type {Logger_Renderer_End_Node} */
+export function logger_end_node(data) {
+	console.log("end_node")
+}
+
+/** @type {Logger_Renderer_Add_Text} */
+export function logger_add_text(text, data) {
+	console.log('add_text: "' + text + '"')
 }

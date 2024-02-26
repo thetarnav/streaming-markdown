@@ -6,6 +6,7 @@ async function main() {
 
     const container = /** @type {HTMLElement} */(document.getElementById("markdown"))
     const renderer = mds.default_renderer(container)
+    // const renderer = mds.logger_renderer()
     const stream = mds.parser(renderer)
 
     let i = 0
@@ -17,9 +18,7 @@ async function main() {
         mds.write(stream, chunk)
     }
 
-	// TODO abstract
     mds.end(stream)
-	renderer.data.temp.parentElement?.removeChild(renderer.data.temp)
 }
 
 main()

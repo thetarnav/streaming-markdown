@@ -65,10 +65,15 @@ mds.end(stream)
 - [x] **Bold** with double asterisks
 - [x] _italic_ with underscores
 - [x] __Bold__ with double underscores
-- [x] Escape characters (e.g. \* or \_ with \\* or \\_)
+- [ ] Special cases:
+    - [ ] **foo*bar***
+    - [ ] ***foo*bar**
+    - [ ] *foo**bar***
+    - [ ] ***foo**bar*
+- [x] Escape characters (e.g. \* or \_ with \\\* or \\\_)
 - [x] \[Link\](url)
     - [ ] href attr
-    - [ ] Escaping escaping bug: \\[Link\\](url)
+    - [x] Escaping escaping bug: \\[Link\\](url)
 - [ ] Images
 - [ ] Lists
 - [ ] Blockquotes
