@@ -18,7 +18,7 @@ async function main() {
         mds.write(stream, chunk)
     }
 
-    mds.end(stream)
+    mds.parser_end(stream)
 }
 
 main()

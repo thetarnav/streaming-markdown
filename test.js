@@ -6,7 +6,7 @@ import * as mds    from "./mds.js"
 /**
  * @typedef {(string | Test_Renderer_Node)[]} Children
  * @typedef {Map<Test_Renderer_Node, Test_Renderer_Node>} Parent_Map
- * 
+ *
  * @typedef  {object} Test_Renderer_Data
  * @property {Test_Renderer_Node} root
  * @property {Test_Renderer_Node} node
@@ -55,7 +55,16 @@ function test_add_node(type, data) {
 }
 /** @type {Test_Add_Text} */
 function test_add_text(text, data) {
-	data.node.children.push(text)
+	if (text === "") return
+
+	if (text !== "\n" &&
+		typeof data.node.children[data.node.children.length - 1] === "string" &&
+		data.node.children[data.node.children.length - 1] !== "\n"
+	) {
+		data.node.children[data.node.children.length - 1] += text
+	} else {
+		data.node.children.push(text)
+	}
 }
 /** @type {Test_End_Node} */
 function test_end_node(data) {
@@ -86,65 +95,30 @@ for (let level = 1; level <= 6; level += 1) {
 		const parser = mds.parser(renderer)
 
 		mds.write(parser, "#".repeat(level) + " " + content_1)
+		mds.parser_end(parser)
 
-		assert.deepEqual(renderer.data.root, {
-			type    : mds.Token_Type.Root,
-			children: [{
-				type    : heading_type,
-				children: []
-			}]
-		})
-
-		mds.end(parser)
-
-		assert.deepEqual(renderer.data.root, {
-			type    : mds.Token_Type.Root,
-			children: [{
+		assert.deepEqual(renderer.data.root.children, [{
 				type    : heading_type,
 				children: [content_1]
 			}]
-		})
+		)
 	})
 
 	t.test(`Heading_${level} with Italic`, () => {
 		const renderer = test_renderer()
 		const parser = mds.parser(renderer)
 
-		mds.write(parser, "#".repeat(level) + " " + content_1)
+		mds.write(parser, "#".repeat(level) + " " + content_1 + " *" + content_2 + "*")
+		mds.parser_end(parser)
 
-		assert.deepEqual(renderer.data.root, {
-			type    : mds.Token_Type.Root,
-			children: [{
-				type    : heading_type,
-				children: []
-			}]
-		})
-
-		mds.write(parser, " *" + content_2 + "*")
-
-		assert.deepEqual(renderer.data.root, {
-			type    : mds.Token_Type.Root,
-			children: [{
-				type    : heading_type,
-				children: [content_1 + " ", {
-					type    : mds.Token_Type.Italic_Ast,
-					children: []
-				}]
-			}]
-		})
-
-		mds.end(parser)
-
-		assert.deepEqual(renderer.data.root, {
-			type    : mds.Token_Type.Root,
-			children: [{
+		assert.deepEqual(renderer.data.root.children, [{
 				type    : heading_type,
 				children: [content_1 + " ", {
 					type    : mds.Token_Type.Italic_Ast,
 					children: [content_2]
 				}]
 			}]
-		})
+		)
 	})
 }
 
@@ -153,24 +127,13 @@ t.test("Line Breaks", () => {
 	const parser = mds.parser(renderer)
 
 	mds.write(parser, content_1 + "\n" + content_2)
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
-			type    : mds.Token_Type.Paragraph,
-			children: [content_1, "\n"],
-		}]
-	})
-
-	mds.end(parser)
-
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Paragraph,
 			children: [content_1, "\n", content_2],
 		}]
-	})
+	)
 })
 
 t.test("Line Breaks with Italic", () => {
@@ -178,18 +141,16 @@ t.test("Line Breaks with Italic", () => {
 	const parser = mds.parser(renderer)
 
 	mds.write(parser, "*" + content_1 + "\n" + content_2 + "*")
-	mds.end(parser)
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Paragraph,
 			children: [{
 				type    : mds.Token_Type.Italic_Ast,
 				children: [content_1, "\n", content_2]
 			}],
 		}]
-	})
+	)
 })
 
 t.test("Paragraphs", () => {
@@ -197,18 +158,16 @@ t.test("Paragraphs", () => {
 	const parser = mds.parser(renderer)
 
 	mds.write(parser, content_1 + "\n" + "\n" + content_2)
-	mds.end(parser)
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Paragraph,
 			children: [content_1],
 		}, {
 			type    : mds.Token_Type.Paragraph,
 			children: [content_2],
 		}]
-	})
+	)
 })
 
 t.test("Paragraph with Italic", () => {
@@ -216,18 +175,16 @@ t.test("Paragraph with Italic", () => {
 	const parser = mds.parser(renderer)
 
 	mds.write(parser, "*" + content_1 + "*")
-	mds.end(parser)
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Paragraph,
 			children: [{
 				type    : mds.Token_Type.Italic_Ast,
 				children: [content_1]
 			}],
 		}]
-	})
+	)
 })
 
 t.test("Empty Code_Block", () => {
@@ -236,33 +193,27 @@ t.test("Empty Code_Block", () => {
 
 	mds.write(parser, "```\n")
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Code_Block,
 			children: []
 		}]
-	})
+	)
 
 	mds.write(parser, "```")
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Code_Block,
 			children: []
 		}]
-	})
+	)
 
-	mds.end(parser)
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
-			type    : mds.Token_Type.Code_Block,
-			children: []
-		}]
-	})
+	assert.deepEqual(renderer.data.root.children, [{
+		type    : mds.Token_Type.Code_Block,
+		children: []
+	}]
+	)
 })
 
 t.test("Code_Block", () => {
@@ -273,23 +224,19 @@ t.test("Code_Block", () => {
 	mds.write(parser, content_1 + "\n")
 	mds.write(parser, "```")
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Code_Block,
 			children: [content_1]
 		}]
-	})
+	)
 
-	mds.end(parser)
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Code_Block,
 			children: [content_1]
 		}]
-	})
+	)
 })
 
 t.test("Code_Block with language", () => {
@@ -300,23 +247,17 @@ t.test("Code_Block with language", () => {
 	mds.write(parser, content_1 + "\n")
 	mds.write(parser, "```")
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
-			type    : mds.Token_Type.Code_Block,
-			children: [content_1]
-		}]
-	})
+	assert.deepEqual(renderer.data.root.children, [{
+		type    : mds.Token_Type.Code_Block,
+		children: [content_1]
+	}])
 
-	mds.end(parser)
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
-			type    : mds.Token_Type.Code_Block,
-			children: [content_1]
-		}]
-	})
+	assert.deepEqual(renderer.data.root.children, [{
+		type    : mds.Token_Type.Code_Block,
+		children: [content_1]
+	}])
 })
 
 for (const token of [
@@ -342,15 +283,13 @@ for (const token of [
 		const parser = mds.parser(renderer)
 
 		mds.write(parser, escaped + content_1)
-		mds.end(parser)
+		mds.parser_end(parser)
 
-		assert.deepEqual(renderer.data.root, {
-			type    : mds.Token_Type.Root,
-			children: [{
+		assert.deepEqual(renderer.data.root.children, [{
 				type    : mds.Token_Type.Paragraph,
 				children: [char + content_1]
 			}]
-		})
+		)
 	})
 
 	t.test(`Escape ${mds.token_type_to_string(token)} End`, () => {
@@ -358,18 +297,16 @@ for (const token of [
 		const parser = mds.parser(renderer)
 
 		mds.write(parser, char + content_1 + escaped)
-		mds.end(parser)
+		mds.parser_end(parser)
 
-		assert.deepEqual(renderer.data.root, {
-			type    : mds.Token_Type.Root,
-			children: [{
+		assert.deepEqual(renderer.data.root.children, [{
 				type    : mds.Token_Type.Paragraph,
 				children: [{
 					type    : token,
 					children: [content_1 + char]
 				}]
 			}]
-		})
+		)
 	})
 }
 
@@ -378,15 +315,13 @@ t.test("Escape Backtick", () => {
 	const parser = mds.parser(renderer)
 
 	mds.write(parser, "\\`" + content_1)
-	mds.end(parser)
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Paragraph,
 			children: ["`" + content_1]
 		}]
-	})
+	)
 })
 
 t.test("Escape Backslash", () => {
@@ -394,31 +329,27 @@ t.test("Escape Backslash", () => {
 	const parser = mds.parser(renderer)
 
 	mds.write(parser, "\\\\" + content_1)
-	mds.end(parser)
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Paragraph,
 			children: ["\\" + content_1]
 		}]
-	})
+	)
 })
 
 t.test("Escape normal char", () => {
 	const renderer = test_renderer()
 	const parser = mds.parser(renderer)
 
-	mds.write(parser, "\\a" + content_1)
-	mds.end(parser)
+	mds.write(parser, "\\a")
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Paragraph,
-			children: ["\\a" + content_1]
+			children: ["\\a"]
 		}]
-	})
+	)
 })
 
 t.test("Link", () => {
@@ -426,18 +357,16 @@ t.test("Link", () => {
 	const parser = mds.parser(renderer)
 
 	mds.write(parser, "[" + content_1 + "](https://example.com)")
-	mds.end(parser)
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Paragraph,
 			children: [{
 				type    : mds.Token_Type.Link,
 				children: [content_1],
 			}]
 		}]
-	})
+	)
 })
 
 t.test("Link with code", () => {
@@ -445,11 +374,9 @@ t.test("Link with code", () => {
 	const parser = mds.parser(renderer)
 
 	mds.write(parser, "[`" + content_1 + "`](url)")
-	mds.end(parser)
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Paragraph,
 			children: [{
 				type    : mds.Token_Type.Link,
@@ -459,7 +386,7 @@ t.test("Link with code", () => {
 				}],
 			}]
 		}]
-	})
+	)
 })
 
 t.test("Escaped link Begin", () => {
@@ -467,15 +394,13 @@ t.test("Escaped link Begin", () => {
 	const parser = mds.parser(renderer)
 
 	mds.write(parser, "\\[" + content_1 + "](url)")
-	mds.end(parser)
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Paragraph,
 			children: ["[" + content_1 + "](url)"]
 		}]
-	})
+	)
 })
 
 t.test("Escaped link End", () => {
@@ -483,16 +408,14 @@ t.test("Escaped link End", () => {
 	const parser = mds.parser(renderer)
 
 	mds.write(parser, "[" + content_1 + "\\](url)")
-	mds.end(parser)
+	mds.parser_end(parser)
 
-	assert.deepEqual(renderer.data.root, {
-		type    : mds.Token_Type.Root,
-		children: [{
+	assert.deepEqual(renderer.data.root.children, [{
 			type    : mds.Token_Type.Paragraph,
 			children: [{
 				type    : mds.Token_Type.Link,
 				children: [content_1 + "](url)"],
 			}]
 		}]
-	})
+	)
 })

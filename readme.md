@@ -21,7 +21,7 @@ Create new markdown `Stream` by calling `stream` function with the `HTMLElement`
 ```js
 import * as mds from "streaming-markdown"
 
-const stream = mds.make(document.getElementById(`markdown`))
+const stream = mds.make(document.getElementById(```markdown```))
 ```
 
 ### `write` function

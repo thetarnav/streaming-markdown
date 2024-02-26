@@ -97,13 +97,17 @@ export function parser(renderer) {
  * Resets the state of the stream and flushes any remaining text.
  * @param   {Parser} p
  * @returns {void  } */
-export function end(p) {
+export function parser_end(p) {
+	// p.text += p.pending
+	write(p, "\n")
+	// p.text += p.pending
 	if (p.text.length > 0) {
-		if (p.text[p.text.length-1] !== '\n') {
-			write(p, "\n")
-		} else {
-			p.renderer.add_text(p.text + p.pending, p.renderer.data)
-		}
+		// if (p.text[p.text.length-1] !== '\n') {
+		// 	write(p, "\n")
+		// } else {
+
+		// }
+		p.renderer.add_text(p.text, p.renderer.data)
 	}
     p.text = ""
 	p.pending = ""
@@ -152,10 +156,8 @@ export function add_paragraph(p) {
  * @returns {string} */
 function escape(char) {
 	const char_code = char.charCodeAt(0)
-	return char_code >= 48 &&
-		   char_code <= 90 &&
-		   char_code >= 97 &&
-		   char_code <= 122
+	return (char_code >= 48 && char_code <= 90) ||
+		   (char_code >= 97 && char_code <= 122)
 		? '\\' + char
 		: char
 }
@@ -166,7 +168,6 @@ function escape(char) {
  * @param   {string} chunk
  * @returns {void  } */
 export function write(p, chunk) {
-
     for (const char of chunk) {
         const in_token = p.types[p.len]
 		const pending_with_char = p.pending + char
@@ -242,25 +243,40 @@ export function write(p, chunk) {
 			continue
 		}
 		case CODE_BLOCK: {
+			if (p.code_block_lang !== null) {
+				p.code_block_lang = '\n' === char ? null : p.code_block_lang + char
+				continue
+			}
+
 			switch (pending_with_char) {
-			case "```":
+			case "\n```":
 				p.code_block_lang = ""
 				parser_add_text(p)
 				parser_end_token(p)
 				continue
-			case "``":
-			case "`":
+			case "\n``":
+			case "\n`":
+			case "\n":
 				p.pending = pending_with_char
 				continue
 			}
 
-			if (p.code_block_lang === null) {
-				p.text += pending_with_char
-				p.pending = ""
-			} else {
-				p.code_block_lang = '\n' === char ? null : p.code_block_lang + char
+			if (p.text === "") {
+				switch (pending_with_char) {
+				case "```":
+					p.code_block_lang = ""
+					parser_add_text(p)
+					parser_end_token(p)
+					continue
+				case "``":
+				case "`":
+					p.pending = pending_with_char
+					continue
+				}
 			}
 
+			p.text += pending_with_char
+			p.pending = ""
 			continue
 		}
 		case CODE_INLINE: {
@@ -455,7 +471,7 @@ export function write(p, chunk) {
 			p.pending = char
 			continue
 		}
-		
+
 		/*
 		No check hit
 		*/
