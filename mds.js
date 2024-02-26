@@ -177,40 +177,6 @@ export function parser_write(p, chunk) {
 		*/
 		switch (in_token) {
 		case ROOT: {
-			console.assert(p.text === "", "Root should not have any text")
-
-			switch (p.pending) {
-			case "\\":
-				parser_add_token(p, PARAGRAPH)
-				p.text = escape(char)
-				p.pending = ""
-				continue
-			case "`":
-				if (char === "`") {
-					p.pending = pending_with_char
-				} else {
-					parser_add_token(p, CODE_INLINE)
-					p.pending = char
-				}
-				continue
-			case "*":
-				if (char === "*") {
-					p.pending = pending_with_char
-				} else {
-					parser_add_token(p, ITALIC_AST)
-					p.pending = char
-				}
-				continue
-			case "_":
-				if (char === "_") {
-					p.pending = pending_with_char
-				} else {
-					parser_add_token(p, ITALIC_UND)
-					p.pending = char
-				}
-				continue
-			}
-
 			switch (pending_with_char) {
 				case "# ":      parser_add_token(p, HEADING_1)  ;continue
 				case "## ":     parser_add_token(p, HEADING_2)  ;continue
@@ -218,9 +184,6 @@ export function parser_write(p, chunk) {
 				case "#### ":   parser_add_token(p, HEADING_4)  ;continue
 				case "##### ":  parser_add_token(p, HEADING_5)  ;continue
 				case "###### ": parser_add_token(p, HEADING_6)  ;continue
-				case "**":      parser_add_token(p, STRONG_AST) ;continue
-				case "__":      parser_add_token(p, STRONG_UND) ;continue
-				case "[":       parser_add_token(p, LINK)       ;continue
 				case "```":     parser_add_token(p, CODE_BLOCK) ;continue
 				case "#":
 				case "##":
