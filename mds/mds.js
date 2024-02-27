@@ -89,12 +89,12 @@ export function token_type_to_string(type) {
  * @returns {Parser      } */
 export function parser(renderer) {
 	return {
-		renderer       : renderer,
-		text           : "",
-		pending        : "",
-		types          : /**@type {*}*/([ROOT,,,,,]),
-		len            : 0,
-		code_block_lang: "",
+		renderer  : renderer,
+		text      : "",
+		pending   : "",
+		types     : /**@type {*}*/([ROOT,,,,,]),
+		len       : 0,
+		code_block: "",
 	}
 }
 
@@ -204,41 +204,49 @@ export function parser_write(p, chunk) {
 		case CODE_BLOCK: {
 			console.assert(p.len === 1, "Code block is always a top-level token")
 
-			if (p.code_block_lang !== null) {
-				p.code_block_lang = '\n' === char ? null : p.code_block_lang + char
-				continue
-			}
-
-			switch (pending_with_char) {
-			case "\n```":
-				p.code_block_lang = ""
-				parser_add_text(p)
-				parser_end_token(p)
-				continue
-			case "\n``":
-			case "\n`":
-			case "\n":
-				p.pending = pending_with_char
-				continue
-			}
-
-			if (p.text === "") {
+			switch (p.code_block) {
+			case 1: /* can end */
 				switch (pending_with_char) {
+				case "\n```":
 				case "```":
-					p.code_block_lang = ""
+					p.code_block = ""
 					parser_add_text(p)
 					parser_end_token(p)
 					continue
+				case "\n``":
+				case "\n`":
 				case "``":
 				case "`":
 					p.pending = pending_with_char
 					continue
 				}
-			}
 
-			p.text += pending_with_char
-			p.pending = ""
-			continue
+				if ('\n' === char) {
+					p.text += p.pending
+					p.pending = char
+				} else {
+					p.code_block = 0
+					p.text += pending_with_char
+					p.pending = ""
+				}
+				continue
+			case 0: /* cannot end */
+				console.assert(p.pending.length === 0, "Has pending text but cannot end")
+				
+				if ('\n' === char) {
+					p.code_block = 1
+					p.pending = char
+				} else {
+					p.text += p.pending + char
+					p.pending = ""
+				}
+				continue
+			default: /* parsing langiage */
+				p.code_block = '\n' === char
+					? 1
+					: p.code_block + char
+				continue
+			}
 		}
 		case CODE_INLINE: {
 			if ("\n" === p.pending) {

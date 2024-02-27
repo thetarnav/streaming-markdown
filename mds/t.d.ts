@@ -2,16 +2,21 @@ import {Token_Type} from './mds.js'
 
 export type Parser = {
 	/** {@link Renderer} interface */
-	renderer       : Any_Renderer
+	renderer  : Any_Renderer
 	/** Text to be added to the last token in the next flush */
-	text           : string
+	text      : string
 	/** Characters for identifying tokens */
-	pending        : string
+	pending   : string
 	/** Current token and it's parents (a slice of a tree) */
-	types          : Token_Type[]
+	types     : Token_Type[]
 	/** Number of tokens in {@link Parser.types types} without root */
-	len            : number
-	code_block_lang: string | null
+	len       : number
+	/** For Code_Block parsing      \
+	 *  string: parsing language    \
+	 *  1     : can end             \
+	 *  0     : cannot end
+	 */
+	code_block: string | 0 | 1
 }
 
 export type Renderer_Add_Node<TData> = (type: Token_Type, data: TData) => void

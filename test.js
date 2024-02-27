@@ -80,16 +80,6 @@ function test_single_write(title, markdown, expected_children) {
 		const renderer = test_renderer()
 		const parser = mds.parser(renderer)
 
-		mds.parser_write(parser, markdown)
-		mds.parser_end(parser)
-
-		assert.deepEqual(renderer.data.root.children, expected_children)
-	})
-
-	t.test(title + " (by char)", () => {
-		const renderer = test_renderer()
-		const parser = mds.parser(renderer)
-
 		for (const char of markdown) {
 			mds.parser_write(parser, char)
 		}
@@ -198,6 +188,22 @@ test_single_write("Code_Block with language",
 	[{
 		type    : mds.Token_Type.Code_Block,
 		children: [content_1]
+	}]
+)
+
+test_single_write("Code_Block with backticks inside",
+	"```\na```b\n```",
+	[{
+		type    : mds.Token_Type.Code_Block,
+		children: ["a```b"]
+	}]
+)
+
+test_single_write("Code_Block with unfinished end backticks",
+	"```\na\n``\n```",
+	[{
+		type    : mds.Token_Type.Code_Block,
+		children: ["a\n``"]
 	}]
 )
 
