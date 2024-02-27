@@ -19,9 +19,11 @@ jobs:
           node-version: 20
           cache: npm
 
-      # not needed yet
-      # - name: Install dependencies
-      #   run: npm install
+      - name: Install dependencies
+        run: npm install
 
       - name: Test
         run: node --test
+
+      - name: Typecheck
+        run: npm run typecheck

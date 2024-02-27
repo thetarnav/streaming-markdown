@@ -1,4 +1,11 @@
-export * from "./types.js"
+/*!
+Streaming Markdown Parser and Renderer
+MIT License
+Copyright (c) 2024 Damian Tarnawski
+https://github.com/thetarnav/streaming-markdown
+*/
+
+export * from "./t.js"
 
 export const
     ROOT        = 1,
@@ -72,8 +79,8 @@ export function token_type_to_string(type) {
 }
 
 /**
- * @typedef {import("./types.js").Any_Renderer} Any_Renderer
- * @typedef {import("./types.js").Parser      } Parser
+ * @typedef {import("./t.js").Any_Renderer} Any_Renderer
+ * @typedef {import("./t.js").Parser      } Parser
  */
 
 /**
@@ -431,11 +438,11 @@ export function parser_write(p, chunk) {
 }
 
 /**
- * @typedef {import("./types.js").Default_Renderer         } Default_Renderer
- * @typedef {import("./types.js").Default_Renderer_Node    } Default_Renderer_Node
- * @typedef {import("./types.js").Default_Renderer_Add_Node} Default_Renderer_Add_Node
- * @typedef {import("./types.js").Default_Renderer_End_Node} Default_Renderer_End_Node
- * @typedef {import("./types.js").Default_Renderer_Add_Text} Default_Renderer_Add_Text
+ * @typedef {import("./t.js").Default_Renderer         } Default_Renderer
+ * @typedef {import("./t.js").Default_Renderer_Node    } Default_Renderer_Node
+ * @typedef {import("./t.js").Default_Renderer_Add_Node} Default_Renderer_Add_Node
+ * @typedef {import("./t.js").Default_Renderer_End_Node} Default_Renderer_End_Node
+ * @typedef {import("./t.js").Default_Renderer_Add_Text} Default_Renderer_Add_Text
  */
 
 /**
@@ -504,10 +511,10 @@ export function default_add_text(text, data) {
 
 
 /**
- * @typedef {import("./types.js").Logger_Renderer         } Logger_Renderer
- * @typedef {import("./types.js").Logger_Renderer_Add_Node} Logger_Renderer_Add_Node
- * @typedef {import("./types.js").Logger_Renderer_End_Node} Logger_Renderer_End_Node
- * @typedef {import("./types.js").Logger_Renderer_Add_Text} Logger_Renderer_Add_Text
+ * @typedef {import("./t.js").Logger_Renderer         } Logger_Renderer
+ * @typedef {import("./t.js").Logger_Renderer_Add_Node} Logger_Renderer_Add_Node
+ * @typedef {import("./t.js").Logger_Renderer_End_Node} Logger_Renderer_End_Node
+ * @typedef {import("./t.js").Logger_Renderer_Add_Text} Logger_Renderer_Add_Text
  */
 
 /** @returns {Logger_Renderer} */

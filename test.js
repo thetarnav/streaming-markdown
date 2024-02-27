@@ -1,7 +1,7 @@
 import * as t      from "node:test"
 import * as assert from "node:assert/strict"
 
-import * as mds    from "./lib/mds.js"
+import * as mds    from "./mds/mds.js"
 
 /**
  * @typedef {(string | Test_Renderer_Node)[]} Children

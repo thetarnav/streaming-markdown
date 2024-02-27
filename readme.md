@@ -1,6 +1,6 @@
 # Streaming *Markdown*
 
-**Experiment making a streaming makdown renderer *à la ChatGPT.***
+**Experiment making a streaming makdown parser *à la ChatGPT.***
 
 ## Installation
 
@@ -10,7 +10,7 @@ Install [`streaming-markdown` package](https://www.npmjs.com/package/streaming-m
 npm install streaming-markdown
 ```
 
-*Or just copy [**`mds.js`**](https://github.com/thetarnav/streaming-markdown/blob/main/mds.js) and [types](https://github.com/thetarnav/streaming-markdown/blob/main/types.d.ts) to your project.*
+*Or just copy [**`mds`**](https://github.com/thetarnav/streaming-markdown/blob/main/mds) dir to your project.*
 
 ## Usage
 
