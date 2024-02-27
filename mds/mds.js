@@ -300,8 +300,25 @@ export function parser_write(p, chunk) {
 			if ("*" === p.pending) {
 				parser_add_text(p)
 				if ('*' === char) {
-					parser_add_token(p, STRONG_AST)
-				} else {
+					/* ***bold_em**em*
+					              ^
+					*/
+					if (p.types[p.len-1] === STRONG_AST) {
+						parser_end_token(p)
+						parser_end_token(p)
+						parser_add_token(p, ITALIC_AST)
+					}
+					/* *em**bold
+					       ^
+					*/
+					else {
+						parser_add_token(p, STRONG_AST)
+					}
+				}
+				/* *em*
+					  ^
+				*/
+				else {
 					parser_end_token(p)
 					p.pending = char
 				}
@@ -312,8 +329,25 @@ export function parser_write(p, chunk) {
 			if ("_" === p.pending) {
 				parser_add_text(p)
 				if ('_' === char) {
-					parser_add_token(p, STRONG_UND)
-				} else {
+					/* ___bold_em__em_
+					              ^
+					*/
+					if (p.types[p.len-1] === STRONG_UND) {
+						parser_end_token(p)
+						parser_end_token(p)
+						parser_add_token(p, ITALIC_UND)
+					}
+					/* _em__bold
+					       ^
+					*/
+					else {
+						parser_add_token(p, STRONG_UND)
+					}
+				}
+				/* _em_
+					  ^
+				*/
+				else {
 					parser_end_token(p)
 					p.pending = char
 				}
@@ -394,37 +428,35 @@ export function parser_write(p, chunk) {
 		}
 
 		if (in_token ^ ASTERISK) {
-			/* **Strong** */
-			if ("**" === pending_with_char) {
-				parser_add_text(p)
-				parser_add_token(p, STRONG_AST)
-				continue
-			}
-			/* *Em* */
-			if ("*" === p.pending &&
-				"\n"!== char
-			) {
-				parser_add_text(p)
-				parser_add_token(p, ITALIC_AST)
-				p.pending = char
+			if ("*" === p.pending) {
+				/* **Strong** */
+				if ('*' === char) {
+					parser_add_text(p)
+					parser_add_token(p, STRONG_AST)
+				}
+				/* *Em* */
+				else {
+					parser_add_text(p)
+					parser_add_token(p, ITALIC_AST)
+					p.pending = char
+				}
 				continue
 			}
 		}
 
 		if (in_token ^ UNDERSCORE) {
-			/* __Strong__ */
-			if ("__" === pending_with_char) {
-				parser_add_text(p)
-				parser_add_token(p, STRONG_UND)
-				continue
-			}
-			/* _Em_ */
-			if ("_" === p.pending &&
-				"\n"!== char
-			) {
-				parser_add_text(p)
-				parser_add_token(p, ITALIC_UND)
-				p.pending = char
+			if ("_" === p.pending) {
+				/* __Strong__ */
+				if ('_' === char) {
+					parser_add_text(p)
+					parser_add_token(p, STRONG_UND)
+				}
+				/* _Em_ */
+				else {
+					parser_add_text(p)
+					parser_add_token(p, ITALIC_UND)
+					p.pending = char
+				}
 				continue
 			}
 		}

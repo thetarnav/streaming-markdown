@@ -341,3 +341,72 @@ test_single_write("Un-Escaped link Both",
 		}]
 	}]
 )
+
+for (const {char, italic, strong} of [{
+	char: "*",
+	italic: mds.Token_Type.Italic_Ast,
+	strong: mds.Token_Type.Strong_Ast,
+}, {
+	char: "_",
+	italic: mds.Token_Type.Italic_Und,
+	strong: mds.Token_Type.Strong_Und,
+}]) {
+	test_single_write("Italic Bold '"+char+char+"foo"+char+"bar"+char+char+char+"'",
+		""+char+char+"foo"+char+"bar"+char+char+char+"",
+		[{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : strong,
+				children: ["foo", {
+					type    : italic,
+					children: ["bar"]
+				}]
+			}]
+		}]
+	)
+
+	test_single_write("Italic Bold '"+char+char+char+"foo"+char+"bar"+char+char+"'",
+		""+char+char+char+"foo"+char+"bar"+char+char+"",
+		[{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : strong,
+				children: [{
+					type    : italic,
+					children: ["foo"]
+				}, "bar"]
+			}]
+		}]
+	)
+
+	test_single_write("Italic Bold '"+char+"foo"+char+char+"bar"+char+char+char+"'",
+		""+char+"foo"+char+char+"bar"+char+char+char+"",
+		[{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : italic,
+				children: ["foo", {
+					type    : strong,
+					children: ["bar"]
+				}]
+			}]
+		}]
+	)
+
+	test_single_write("Italic Bold '"+char+char+char+"foo"+char+char+"bar"+char+"'",
+		""+char+char+char+"foo"+char+char+"bar"+char+"",
+		[{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : strong,
+				children: [{
+					type    : italic,
+					children: ["foo"]
+				}]
+			}, {
+				type    : italic,
+				children: ["bar"]
+			}]
+		}]
+	)	
+}
