@@ -103,6 +103,7 @@ export function parser(renderer) {
  * @param   {Parser} p
  * @returns {void  } */
 export function parser_end(p) {
+	if (p.len === 0) return
 	parser_write(p, "\n")
 	parser_add_text(p)
 }
@@ -143,17 +144,6 @@ export function parser_add_token(p, type) {
  * @returns {void  } */
 export function parser_add_paragraph(p) {
 	if (p.len === 0) parser_add_token(p, PARAGRAPH)
-}
-
-/**
- * @param   {string} char
- * @returns {string} */
-function escape(char) {
-	const char_code = char.charCodeAt(0)
-	return (char_code >= 48 && char_code <= 90) ||
-		   (char_code >= 97 && char_code <= 122)
-		? '\\' + char
-		: char
 }
 
 /**
@@ -365,8 +355,18 @@ export function parser_write(p, chunk) {
 		Escape character
 		*/
 		if ("\\" === p.pending) {
-			p.text += escape(char)
-			p.pending = ""
+			if ('\n' === char) {
+				// Escaped newline has the same affect as unescaped one
+				p.pending = char
+			} else {
+				const char_code = char.charCodeAt(0)
+				p.pending = ""
+				p.text +=
+					(char_code >= 48 && char_code <= 90) || // 0-9 A-Z
+					(char_code >= 97 && char_code <= 122)   // a-z
+					? '\\' + char
+					: char
+			}
 			continue
 		}
 

@@ -80,6 +80,16 @@ function test_single_write(title, markdown, expected_children) {
 		const renderer = test_renderer()
 		const parser = mds.parser(renderer)
 
+		mds.parser_write(parser, markdown)
+		mds.parser_end(parser)
+
+		assert.deepEqual(renderer.data.root.children, expected_children)
+	})
+
+	t.test(title + " (by char)", () => {
+		const renderer = test_renderer()
+		const parser = mds.parser(renderer)
+
 		for (const char of markdown) {
 			mds.parser_write(parser, char)
 		}
@@ -142,6 +152,14 @@ test_single_write("Line Breaks with Italic",
 			type    : mds.Token_Type.Italic_Ast,
 			children: [content_1, "\n", content_2]
 		}],
+	}]
+)
+
+test_single_write("Escaped Line Breaks",
+	'a'+'\\'+'\n'+'b',
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: ['a', '\n', 'b'],
 	}]
 )
 

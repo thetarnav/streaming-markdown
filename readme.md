@@ -59,7 +59,7 @@ mds.parser_end(parser)
 - [x] Paragraphs
 - [x] Line breaks
     - [x] Single line breaks don't end tokens
-    - [ ] Escaping line breaks
+    - [x] Escaping line breaks
 - [x] Headers
 - [x] code block with triple backticks
     - [ ] send language to renderer
