@@ -111,8 +111,8 @@ export function parser_end(p) {
  * @param   {Parser} p
  * @returns {void  } */
 export function parser_add_text(p) {
-	console.assert(p.len > 0, "Never adding text to root")
 	if (p.text.length === 0) return
+	console.assert(p.len > 0, "Never adding text to root")
 	p.renderer.add_text(p.text, p.renderer.data)
 	p.text = ""
 }
