@@ -28,18 +28,15 @@ export type Renderer<TData> = {
 export type Any_Renderer = Renderer<any>
 
 export type Default_Renderer_Data = {
-	node: Default_Renderer_Node
-}
-export type Default_Renderer_Node = {
-	slot  : HTMLElement
-	parent: Default_Renderer_Node | null
+	nodes: HTMLElement[]
+	index: number
 }
 export type Default_Renderer          = Renderer         <Default_Renderer_Data>
 export type Default_Renderer_Add_Node = Renderer_Add_Node<Default_Renderer_Data>
 export type Default_Renderer_End_Node = Renderer_End_Node<Default_Renderer_Data>
 export type Default_Renderer_Add_Text = Renderer_Add_Text<Default_Renderer_Data>
 
-export type Logger_Renderer_Data = undefined
+export type Logger_Renderer_Data     = undefined
 export type Logger_Renderer          = Renderer         <Logger_Renderer_Data>
 export type Logger_Renderer_Add_Node = Renderer_Add_Node<Logger_Renderer_Data>
 export type Logger_Renderer_End_Node = Renderer_End_Node<Logger_Renderer_Data>

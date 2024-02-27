@@ -111,6 +111,7 @@ export function parser_end(p) {
  * @param   {Parser} p
  * @returns {void  } */
 export function parser_add_text(p) {
+	console.assert(p.len > 0, "Never adding text to root")
 	if (p.text.length === 0) return
 	p.renderer.add_text(p.text, p.renderer.data)
 	p.text = ""
@@ -120,6 +121,7 @@ export function parser_add_text(p) {
  * @param   {Parser} p
  * @returns {void  } */
 export function parser_end_token(p) {
+	console.assert(p.len > 0, "No nodes to end")
 	p.len -= 1
 	p.renderer.end_node(p.renderer.data)
 	p.pending = ""
@@ -169,6 +171,8 @@ export function parser_write(p, chunk) {
 		*/
 		switch (in_token) {
 		case ROOT: {
+			console.assert(p.text.length === 0, "Root should not have any text")
+
 			switch (pending_with_char) {
 			case "# ":      parser_add_token(p, HEADING_1)  ;continue
 			case "## ":     parser_add_token(p, HEADING_2)  ;continue
@@ -198,6 +202,8 @@ export function parser_write(p, chunk) {
 			continue
 		}
 		case CODE_BLOCK: {
+			console.assert(p.len === 1, "Code block is always a top-level token")
+
 			if (p.code_block_lang !== null) {
 				p.code_block_lang = '\n' === char ? null : p.code_block_lang + char
 				continue
@@ -439,7 +445,6 @@ export function parser_write(p, chunk) {
 
 /**
  * @typedef {import("./t.js").Default_Renderer         } Default_Renderer
- * @typedef {import("./t.js").Default_Renderer_Node    } Default_Renderer_Node
  * @typedef {import("./t.js").Default_Renderer_Add_Node} Default_Renderer_Add_Node
  * @typedef {import("./t.js").Default_Renderer_End_Node} Default_Renderer_End_Node
  * @typedef {import("./t.js").Default_Renderer_Add_Text} Default_Renderer_Add_Text
@@ -454,10 +459,8 @@ export function default_renderer(root) {
 		end_node: default_end_node,
 		add_text: default_add_text,
 		data    : {
-			node: {
-				slot  : root,
-				parent: null,
-			},
+			nodes: /**@type {*}*/([root,,,,,]),
+			index: 0,
 		},
 	}
 }
@@ -488,24 +491,22 @@ export function default_add_node(type, data) {
 		break
 	}
 
-	data.node.slot.appendChild(mount)
-	data.node = {
-		slot: slot,
-		parent: data.node,
-	}
+	data.nodes[data.index].appendChild(mount)
+	data.index += 1
+	data.nodes[data.index] = slot
 }
 
 /** @type {Default_Renderer_End_Node} */
 export function default_end_node(data) {
-	data.node = /**@type {Default_Renderer_Node}*/(data.node.parent)
+	data.index -= 1
 }
 
 /** @type {Default_Renderer_Add_Text} */
 export function default_add_text(text, data) {
 	switch (text) {
 	case ""  : break
-	case "\n": data.node.slot.appendChild(document.createElement("br")); break
-	default  : data.node.slot.appendChild(document.createTextNode(text))
+	case "\n": data.nodes[data.index].appendChild(document.createElement("br")) ;break
+	default  : data.nodes[data.index].appendChild(document.createTextNode(text))
 	}
 }
 
