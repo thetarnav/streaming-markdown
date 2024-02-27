@@ -294,3 +294,14 @@ test_single_write("Escaped link End",
 		}]
 	}]
 )
+
+test_single_write("Un-Escaped link Both",
+	"\\\\[" + content_1 + "\\\\](url)",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: ["\\", {
+			type    : mds.Token_Type.Link,
+			children: [content_1 + "\\"],
+		}]
+	}]
+)
