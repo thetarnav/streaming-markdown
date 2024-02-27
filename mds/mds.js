@@ -8,50 +8,50 @@ https://github.com/thetarnav/streaming-markdown
 export * from "./t.js"
 
 export const
-    ROOT        = 1,
-    PARAGRAPH   = 2,
-    HEADING_1   = 4,
-    HEADING_2   = 8,
-    HEADING_3   = 16,
-    HEADING_4   = 32,
-    HEADING_5   = 64,
-    HEADING_6   = 128,
-    ITALIC_AST  = 256,
-    ITALIC_UND  = 512,
-    STRONG_AST  = 1024,
-    STRONG_UND  = 2048,
-    CODE_INLINE = 4096,
-    CODE_BLOCK  = 8192,
-	LINK		= 16384,
+	ROOT        = 1,
+	PARAGRAPH   = 2,
+	HEADING_1   = 4,
+	HEADING_2   = 8,
+	HEADING_3   = 16,
+	HEADING_4   = 32,
+	HEADING_5   = 64,
+	HEADING_6   = 128,
+	ITALIC_AST  = 256,
+	ITALIC_UND  = 512,
+	STRONG_AST  = 1024,
+	STRONG_UND  = 2048,
+	CODE_INLINE = 4096,
+	CODE_BLOCK  = 8192,
+	LINK        = 16384,
 	/** `STRONG_AST | ITALIC_AST` */
-	ASTERISK 	= 1280,
+	ASTERISK    = 1280,
 	/** `STRONG_UND | ITALIC_UND` */
-	UNDERSCORE 	= 2560,
+	UNDERSCORE  = 2560,
 	/** `CODE_INLINE | CODE_BLOCK` */
 	CODE        = 12288,
-    /** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
-    HEADING     = 252,
-    /** `ITALIC_AST | ITALIC_UND` */
-    ITALIC      = 768,
-    /** `STRONG_AST | STRONG_UND` */
-    STRONG      = 3072
+	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
+	HEADING     = 252,
+	/** `ITALIC_AST | ITALIC_UND` */
+	ITALIC      = 768,
+	/** `STRONG_AST | STRONG_UND` */
+	STRONG      = 3072
 
 /** @enum {(typeof Token_Type)[keyof typeof Token_Type]} */
 export const Token_Type = /** @type {const} */({
-    Root:        ROOT,
-    Paragraph:   PARAGRAPH,
-    Heading_1:   HEADING_1,
-    Heading_2:   HEADING_2,
-    Heading_3:   HEADING_3,
-    Heading_4:   HEADING_4,
-    Heading_5:   HEADING_5,
-    Heading_6:   HEADING_6,
-    Italic_Ast:  ITALIC_AST,
-    Italic_Und:  ITALIC_UND,
-    Strong_Ast:  STRONG_AST,
-    Strong_Und:  STRONG_UND,
-    Code_Inline: CODE_INLINE,
-    Code_Block:  CODE_BLOCK,
+	Root:        ROOT,
+	Paragraph:   PARAGRAPH,
+	Heading_1:   HEADING_1,
+	Heading_2:   HEADING_2,
+	Heading_3:   HEADING_3,
+	Heading_4:   HEADING_4,
+	Heading_5:   HEADING_5,
+	Heading_6:   HEADING_6,
+	Italic_Ast:  ITALIC_AST,
+	Italic_Und:  ITALIC_UND,
+	Strong_Ast:  STRONG_AST,
+	Strong_Und:  STRONG_UND,
+	Code_Inline: CODE_INLINE,
+	Code_Block:  CODE_BLOCK,
 	Link:        LINK,
 })
 
@@ -59,23 +59,23 @@ export const Token_Type = /** @type {const} */({
  * @param   {Token_Type} type
  * @returns {string    } */
 export function token_type_to_string(type) {
-    switch (type) {
-    case ROOT:       return "Root"
-    case PARAGRAPH:  return "Paragraph"
-    case HEADING_1:  return "Heading_1"
-    case HEADING_2:  return "Heading_2"
-    case HEADING_3:  return "Heading_3"
-    case HEADING_4:  return "Heading_4"
-    case HEADING_5:  return "Heading_5"
-    case HEADING_6:  return "Heading_6"
-    case ITALIC_AST: return "Italic_Ast"
-    case ITALIC_UND: return "Italic_Und"
-    case STRONG_AST: return "Strong_Ast"
-    case STRONG_UND: return "Strong_Und"
-    case CODE_INLINE:return "Code_Inline"
-    case CODE_BLOCK: return "Code_Block"
+	switch (type) {
+	case ROOT:       return "Root"
+	case PARAGRAPH:  return "Paragraph"
+	case HEADING_1:  return "Heading_1"
+	case HEADING_2:  return "Heading_2"
+	case HEADING_3:  return "Heading_3"
+	case HEADING_4:  return "Heading_4"
+	case HEADING_5:  return "Heading_5"
+	case HEADING_6:  return "Heading_6"
+	case ITALIC_AST: return "Italic_Ast"
+	case ITALIC_UND: return "Italic_Und"
+	case STRONG_AST: return "Strong_Ast"
+	case STRONG_UND: return "Strong_Und"
+	case CODE_INLINE:return "Code_Inline"
+	case CODE_BLOCK: return "Code_Block"
 	case LINK:       return "Link"
-    }
+	}
 }
 
 /**
@@ -88,10 +88,10 @@ export function token_type_to_string(type) {
  * @param   {Any_Renderer} renderer
  * @returns {Parser      } */
 export function parser(renderer) {
-    return {
+	return {
 		renderer       : renderer,
 		text           : "",
-		pending		   : "",
+		pending        : "",
 		types          : /**@type {*}*/([ROOT,,,,,]),
 		len            : 0,
 		code_block_lang: "",
@@ -131,16 +131,16 @@ export function parser_end_token(p) {
  * @returns {void      } */
 export function parser_add_token(p, type) {
 	p.pending = ""
-    p.len += 1
-    p.types[p.len] = type
-    p.renderer.add_node(type, p.renderer.data)
+	p.len += 1
+	p.types[p.len] = type
+	p.renderer.add_node(type, p.renderer.data)
 }
 
 /**
  * @param   {Parser} p
  * @returns {void  } */
 export function parser_add_paragraph(p) {
-    if (p.len === 0) parser_add_token(p, PARAGRAPH)
+	if (p.len === 0) parser_add_token(p, PARAGRAPH)
 }
 
 /**
@@ -160,8 +160,8 @@ function escape(char) {
  * @param   {string} chunk
  * @returns {void  } */
 export function parser_write(p, chunk) {
-    for (const char of chunk) {
-        const in_token = p.types[p.len]
+	for (const char of chunk) {
+		const in_token = p.types[p.len]
 		const pending_with_char = p.pending + char
 
 		/*
@@ -292,7 +292,7 @@ export function parser_write(p, chunk) {
 				continue
 			}
 			break
-        case ITALIC_AST:
+		case ITALIC_AST:
 			if ("*" === p.pending) {
 				parser_add_text(p)
 				if ('*' === char) {
@@ -304,8 +304,8 @@ export function parser_write(p, chunk) {
 				continue
 			}
 			break
-        case ITALIC_UND:
-            if ("_" === p.pending) {
+		case ITALIC_UND:
+			if ("_" === p.pending) {
 				parser_add_text(p)
 				if ('_' === char) {
 					parser_add_token(p, STRONG_UND)
@@ -315,7 +315,7 @@ export function parser_write(p, chunk) {
 				}
 				continue
 			}
-            break
+			break
 		case LINK:
 			if (']' === p.pending) {
 				/*
@@ -348,15 +348,15 @@ export function parser_write(p, chunk) {
 		}
 
 		/*
-        Escape character
-        */
+		Escape character
+		*/
 		if ("\\" === p.pending) {
 			p.text += escape(char)
 			p.pending = ""
 			continue
 		}
 
-        /* Newline */
+		/* Newline */
 		if ('\n' === p.pending[0]) {
 			parser_add_text(p)
 			if ('\n' === char) {
@@ -368,18 +368,18 @@ export function parser_write(p, chunk) {
 			continue
 		}
 
-        /* `Code Inline` */
-        if ('`' === p.pending &&
+		/* `Code Inline` */
+		if ('`' === p.pending &&
 			"\n"!== char &&
 			'`' !== char
 		) {
-            parser_add_text(p)
-            parser_add_token(p, CODE_INLINE)
-            p.pending = char
-            continue
-        }
+			parser_add_text(p)
+			parser_add_token(p, CODE_INLINE)
+			p.pending = char
+			continue
+		}
 
-        if (in_token ^ ASTERISK) {
+		if (in_token ^ ASTERISK) {
 			/* **Strong** */
 			if ("**" === pending_with_char) {
 				parser_add_text(p)
@@ -432,9 +432,9 @@ export function parser_write(p, chunk) {
 		*/
 		p.text += p.pending
 		p.pending = char
-    }
+	}
 
-    parser_add_text(p)
+	parser_add_text(p)
 }
 
 /**
@@ -449,47 +449,47 @@ export function parser_write(p, chunk) {
  * @param   {HTMLElement     } root
  * @returns {Default_Renderer} */
 export function default_renderer(root) {
-    return {
-        add_node: default_add_node,
-        end_node: default_end_node,
-        add_text: default_add_text,
-        data    : {
-            node: {
+	return {
+		add_node: default_add_node,
+		end_node: default_end_node,
+		add_text: default_add_text,
+		data    : {
+			node: {
 				slot  : root,
 				parent: null,
 			},
-        },
-    }
+		},
+	}
 }
 
 /** @type {Default_Renderer_Add_Node} */
 export function default_add_node(type, data) {
-    /**@type {HTMLElement}*/ let mount
-    /**@type {HTMLElement}*/ let slot
+	/**@type {HTMLElement}*/ let mount
+	/**@type {HTMLElement}*/ let slot
 
-    switch (type) {
-    case ROOT: return // node is already root
-    case PARAGRAPH:  mount = slot = document.createElement("p")     ;break
-    case HEADING_1:  mount = slot = document.createElement("h1")    ;break
-    case HEADING_2:  mount = slot = document.createElement("h2")    ;break
-    case HEADING_3:  mount = slot = document.createElement("h3")    ;break
-    case HEADING_4:  mount = slot = document.createElement("h4")    ;break
-    case HEADING_5:  mount = slot = document.createElement("h5")    ;break
-    case HEADING_6:  mount = slot = document.createElement("h6")    ;break
-    case ITALIC_AST:
-    case ITALIC_UND: mount = slot = document.createElement("em")    ;break
-    case STRONG_AST:
-    case STRONG_UND: mount = slot = document.createElement("strong");break
-    case CODE_INLINE:mount = slot = document.createElement("code")  ;break
+	switch (type) {
+	case ROOT: return // node is already root
+	case PARAGRAPH:  mount = slot = document.createElement("p")     ;break
+	case HEADING_1:  mount = slot = document.createElement("h1")    ;break
+	case HEADING_2:  mount = slot = document.createElement("h2")    ;break
+	case HEADING_3:  mount = slot = document.createElement("h3")    ;break
+	case HEADING_4:  mount = slot = document.createElement("h4")    ;break
+	case HEADING_5:  mount = slot = document.createElement("h5")    ;break
+	case HEADING_6:  mount = slot = document.createElement("h6")    ;break
+	case ITALIC_AST:
+	case ITALIC_UND: mount = slot = document.createElement("em")    ;break
+	case STRONG_AST:
+	case STRONG_UND: mount = slot = document.createElement("strong");break
+	case CODE_INLINE:mount = slot = document.createElement("code")  ;break
 	case LINK:       mount = slot = document.createElement("a")     ;break
-    case CODE_BLOCK:
-        mount = document.createElement("pre")
-        slot = mount.appendChild(document.createElement("code"))
-        break
-    }
+	case CODE_BLOCK:
+		mount = document.createElement("pre")
+		slot = mount.appendChild(document.createElement("code"))
+		break
+	}
 
-    data.node.slot.appendChild(mount)
-    data.node = {
+	data.node.slot.appendChild(mount)
+	data.node = {
 		slot: slot,
 		parent: data.node,
 	}

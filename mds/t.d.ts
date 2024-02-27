@@ -19,19 +19,19 @@ export type Renderer_End_Node<TData> = (data: TData) => void
 export type Renderer_Add_Text<TData> = (text: string, data: TData) => void
 
 export type Renderer<TData> = {
-    data    : TData
-    add_node: Renderer_Add_Node<TData>
+	data    : TData
+	add_node: Renderer_Add_Node<TData>
 	end_node: Renderer_End_Node<TData>
-    add_text: Renderer_Add_Text<TData>
+	add_text: Renderer_Add_Text<TData>
 }
 
 export type Any_Renderer = Renderer<any>
 
 export type Default_Renderer_Data = {
-    node: Default_Renderer_Node
+	node: Default_Renderer_Node
 }
 export type Default_Renderer_Node = {
-	slot : HTMLElement
+	slot  : HTMLElement
 	parent: Default_Renderer_Node | null
 }
 export type Default_Renderer          = Renderer         <Default_Renderer_Data>
