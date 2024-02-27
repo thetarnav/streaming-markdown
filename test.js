@@ -1,7 +1,7 @@
 import * as t      from "node:test"
 import * as assert from "node:assert/strict"
 
-import * as mds    from "./mds.js"
+import * as mds    from "./lib/mds.js"
 
 /**
  * @typedef {(string | Test_Renderer_Node)[]} Children
@@ -166,7 +166,7 @@ test_single_write("Paragraphs",
 	}]
 )
 
-test_single_write("Paragraph with Italic", 
+test_single_write("Paragraph with Italic",
 	"*" + content_1 + "*",
 	[{
 		type    : mds.Token_Type.Paragraph,
