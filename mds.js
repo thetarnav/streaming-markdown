@@ -81,14 +81,13 @@ export function token_type_to_string(type) {
  * @param   {Any_Renderer} renderer
  * @returns {Parser      } */
 export function parser(renderer) {
-	renderer.add_node(ROOT, renderer.data) // ? Shouldn't the user call that?
     return {
 		renderer       : renderer,
 		text           : "",
 		pending		   : "",
-		types          : /**@type {*}*/([ROOT,,,,,]), // ? do I need the root still?
+		types          : /**@type {*}*/([ROOT,,,,,]),
 		len            : 0,
-		code_block_lang: "", // TODO remove
+		code_block_lang: "",
 	}
 }
 
@@ -476,8 +475,7 @@ export function default_add_node(type, data) {
     /**@type {HTMLElement}*/ let slot
 
     switch (type) {
-    case ROOT:
-		return // node is already root
+    case ROOT: return // node is already root
     case PARAGRAPH:  mount = slot = document.createElement("p")     ;break
     case HEADING_1:  mount = slot = document.createElement("h1")    ;break
     case HEADING_2:  mount = slot = document.createElement("h2")    ;break

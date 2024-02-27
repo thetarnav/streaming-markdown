@@ -42,10 +42,6 @@ function test_renderer() {
 }
 /** @type {Test_Add_Node} */
 function test_add_node(type, data) {
-	if (type === mds.Token_Type.Root) {
-		return
-	}
-
 	/** @type {Test_Renderer_Node} */
     const node = {type, children: []}
 	const parent = data.node
