@@ -97,17 +97,8 @@ export function parser(renderer) {
  * @param   {Parser} p
  * @returns {void  } */
 export function parser_end(p) {
-	// p.text += p.pending
 	parser_write(p, "\n")
-	// p.text += p.pending
-	if (p.text.length > 0) {
-		// if (p.text[p.text.length-1] !== '\n') {
-		// 	write(p, "\n")
-		// } else {
-
-		// }
-		p.renderer.add_text(p.text, p.renderer.data)
-	}
+	parser_add_text(p)
     p.text = ""
 	p.pending = ""
     p.code_block_lang = null
