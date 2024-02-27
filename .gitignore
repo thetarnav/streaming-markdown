@@ -1,2 +1,4 @@
 node_modules
-mds/mds.d.ts
+*.d.ts
+*.d.ts.map
+!t.d.ts

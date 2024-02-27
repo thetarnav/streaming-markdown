@@ -15,6 +15,7 @@ const ts_options = {
 	noEmit              : false,
 	noEmitOnError       : false,
 	declaration         : true,
+	declarationMap	    : true,
 }
 
 function main() {
