@@ -85,6 +85,18 @@ function test_single_write(title, markdown, expected_children) {
 
 		assert.deepEqual(renderer.data.root.children, expected_children)
 	})
+
+	t.test(title + " (by char)", () => {
+		const renderer = test_renderer()
+		const parser = mds.parser(renderer)
+
+		for (const char of markdown) {
+			mds.parser_write(parser, char)
+		}
+		mds.parser_end(parser)
+
+		assert.deepEqual(renderer.data.root.children, expected_children)
+	})
 }
 
 const content_1 = "Hello, World!"

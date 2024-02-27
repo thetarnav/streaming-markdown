@@ -92,17 +92,12 @@ export function parser(renderer) {
 }
 
 /**
- * Finish rendering the markdown.
- * Resets the state of the stream and flushes any remaining text.
+ * Finish rendering the markdown - flushes any remaining text.
  * @param   {Parser} p
  * @returns {void  } */
 export function parser_end(p) {
 	parser_write(p, "\n")
 	parser_add_text(p)
-    p.text = ""
-	p.pending = ""
-    p.code_block_lang = null
-    p.len = 0
 }
 
 /**
