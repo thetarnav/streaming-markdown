@@ -14,14 +14,15 @@ npm install streaming-markdown
 
 ## Usage
 
-### `Parser` object
-
-Create new markdown `Parser` by calling `parser` function with the `HTMLElement` to render to.
+First create new markdown `Parser` by calling `parser` function.\
+It's single argument is a `Renderer` object, which is an interface to render the parsed markdown tokens to the DOM.\
+There are two built-in renderers—`default_renderer` and `logger_renderer`—that you can try at first.
 
 ```js
 import * as mds from "streaming-markdown"
 
-const parser = mds.parser(document.getElementById(```markdown```))
+const renderer = mds.default_renderer(document.getElementById("markdown"))
+const parser = mds.parser(renderer)
 ```
 
 ### `write` function
@@ -58,6 +59,7 @@ mds.parser_end(parser)
 - [x] Paragraphs
 - [x] Line breaks
     - [x] Single line breaks don't end tokens
+    - [ ] Escaping line breaks
 - [x] Headers
 - [x] code block with triple backticks
     - [ ] send language to renderer
