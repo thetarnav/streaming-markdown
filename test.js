@@ -342,70 +342,76 @@ test_single_write("Un-Escaped link Both",
 	}]
 )
 
-for (const {char, italic, strong} of [{
-	char: "*",
+for (const {c, italic, strong} of [{
+	c: "*",
 	italic: mds.Token_Type.Italic_Ast,
 	strong: mds.Token_Type.Strong_Ast,
 }, {
-	char: "_",
+	c: "_",
 	italic: mds.Token_Type.Italic_Und,
 	strong: mds.Token_Type.Strong_Und,
 }]) {
-	test_single_write("Italic Bold '"+char+char+"foo"+char+"bar"+char+char+char+"'",
-		""+char+char+"foo"+char+"bar"+char+char+char+"",
+	const case_1 = ""+c+c+"bold"+c+"bold>em"+c+c+c+""
+	const case_2 = ""+c+c+c+"bold>em"+c+"bold"+c+c+""
+	const case_3 = ""+c+"em"+c+c+"em>bold"+c+c+c+""
+	const case_4 = ""+c+c+c+"bold>em"+c+c+"em"+c+""
+
+	test_single_write("Italic & Bold \""+case_1+"\'",
+		case_1,
 		[{
 			type    : mds.Token_Type.Paragraph,
 			children: [{
 				type    : strong,
-				children: ["foo", {
+				children: ["bold", {
 					type    : italic,
-					children: ["bar"]
+					children: ["bold>em"]
 				}]
 			}]
 		}]
 	)
 
-	test_single_write("Italic Bold '"+char+char+char+"foo"+char+"bar"+char+char+"'",
-		""+char+char+char+"foo"+char+"bar"+char+char+"",
+	test_single_write("Italic & Bold \""+case_2+"\'",
+		case_2,
 		[{
 			type    : mds.Token_Type.Paragraph,
 			children: [{
 				type    : strong,
 				children: [{
 					type    : italic,
-					children: ["foo"]
-				}, "bar"]
+					children: ["bold>em"]
+				},
+				"bold"]
 			}]
 		}]
 	)
 
-	test_single_write("Italic Bold '"+char+"foo"+char+char+"bar"+char+char+char+"'",
-		""+char+"foo"+char+char+"bar"+char+char+char+"",
+	test_single_write("Italic & Bold \""+case_3+"\'",
+		case_3,
 		[{
 			type    : mds.Token_Type.Paragraph,
 			children: [{
 				type    : italic,
-				children: ["foo", {
+				children: ["em", {
 					type    : strong,
-					children: ["bar"]
+					children: ["em>bold"]
 				}]
 			}]
 		}]
 	)
 
-	test_single_write("Italic Bold '"+char+char+char+"foo"+char+char+"bar"+char+"'",
-		""+char+char+char+"foo"+char+char+"bar"+char+"",
+	test_single_write("Italic & Bold \""+case_4+"\'",
+		case_4,
 		[{
 			type    : mds.Token_Type.Paragraph,
 			children: [{
 				type    : strong,
 				children: [{
 					type    : italic,
-					children: ["foo"]
+					children: ["bold>em"]
 				}]
 			}, {
 				type    : italic,
-				children: ["bar"]
+				children: ["em"]
 			}]
 		}]
 	)	

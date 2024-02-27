@@ -68,11 +68,11 @@ mds.parser_end(parser)
 - [x] **Bold** with double asterisks
 - [x] _italic_ with underscores
 - [x] __Bold__ with double underscores
-- [ ] Special cases:
-    - [ ] **foo*bar***
-    - [ ] ***foo*bar**
-    - [ ] *foo**bar***
-    - [ ] ***foo**bar*
+- [x] Special cases:
+    - [x] **bold*bold>em***
+    - [x] ***bold>em*bold**
+    - [x] *em**em>bold***
+    - [x] ***bold>em**em*
 - [x] Escape characters (e.g. \* or \_ with \\\* or \\\_)
 - [x] \[Link\](url)
     - [ ] href attr
