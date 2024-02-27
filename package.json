@@ -1,6 +1,6 @@
 {
 	"name": "streaming-markdown",
-	"version": "0.0.0",
+	"version": "0.0.1",
 	"author": "Damian Tarnawski <gthetarnav@gmail.com>",
 	"description": "Streaming Markdown parser, à la ChatGPT",
 	"license": "MIT",
@@ -11,7 +11,9 @@
 	"private": false,
 	"sideEffects": false,
 	"type": "module",
-	"files": ["mds"],
+	"files": [
+		"mds"
+	],
 	"module": "./mds/mds.js",
 	"types": "./mds/mds.d.ts",
 	"exports": {
@@ -21,10 +23,10 @@
 		}
 	},
 	"scripts": {
-		"dev":       "node ./dev.js",
-		"test":      "node --test",
+		"dev": "node ./dev.js",
+		"test": "node --test",
 		"typecheck": "tsc --noEmit",
-		"build":     "node ./build.js"
+		"build": "node ./build.js"
 	},
 	"devDependencies": {
 		"@types/node": "^20.11.19",
