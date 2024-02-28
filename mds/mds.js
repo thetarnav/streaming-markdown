@@ -254,11 +254,11 @@ export function parser_write(p, chunk) {
 			}
 		}
 		case CODE_INLINE: {
-			if ('\n' === char) {
+			if ('\n' === char && p.pending.length === 0) {
 				p.pending = char
 				continue
 			}
-			if ("`" === char) {
+			if ('`' === char) {
 				p.text += p.pending
 				parser_add_text(p)
 				parser_end_token(p)

@@ -207,6 +207,20 @@ test_single_write("Code with line break",
 	}]
 )
 
+test_single_write("Code with two line breaks",
+	"`a\n\nb",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: [{
+			type    : mds.Token_Type.Code_Inline,
+			children: ["a"]
+		}],
+	}, {
+		type    : mds.Token_Type.Paragraph,
+		children: ["b"],
+	}]
+)
+
 test_single_write("Empty Code_Block",
 	"```\n```",
 	[{
