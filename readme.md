@@ -23,8 +23,9 @@ There are two built-in renderers—`default_renderer` and `logger_renderer`—th
 ```js
 import * as mds from "streaming-markdown"
 
-const renderer = mds.default_renderer(document.getElementById("markdown"))
-const parser = mds.parser(renderer)
+const element  = document.getElementById("markdown")
+const renderer = mds.default_renderer(element)
+const parser   = mds.parser(renderer)
 ```
 
 ### `write` function
