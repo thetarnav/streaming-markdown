@@ -288,25 +288,61 @@ test_single_write("Escape normal char",
 )
 
 test_single_write("Link",
-	"[" + content_1 + "](url)",
+	"[title](url)",
 	[{
 		type    : mds.Token_Type.Paragraph,
 		children: [{
 			type    : mds.Token_Type.Link,
-			children: [content_1],
+			children: ["title"],
 		}]
 	}]
 )
 
 test_single_write("Link with code",
-	"[`" + content_1 + "`](url)",
+	"[`title`](url)",
 	[{
 		type    : mds.Token_Type.Paragraph,
 		children: [{
 			type    : mds.Token_Type.Link,
 			children: [{
 				type    : mds.Token_Type.Code_Inline,
-				children: [content_1],
+				children: ["title"],
+			}],
+		}]
+	}]
+)
+
+test_single_write("Image",
+	"![title](url)",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: [{
+			type    : mds.Token_Type.Image,
+			children: ["title"],
+		}]
+	}]
+)
+
+test_single_write("Image with code",
+	"![`title`](url)",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: [{
+			type    : mds.Token_Type.Image,
+			children: ["`title`"],
+		}]
+	}]
+)
+
+test_single_write("Link with Image",
+	"[![title](src)](href)",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: [{
+			type    : mds.Token_Type.Link,
+			children: [{
+				type    : mds.Token_Type.Image,
+				children: ["title"],
 			}],
 		}]
 	}]

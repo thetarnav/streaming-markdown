@@ -23,6 +23,7 @@ export const
 	CODE_INLINE = 4096,
 	CODE_BLOCK  = 8192,
 	LINK        = 16384,
+	IMAGE       = 32768,
 	/** `STRONG_AST | ITALIC_AST` */
 	ASTERISK    = 1280,
 	/** `STRONG_UND | ITALIC_UND` */
@@ -53,6 +54,7 @@ export const Token_Type = /** @type {const} */({
 	Code_Inline: CODE_INLINE,
 	Code_Block:  CODE_BLOCK,
 	Link:        LINK,
+	Image:       IMAGE,
 })
 
 /**
@@ -75,6 +77,7 @@ export function token_type_to_string(type) {
 	case CODE_INLINE:return "Code_Inline"
 	case CODE_BLOCK: return "Code_Block"
 	case LINK:       return "Link"
+	case IMAGE:      return "Image"
 	}
 }
 
@@ -381,6 +384,7 @@ export function parser_write(p, chunk) {
 			}
 			break
 		case LINK:
+		case IMAGE:
 			if (']' === p.pending) {
 				/*
 				[Link](url)
@@ -442,6 +446,12 @@ export function parser_write(p, chunk) {
 			continue
 		}
 
+		if (in_token === IMAGE) {
+			p.text += p.pending
+			p.pending = char
+			continue
+		}
+
 		/* `Code Inline` */
 		if ('`' === p.pending &&
 			"\n"!== char &&
@@ -499,6 +509,13 @@ export function parser_write(p, chunk) {
 			continue
 		}
 
+		/* ![Image](url) */
+		if ("![" === pending_with_char) {
+			parser_add_text(p)
+			parser_add_token(p, IMAGE)
+			continue
+		}
+
 		/*
 		No check hit
 		*/
@@ -551,6 +568,7 @@ export function default_add_node(type, data) {
 	case STRONG_UND: mount = slot = document.createElement("strong");break
 	case CODE_INLINE:mount = slot = document.createElement("code")  ;break
 	case LINK:       mount = slot = document.createElement("a")     ;break
+	case IMAGE:      mount = slot = document.createElement("img")   ;break
 	case CODE_BLOCK:
 		mount = document.createElement("pre")
 		slot = mount.appendChild(document.createElement("code"))

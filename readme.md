@@ -1,5 +1,7 @@
 # Streaming *Markdown*
 
+[![version](https://img.shields.io/npm/v/streaming-markdown?style=for-the-badge)](https://www.npmjs.com/package/streaming-markdown)
+
 **Experiment making a streaming makdown parser *à la ChatGPT.***
 
 ## Installation
@@ -77,7 +79,8 @@ mds.parser_end(parser)
 - [x] \[Link\](url)
     - [ ] href attr
     - [x] Escaping escaping bug: \\[Link\\](url)
-- [ ] Images
+- [x] Images
+    - [ ] src attr
 - [ ] Lists
 - [ ] Blockquotes
 - [ ] Tables
