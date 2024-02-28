@@ -1,4 +1,4 @@
-/*!
+/*
 Streaming Markdown Parser and Renderer
 MIT License
 Copyright (c) 2024 Damian Tarnawski
@@ -399,7 +399,7 @@ export function parser_write(p, chunk) {
 				p.text +=
 					(char_code >= 48 && char_code <= 90) || // 0-9 A-Z
 					(char_code >= 97 && char_code <= 122)   // a-z
-					? '\\' + char
+					? pending_with_char
 					: char
 			}
 			continue
@@ -530,7 +530,8 @@ export function default_add_node(type, data) {
 	case IMAGE:      mount = slot = document.createElement("img")   ;break
 	case CODE_BLOCK:
 		mount = document.createElement("pre")
-		slot = mount.appendChild(document.createElement("code"))
+		slot  = document.createElement("code")
+		mount.appendChild(slot)
 		break
 	}
 
