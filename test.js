@@ -99,9 +99,6 @@ function test_single_write(title, markdown, expected_children) {
 	})
 }
 
-const content_1 = "Hello, World!"
-const content_2 = "Goodbye, World!"
-
 for (let level = 1; level <= 6; level += 1) {
 
 	/** @type {mds.Token_Type} */
@@ -117,30 +114,30 @@ for (let level = 1; level <= 6; level += 1) {
 	}
 
 	test_single_write(`Heading_${level}`,
-		"#".repeat(level) + " " + content_1,
+		"#".repeat(level) + " " + "foo",
 		[{
 			type    : heading_type,
-			children: [content_1]
+			children: ["foo"]
 		}]
 	)
 
 	test_single_write(`Heading_${level} with Line Italic`,
-		"#".repeat(level) + " " + content_1 + " *" + content_2 + "*",
+		"#".repeat(level) + " foo *bar*",
 		[{
 			type    : heading_type,
-			children: [content_1 + " ", {
+			children: ["foo ", {
 				type    : mds.Token_Type.Italic_Ast,
-				children: [content_2]
+				children: ["bar"]
 			}]
 		}]
 	)
 }
 
 test_single_write("Line Breaks",
-	content_1 + "\n" + content_2,
+	"foo\nbar",
 	[{
 		type    : mds.Token_Type.Paragraph,
-		children: [content_1, "\n", content_2],
+		children: ["foo", "\n", "bar"],
 	}]
 )
 
@@ -164,23 +161,23 @@ test_single_write("Escaped Line Breaks",
 )
 
 test_single_write("Paragraphs",
-	content_1 + "\n" + "\n" + content_2,
+	"foo\n\nbar",
 	[{
 		type    : mds.Token_Type.Paragraph,
-		children: [content_1],
+		children: ["foo"],
 	}, {
 		type    : mds.Token_Type.Paragraph,
-		children: [content_2],
+		children: ["bar"],
 	}]
 )
 
 test_single_write("Paragraph with Italic",
-	"*" + content_1 + "*",
+	"*foo*",
 	[{
 		type    : mds.Token_Type.Paragraph,
 		children: [{
 			type    : mds.Token_Type.Italic_Ast,
-			children: [content_1]
+			children: ["foo"]
 		}],
 	}]
 )
@@ -230,18 +227,18 @@ test_single_write("Empty Code_Block",
 )
 
 test_single_write("Code_Block",
-	"```\n" + content_1 + "\n```",
+	"```\nfoo\n```",
 	[{
 		type    : mds.Token_Type.Code_Block,
-		children: [content_1]
+		children: ["foo"]
 	}]
 )
 
 test_single_write("Code_Block with language",
-	"```js\n" + content_1 + "\n```",
+	"```js\nfoo\n```",
 	[{
 		type    : mds.Token_Type.Code_Block,
-		children: [content_1]
+		children: ["foo"]
 	}]
 )
 
@@ -280,38 +277,38 @@ for (const token of [
 	}
 
 	test_single_write(`Escape ${mds.token_type_to_string(token)} Begin`,
-		escaped + content_1,
+		escaped + "foo",
 		[{
 			type    : mds.Token_Type.Paragraph,
-			children: [char + content_1]
+			children: [char + "foo"]
 		}]
 	)
 
 	test_single_write(`Escape ${mds.token_type_to_string(token)} End`,
-		char + content_1 + escaped,
+		char + "foo" + escaped,
 		[{
 			type    : mds.Token_Type.Paragraph,
 			children: [{
 				type    : token,
-				children: [content_1 + char]
+				children: ["foo" + char]
 			}]
 		}]
 	)
 }
 
 test_single_write("Escape Backtick",
-	"\\`" + content_1,
+	"\\`" + "foo",
 	[{
 		type    : mds.Token_Type.Paragraph,
-		children: ["`" + content_1]
+		children: ["`" + "foo"]
 	}]
 )
 
 test_single_write("Escape Backslash",
-	"\\\\" + content_1,
+	"\\\\" + "foo",
 	[{
 		type    : mds.Token_Type.Paragraph,
-		children: ["\\" + content_1]
+		children: ["\\" + "foo"]
 	}]
 )
 
@@ -385,31 +382,31 @@ test_single_write("Link with Image",
 )
 
 test_single_write("Escaped link Begin",
-	"\\[" + content_1 + "](url)",
+	"\\[foo](url)",
 	[{
 		type    : mds.Token_Type.Paragraph,
-		children: ["[" + content_1 + "](url)"]
+		children: ["[foo](url)"]
 	}]
 )
 
 test_single_write("Escaped link End",
-	"[" + content_1 + "\\](url)",
+	"[foo\\](url)",
 	[{
 		type    : mds.Token_Type.Paragraph,
 		children: [{
 			type    : mds.Token_Type.Link,
-			children: [content_1 + "](url)"],
+			children: ["foo](url)"],
 		}]
 	}]
 )
 
 test_single_write("Un-Escaped link Both",
-	"\\\\[" + content_1 + "\\\\](url)",
+	"\\\\[foo\\\\](url)",
 	[{
 		type    : mds.Token_Type.Paragraph,
 		children: ["\\", {
 			type    : mds.Token_Type.Link,
-			children: [content_1 + "\\"],
+			children: ["foo\\"],
 		}]
 	}]
 )

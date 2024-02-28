@@ -235,9 +235,9 @@ export function parser_write(p, chunk) {
 					p.pending = ""
 				}
 				continue
-			case 0: /* cannot end */
+			case 0: /* can't end */
 				console.assert(p.pending.length === 0, "Has pending text but cannot end")
-				
+
 				if ('\n' === char) {
 					p.code_block = 1
 					p.pending = char
@@ -368,28 +368,27 @@ export function parser_write(p, chunk) {
 			break
 		}
 
+		/*
+		Common checks
+		*/
+		switch (p.pending) {
 		/* Newline */
-		if ('\n' === p.pending[0]) {
+		case "\n":
 			parser_add_text(p)
+			/* Paragraph */
 			if ('\n' === char) {
 				while (p.len > 0) parser_end_token(p)
-			} else {
+			}
+			/* Line break */
+			else {
 				p.renderer.add_text('\n', p.renderer.data)
 				p.pending = char
 			}
 			continue
-		}
+		/* Escape character */
+		case "\\":
+			if (in_token === CODE_INLINE) break
 
-		if (in_token === CODE_INLINE) {
-			p.text += p.pending + char
-			p.pending = ""
-			continue
-		}
-
-		/*
-		Escape character
-		*/
-		if ("\\" === p.pending) {
 			if ('\n' === char) {
 				// Escaped newline has the same affect as unescaped one
 				p.pending = char
@@ -403,83 +402,83 @@ export function parser_write(p, chunk) {
 					: char
 			}
 			continue
-		}
-
-		if (in_token === IMAGE) {
-			p.text += p.pending
-			p.pending = char
-			continue
-		}
-
 		/* `Code Inline` */
-		if ('`' === p.pending &&
-			"\n"!== char &&
-			'`' !== char
-		) {
-			parser_add_text(p)
-			parser_add_token(p, CODE_INLINE)
-			p.text = char
-			continue
-		}
-
-		if (in_token ^ ASTERISK) {
-			if ("*" === p.pending) {
-				/* **Strong** */
-				if ('*' === char) {
-					parser_add_text(p)
-					parser_add_token(p, STRONG_AST)
-				}
-				/* *Em* */
-				else {
-					parser_add_text(p)
-					parser_add_token(p, ITALIC_AST)
-					p.pending = char
-				}
+		case "`":
+			if (!(in_token & (CODE_INLINE | IMAGE)) &&
+				"\n"!== char &&
+				'`' !== char
+			) {
+				parser_add_text(p)
+				parser_add_token(p, CODE_INLINE)
+				p.text = char
 				continue
 			}
-		}
+			break
+		case "*":
+			if (in_token & (CODE_INLINE | ASTERISK | IMAGE)) break
 
-		if (in_token ^ UNDERSCORE) {
-			if ("_" === p.pending) {
-				/* __Strong__ */
-				if ('_' === char) {
-					parser_add_text(p)
-					parser_add_token(p, STRONG_UND)
-				}
-				/* _Em_ */
-				else {
-					parser_add_text(p)
-					parser_add_token(p, ITALIC_UND)
-					p.pending = char
-				}
+			parser_add_text(p)
+			/* **Strong** */
+			if ('*' === char) {
+				parser_add_token(p, STRONG_AST)
+			}
+			/* *Em* */
+			else {
+				parser_add_token(p, ITALIC_AST)
+				p.pending = char
+			}
+			continue
+		case "_":
+			if (in_token & (CODE_INLINE | UNDERSCORE | IMAGE)) break
+
+			parser_add_text(p)
+			/* __Strong__ */
+			if ('_' === char) {
+				parser_add_token(p, STRONG_UND)
+			}
+			/* _Em_ */
+			else {
+				parser_add_token(p, ITALIC_UND)
+				p.pending = char
+			}
+			continue
+		/* [Image](url) */
+		case "[":
+			if (!(in_token & (CODE_INLINE | IMAGE | LINK)) &&
+				"\n"!== char &&
+				"]" !== char
+			) {
+				parser_add_text(p)
+				parser_add_token(p, LINK)
+				p.pending = char
 				continue
 			}
-		}
-
-		/* [Link](url) */
-		if (in_token !== LINK &&
-			"[" === p.pending &&
-			"\n"!== char &&
-			"]" !== char
-		) {
-			parser_add_text(p)
-			parser_add_token(p, LINK)
-			p.pending = char
-			continue
-		}
-
+			break
 		/* ![Image](url) */
-		if ("![" === pending_with_char) {
-			parser_add_text(p)
-			parser_add_token(p, IMAGE)
-			continue
+		case "!":
+			if (!(in_token & (CODE_INLINE | IMAGE)) &&
+				"[" === char
+			) {
+				parser_add_text(p)
+				parser_add_token(p, IMAGE)
+				continue
+			}
+			break
 		}
 
 		/*
 		No check hit
 		*/
-		p.text += p.pending
-		p.pending = char
+		switch (in_token) {
+		case CODE_INLINE:
+			p.text += p.pending + char
+			p.pending = ""
+			break
+		default:
+			p.text += p.pending
+			p.pending = char
+			break
+		}
 	}
 
 	parser_add_text(p)
