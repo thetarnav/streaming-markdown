@@ -276,38 +276,41 @@ export function parser_write(p, chunk) {
 			}
 		}
 		case STRONG_AST:
-			if ("*" === p.pending) {
-				parser_add_text(p)
-				if ('*' === char) {
-					parser_end_token(p)
-				} else {
-					parser_add_token(p, ITALIC_AST)
-					p.pending = char
-				}
-				continue
+		case STRONG_UND: {
+			/** @type {string    } */ let symbol = '*'
+			/** @type {Token_Type} */ let italic = ITALIC_AST
+			if (in_token === STRONG_UND) {
+				symbol = '_'
+				italic = ITALIC_UND
 			}
-            break
-        case STRONG_UND:
-            if ("_" === p.pending) {
+			if (symbol === p.pending) {
 				parser_add_text(p)
-				if ('_' === char) {
+				if (symbol === char) {
 					parser_end_token(p)
 				} else {
-					parser_add_token(p, ITALIC_UND)
+					parser_add_token(p, italic)
 					p.pending = char
 				}
 				continue
 			}
 			break
+		}
 		case ITALIC_AST:
+		case ITALIC_UND: {
+			/** @type {string    } */ let symbol = '*'
+			/** @type {Token_Type} */ let strong = STRONG_AST
+			if (in_token === ITALIC_UND) {
+				symbol = '_'
+				strong = STRONG_UND
+			}
 			switch (p.pending) {
-			case "*":
-				if ('*' === char) {
+			case symbol:
+				if (symbol === char) {
 					/* Decide between ***bold>em**em* and **bold*bold>em***
 					                             ^                       ^
 					   With the help of the next character
 					*/
-					if (p.types[p.len-1] === STRONG_AST) {
+					if (p.types[p.len-1] === strong) {
 						p.pending = pending_with_char
 					}
 					/* *em**bold
@@ -315,7 +318,7 @@ export function parser_write(p, chunk) {
 					*/
 					else {
 						parser_add_text(p)
-						parser_add_token(p, STRONG_AST)
+						parser_add_token(p, strong)
 					}
 				}
 				/* *em*foo
@@ -327,62 +330,21 @@ export function parser_write(p, chunk) {
 					p.pending = char
 				}
 				continue
-			case "**":
+			case symbol+symbol:
 				parser_add_text(p)
 				parser_end_token(p)
 				parser_end_token(p)
 				/* ***bold>em**em* or **bold*bold>em***
 				               ^                      ^
 				*/
-				if ('*' !== char) {
-					parser_add_token(p, ITALIC_AST)
+				if (symbol !== char) {
+					parser_add_token(p, in_token)
 					p.pending = char
 				}
 				continue
 			}
 			break
-		case ITALIC_UND:
-			switch (p.pending) {
-			case "_":
-				if ('_' === char) {
-					/* Decide between ___bold>em__em_ and __bold_bold>em___
-					                             ^                       ^
-					   With the help of the next character
-					*/
-					if (p.types[p.len-1] === STRONG_UND) {
-						p.pending = pending_with_char
-					}
-					/* _em__bold
-					       ^
-					*/
-					else {
-						parser_add_text(p)
-						parser_add_token(p, STRONG_UND)
-					}
-				}
-				/* _em_foo
-					   ^
-				*/
-				else {
-					parser_add_text(p)
-					parser_end_token(p)
-					p.pending = char
-				}
-				continue
-			case "__":
-				parser_add_text(p)
-				parser_end_token(p)
-				parser_end_token(p)
-				/* ___bold>em__em_ or __bold_bold>em___
-				               ^                      ^
-				*/
-				if ('_' !== char) {
-					parser_add_token(p, ITALIC_UND)
-					p.pending = char
-				}
-				continue
-			}
-			break
+		}
 		case LINK:
 		case IMAGE:
 			if (']' === p.pending) {
