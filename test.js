@@ -6,6 +6,7 @@ import * as mds    from "./mds/mds.js"
 /**
  * @typedef {(string | Test_Renderer_Node)[]} Children
  * @typedef {Map<Test_Renderer_Node, Test_Renderer_Node>} Parent_Map
+ * @typedef {{[key in mds.Attr_Type]?: string}} Node_Attrs
  *
  * @typedef  {object} Test_Renderer_Data
  * @property {Test_Renderer_Node} root
@@ -15,11 +16,13 @@ import * as mds    from "./mds/mds.js"
  * @typedef  {object} Test_Renderer_Node
  * @property {mds.Token_Type} type
  * @property {Children      } children
+ * @property {Node_Attrs=   } attrs
  *
  * @typedef {mds.Renderer         <Test_Renderer_Data>} Test_Renderer
  * @typedef {mds.Renderer_Add_Node<Test_Renderer_Data>} Test_Add_Node
  * @typedef {mds.Renderer_End_Node<Test_Renderer_Data>} Test_End_Node
  * @typedef {mds.Renderer_Add_Text<Test_Renderer_Data>} Test_Add_Text
+ * @typedef {mds.Renderer_Set_Attr<Test_Renderer_Data>} Test_Set_Attr
  */
 
 /** @returns {Test_Renderer} */
@@ -33,6 +36,7 @@ function test_renderer() {
 		add_node: test_renderer_add_node,
 		end_node: test_renderer_end_node,
 		add_text: test_renderer_add_text,
+		set_attr: test_renderer_set_attr,
 		data    : {
 			parent_map: new Map(),
 			root: root,
@@ -41,7 +45,7 @@ function test_renderer() {
 	}
 }
 /** @type {Test_Add_Node} */
-function test_renderer_add_node(type, data) {
+function test_renderer_add_node(data, type) {
 	/** @type {Test_Renderer_Node} */
     const node = {type, children: []}
 	const parent = data.node
@@ -50,7 +54,7 @@ function test_renderer_add_node(type, data) {
 	data.node = node
 }
 /** @type {Test_Add_Text} */
-function test_renderer_add_text(text, data) {
+function test_renderer_add_text(data, text) {
 	if (text === "") return
 
 	if (text !== "\n" &&
@@ -67,6 +71,16 @@ function test_renderer_end_node(data) {
 	const parent = data.parent_map.get(data.node)
 	assert.notEqual(parent, undefined)
 	data.node = /** @type {Test_Renderer_Node} */(parent)
+}
+/** @type {Test_Set_Attr} */
+function test_renderer_set_attr(data, type, value) {
+	if (value.length === 0) return
+
+	if (data.node.attrs === undefined) {
+		data.node.attrs = {[type]: value}
+	} else {
+		data.node.attrs[type] = value
+	}
 }
 
 /**
@@ -238,7 +252,8 @@ test_single_write("Code_Block with language",
 	"```js\nfoo\n```",
 	[{
 		type    : mds.Token_Type.Code_Block,
-		children: ["foo"]
+		children: ["foo"],
+		attrs   : {[mds.Attr_Type.Lang]: "js"}
 	}]
 )
 
@@ -326,6 +341,7 @@ test_single_write("Link",
 		type    : mds.Token_Type.Paragraph,
 		children: [{
 			type    : mds.Token_Type.Link,
+			attrs   : {[mds.Attr_Type.Href]: "url"},
 			children: ["title"],
 		}]
 	}]
@@ -337,6 +353,7 @@ test_single_write("Link with code",
 		type    : mds.Token_Type.Paragraph,
 		children: [{
 			type    : mds.Token_Type.Link,
+			attrs   : {[mds.Attr_Type.Href]: "url"},
 			children: [{
 				type    : mds.Token_Type.Code_Inline,
 				children: ["title"],
@@ -351,6 +368,7 @@ test_single_write("Image",
 		type    : mds.Token_Type.Paragraph,
 		children: [{
 			type    : mds.Token_Type.Image,
+			attrs   : {[mds.Attr_Type.Src]: "url"},
 			children: ["title"],
 		}]
 	}]
@@ -362,6 +380,7 @@ test_single_write("Image with code",
 		type    : mds.Token_Type.Paragraph,
 		children: [{
 			type    : mds.Token_Type.Image,
+			attrs   : {[mds.Attr_Type.Src]: "url"},
 			children: ["`title`"],
 		}]
 	}]
@@ -373,8 +392,10 @@ test_single_write("Link with Image",
 		type    : mds.Token_Type.Paragraph,
 		children: [{
 			type    : mds.Token_Type.Link,
+			attrs   : {[mds.Attr_Type.Href]: "href"},
 			children: [{
 				type    : mds.Token_Type.Image,
+				attrs   : {[mds.Attr_Type.Src]: "src"},
 				children: ["title"],
 			}],
 		}]
@@ -406,6 +427,7 @@ test_single_write("Un-Escaped link Both",
 		type    : mds.Token_Type.Paragraph,
 		children: ["\\", {
 			type    : mds.Token_Type.Link,
+			attrs   : {[mds.Attr_Type.Href]: "url"},
 			children: ["foo\\"],
 		}]
 	}]
@@ -483,5 +505,5 @@ for (const {c, italic, strong} of [{
 				children: ["em"]
 			}]
 		}]
-	)	
+	)
 }

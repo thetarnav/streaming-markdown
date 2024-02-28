@@ -64,8 +64,9 @@ mds.parser_end(parser)
     - [x] Single line breaks don't end tokens
     - [x] Escaping line breaks
 - [x] Headers
-- [x] code block with triple backticks
-    - [ ] send language to renderer
+- [ ] Code Block with indent
+- [x] Code Block with triple backticks
+    - [x] language attr
 - [x] `inline code` with backticks
 - [x] *italic* with single asterisks
 - [x] **Bold** with double asterisks
@@ -76,12 +77,13 @@ mds.parser_end(parser)
     - [x] ***bold>em*bold**
     - [x] *em**em>bold***
     - [x] ***bold>em**em*
+- [ ] Strikethrough
 - [x] Escape characters (e.g. \* or \_ with \\\* or \\\_)
 - [x] \[Link\](url)
-    - [ ] href attr
+    - [x] href attr
     - [x] Escaping escaping bug: \\[Link\\](url)
 - [x] Images
-    - [ ] src attr
+    - [x] src attr
 - [ ] Lists
 - [ ] Blockquotes
 - [ ] Tables

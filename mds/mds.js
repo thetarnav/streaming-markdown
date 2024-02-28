@@ -81,6 +81,29 @@ export function token_type_to_string(type) {
 	}
 }
 
+export const
+	HREF = 1,
+	SRC  = 2,
+	LANG = 4
+
+/** @enum {(typeof Attr_Type)[keyof typeof Attr_Type]} */
+export const Attr_Type = /** @type {const} */({
+	Href: HREF,
+	Src:  SRC,
+	Lang: LANG,
+})
+
+/**
+ * @param   {Attr_Type} type
+ * @returns {string    } */
+export function attr_type_to_html_attr(type) {
+	switch (type) {
+	case HREF: return "href"
+	case SRC : return "src"
+	case LANG: return "lang"
+	}
+}
+
 /**
  * @typedef {import("./t.js").Any_Renderer} Any_Renderer
  * @typedef {import("./t.js").Parser      } Parser
@@ -117,7 +140,7 @@ export function parser_end(p) {
 export function parser_add_text(p) {
 	if (p.text.length === 0) return
 	console.assert(p.len > 0, "Never adding text to root")
-	p.renderer.add_text(p.text, p.renderer.data)
+	p.renderer.add_text(p.renderer.data, p.text)
 	p.text = ""
 }
 
@@ -139,7 +162,7 @@ export function parser_add_token(p, type) {
 	p.pending = ""
 	p.len += 1
 	p.types[p.len] = type
-	p.renderer.add_node(type, p.renderer.data)
+	p.renderer.add_node(p.renderer.data, type)
 }
 
 /**
@@ -247,9 +270,12 @@ export function parser_write(p, chunk) {
 				}
 				continue
 			default: /* parsing langiage */
-				p.code_block = '\n' === char
-					? 1
-					: p.code_block + char
+				if ('\n' === char) {
+					p.renderer.set_attr(p.renderer.data, LANG, p.code_block)
+					p.code_block = 1
+				} else {
+					p.code_block += char
+				}
 				continue
 			}
 		}
@@ -359,6 +385,9 @@ export function parser_write(p, chunk) {
 						  ^
 				*/
 				if (')' === char) {
+					const type = in_token === LINK ? HREF : SRC
+					const url = p.pending.slice(2)
+					p.renderer.set_attr(p.renderer.data, type, url)
 					parser_end_token(p)
 				} else {
 					p.pending += char
@@ -381,7 +410,7 @@ export function parser_write(p, chunk) {
 			}
 			/* Line break */
 			else {
-				p.renderer.add_text('\n', p.renderer.data)
+				p.renderer.add_text(p.renderer.data, '\n')
 				p.pending = char
 			}
 			continue
@@ -489,6 +518,7 @@ export function parser_write(p, chunk) {
  * @typedef {import("./t.js").Default_Renderer_Add_Node} Default_Renderer_Add_Node
  * @typedef {import("./t.js").Default_Renderer_End_Node} Default_Renderer_End_Node
  * @typedef {import("./t.js").Default_Renderer_Add_Text} Default_Renderer_Add_Text
+ * @typedef {import("./t.js").Default_Renderer_Set_Attr} Default_Renderer_Set_Attr
  */
 
 /**
@@ -499,6 +529,7 @@ export function default_renderer(root) {
 		add_node: default_add_node,
 		end_node: default_end_node,
 		add_text: default_add_text,
+		set_attr: default_set_attr,
 		data    : {
 			nodes: /**@type {*}*/([root,,,,,]),
 			index: 0,
@@ -507,7 +538,7 @@ export function default_renderer(root) {
 }
 
 /** @type {Default_Renderer_Add_Node} */
-export function default_add_node(type, data) {
+export function default_add_node(data, type) {
 	/**@type {HTMLElement}*/ let mount
 	/**@type {HTMLElement}*/ let slot
 
@@ -545,12 +576,17 @@ export function default_end_node(data) {
 }
 
 /** @type {Default_Renderer_Add_Text} */
-export function default_add_text(text, data) {
+export function default_add_text(data, text) {
 	switch (text) {
 	case ""  : break
 	case "\n": data.nodes[data.index].appendChild(document.createElement("br")) ;break
 	default  : data.nodes[data.index].appendChild(document.createTextNode(text))
 	}
+}
+
+/** @type {Default_Renderer_Set_Attr} */
+export function default_set_attr(data, type, value) {
+	data.nodes[data.index].setAttribute(attr_type_to_html_attr(type), value)
 }
 
 
@@ -559,6 +595,7 @@ export function default_add_text(text, data) {
  * @typedef {import("./t.js").Logger_Renderer_Add_Node} Logger_Renderer_Add_Node
  * @typedef {import("./t.js").Logger_Renderer_End_Node} Logger_Renderer_End_Node
  * @typedef {import("./t.js").Logger_Renderer_Add_Text} Logger_Renderer_Add_Text
+ * @typedef {import("./t.js").Logger_Renderer_Set_Attr} Logger_Renderer_Set_Attr
  */
 
 /** @returns {Logger_Renderer} */
@@ -568,11 +605,12 @@ export function logger_renderer() {
 		add_node: logger_add_node,
 		end_node: logger_end_node,
 		add_text: logger_add_text,
+		set_attr: logger_set_attr,
 	}
 }
 
 /** @type {Logger_Renderer_Add_Node} */
-export function logger_add_node(type, data) {
+export function logger_add_node(data, type) {
 	console.log("add_node:", token_type_to_string(type))
 }
 
@@ -582,6 +620,11 @@ export function logger_end_node(data) {
 }
 
 /** @type {Logger_Renderer_Add_Text} */
-export function logger_add_text(text, data) {
-	console.log('add_text: "' + text + '"')
+export function logger_add_text(data, text) {
+	console.log('add_text: "%s"', text)
+}
+
+/** @type {Logger_Renderer_Set_Attr} */
+export function logger_set_attr(data, type, value) {
+	console.log('set_attr: %s="%s"', attr_type_to_html_attr(type), value)
 }
