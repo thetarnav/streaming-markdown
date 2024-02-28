@@ -145,12 +145,12 @@ test_single_write("Line Breaks",
 )
 
 test_single_write("Line Breaks with Italic",
-	"*" + content_1 + "\n" + content_2 + "*",
+	"*a\nb*",
 	[{
 		type    : mds.Token_Type.Paragraph,
 		children: [{
 			type    : mds.Token_Type.Italic_Ast,
-			children: [content_1, "\n", content_2]
+			children: ["a", "\n", "b"]
 		}],
 	}]
 )
@@ -181,6 +181,28 @@ test_single_write("Paragraph with Italic",
 		children: [{
 			type    : mds.Token_Type.Italic_Ast,
 			children: [content_1]
+		}],
+	}]
+)
+
+test_single_write("Code Inline",
+	"`a`",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: [{
+			type    : mds.Token_Type.Code_Inline,
+			children: ["a"]
+		}],
+	}]
+)
+
+test_single_write("Code with line break",
+	"`a\nb`",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: [{
+			type    : mds.Token_Type.Code_Inline,
+			children: ["a", "\n", "b"]
 		}],
 	}]
 )

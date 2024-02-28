@@ -189,6 +189,18 @@ export function parser_write(p, chunk) {
 				continue
 			}
 
+			/* `Code Inline` */
+			if ('`' === p.pending &&
+				"\n"!== char &&
+				'`' !== char
+			) {
+				parser_add_token(p, PARAGRAPH)
+				parser_add_text(p)
+				parser_add_token(p, CODE_INLINE)
+				p.text = char
+				continue
+			}
+
 			parser_add_token(p, PARAGRAPH)
 			p.text = p.pending
 			p.pending = char
@@ -242,38 +254,17 @@ export function parser_write(p, chunk) {
 			}
 		}
 		case CODE_INLINE: {
-			if ("\n" === p.pending) {
-				parser_add_text(p)
-
-				switch (char) {
-				case '\n':
-					while (p.len > 0) parser_end_token(p)
-					continue
-				case '`':
-					p.renderer.add_text('\n', p.renderer.data)
-					parser_end_token(p)
-					continue
-				default:
-					p.renderer.add_text('\n', p.renderer.data)
-					continue
-				}
-			}
-
-			switch (char) {
-			case '\n':
-				p.pending = "\n"
+			if ('\n' === char) {
+				p.pending = char
 				continue
-			case '`':
+			}
+			if ("`" === char) {
 				p.text += p.pending
-				p.pending = ""
 				parser_add_text(p)
 				parser_end_token(p)
 				continue
-			default:
-				p.text += p.pending + char
-				p.pending = ""
-				continue
 			}
+			break
 		}
 		case STRONG_AST:
 		case STRONG_UND: {
@@ -377,6 +368,24 @@ export function parser_write(p, chunk) {
 			break
 		}
 
+		/* Newline */
+		if ('\n' === p.pending[0]) {
+			parser_add_text(p)
+			if ('\n' === char) {
+				while (p.len > 0) parser_end_token(p)
+			} else {
+				p.renderer.add_text('\n', p.renderer.data)
+				p.pending = char
+			}
+			continue
+		}
+
+		if (in_token === CODE_INLINE) {
+			p.text += p.pending + char
+			p.pending = ""
+			continue
+		}
+
 		/*
 		Escape character
 		*/
@@ -396,18 +405,6 @@ export function parser_write(p, chunk) {
 			continue
 		}
 
-		/* Newline */
-		if ('\n' === p.pending[0]) {
-			parser_add_text(p)
-			if ('\n' === char) {
-				while (p.len > 0) parser_end_token(p)
-			} else {
-				p.renderer.add_text('\n', p.renderer.data)
-				p.pending = char
-			}
-			continue
-		}
-
 		if (in_token === IMAGE) {
 			p.text += p.pending
 			p.pending = char
@@ -421,7 +418,7 @@ export function parser_write(p, chunk) {
 		) {
 			parser_add_text(p)
 			parser_add_token(p, CODE_INLINE)
-			p.pending = char
+			p.text = char
 			continue
 		}
 
