@@ -8,7 +8,7 @@
 
 Install [`streaming-markdown` package](https://www.npmjs.com/package/streaming-markdown) from npm.
 
-```
+```bash
 npm install streaming-markdown
 ```
 
@@ -36,13 +36,13 @@ Then, you can start streaming markdown to the `Parser` by calling `parser_write`
 mds.parser_write(parser, "# Streaming Markdown\n\n")
 ```
 
-*You can write as **many times** as needed to stream the markdown.*
+*You can write **as many times as you want** to stream the markdown.*
 
 The parser is optimistic.
 When it sees the start of an inline code block or code block,
 it will immediately style the element accordingly.
 
-E.g. "\`print("hello wor" should be displayed as `print("hello wor
+E.g. "\`print("hello wor" should be displayed as `print("hello wor`
 
 While the text is streamed in, the user should be able to select the text that has already been streamed in and copy it.
 *(The parser is only adding new elements to the DOM, not modifying the existing ones.)*

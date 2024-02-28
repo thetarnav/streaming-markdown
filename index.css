@@ -1,3 +1,11 @@
+:root {
+	--gray-1: #0A0708;
+	--gray-2: #4E4D4D;
+	--gray-3: #B1B1B1;
+	--gray-4: #d3cfce;
+	--code: #de7436;
+	--link: #1e77dc;
+}
 html {
 	font-size: 18px;
 	/* 1.5rem - 24px */
@@ -10,8 +18,8 @@ html {
 		"wdth" 100;
 }
 body {
-    background-color: #0A0708;
-    color: #B1B1B1;
+    background-color: var(--gray-1);
+    color: var(--gray-3);
     margin: 2rem;
 }
 
@@ -27,7 +35,7 @@ body {
     margin: 0 auto;
 }
 .prose *::before, .prose *::after {
-	color: #444;
+	color: var(--gray-2);
 	font-size: 18px;
 	font-weight: 400;
 	font-family: monospace;
@@ -41,11 +49,12 @@ body {
 }
 .prose :is(h1, h2) {
 	margin: 2rem 0
-	        1rem;
+            1rem;
+	color: var(--gray-4);
 }
 .prose :not(pre) > code {
     border-radius: 3px;
-	color: #de7436;
+	color: var(--code);
 }
 .prose :not(pre) > code::before,
 .prose :not(pre) > code::after {
@@ -53,24 +62,25 @@ body {
 }
 .prose pre {
 	position: relative;
-    border-radius: 6px;
-    background-color: #222;
-    border: 1px solid #333;
-    padding: 1.5rem;
+    background-color: var(--gray-1);
+    border: 1px solid var(--gray-2);
+	border-radius: 4px;
+    padding: 1.5rem 1ch;
+	margin: 0 -1ch;
     overflow-x: auto;
 }
-.prose pre::before, 
-.prose pre::after {
-	content: "```";
-	color: #666;
+.prose pre > code::before, 
+.prose pre > code::after {
 	position: absolute;
-	left: 0;
+	left: 1ch;
 	display: block;
 }
-.prose pre::before {
+.prose pre > code::before {
+	content: "```" attr(lang);
 	top: 0;
 }
-.prose pre::after {
+.prose pre > code::after {
+	content: "```";
 	bottom: 0;
 }
 .prose h1::before {
@@ -91,9 +101,6 @@ body {
 .prose h6::before {
 	content: "###### ";
 }
-.prose span {
-    outline: 1px solid #64705d;
-}
 .prose em::after,
 .prose em::before {
     content: "*";
@@ -104,7 +111,7 @@ body {
 }
 
 .prose a {
-	color: #1e77dc;
+	color: var(--link);
 }
 .prose a::before {
 	content: "[";
