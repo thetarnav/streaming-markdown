@@ -21,7 +21,7 @@ html {
 /* Larger font-size on mobile */
 @media (max-width: 1024px) {
 	html {
-		font-size: 20px;
+		font-size: 22px;
 	}
 }
 
