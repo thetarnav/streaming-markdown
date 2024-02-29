@@ -17,6 +17,14 @@ html {
 	font-variation-settings:
 		"wdth" 100;
 }
+
+/* Larger font-size on mobile */
+@media (max-width: 1024px) {
+	html {
+		font-size: 20px;
+	}
+}
+
 body {
     background-color: var(--gray-1);
     color: var(--gray-3);
