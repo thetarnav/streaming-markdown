@@ -174,13 +174,6 @@ export function parser_add_token(p, type) {
 }
 
 /**
- * @param   {Parser} p
- * @returns {void  } */
-export function parser_add_paragraph(p) {
-	if (p.len === 0) parser_add_token(p, PARAGRAPH)
-}
-
-/**
  * Parse and render another chunk of markdown.
  * @param   {Parser} p
  * @param   {string} chunk
@@ -228,22 +221,28 @@ export function parser_write(p, chunk) {
 				continue
 			}
 
+			switch (p.pending) {
 			/* `Code Inline` */
-			if ('`' === p.pending &&
-				'\n'!== char &&
-				'`' !== char
-			) {
+			case "`":
 				parser_add_token(p, PARAGRAPH)
 				parser_add_text(p)
 				parser_add_token(p, CODE_INLINE)
 				p.text = char
 				continue
+			/* Trim leading spaces */
+			case " ":
+			case "  ":
+			case "   ":
+				parser_add_token(p, PARAGRAPH)
+				p.pending = char
+				continue
+			default:
+				p.text = p.pending
+				parser_add_token(p, PARAGRAPH)
+				p.pending = char
+				continue
 			}
 
-			p.text = p.pending
-			parser_add_token(p, PARAGRAPH)
-			p.pending = char
-			continue
 		}
 		case CODE_BLOCK:
 			switch (pending_with_char) {
@@ -548,6 +547,11 @@ export function parser_write(p, chunk) {
 			) {
 				parser_add_text(p)
 				parser_add_token(p, IMAGE)
+				continue
+			}
+			break
+		case " ":
+			if (char === " ") {
 				continue
 			}
 			break

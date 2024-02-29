@@ -196,6 +196,33 @@ test_single_write("Paragraph with Italic",
 	}]
 )
 
+test_single_write("Paragraph trim leading spaces",
+	"  foo",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: ["foo"],
+	}]
+)
+
+test_single_write("Trim too many spaces",
+	"foo       bar",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: ["foo bar"],
+	}]
+)
+
+test_single_write("Trim too many spaces in italic",
+	"*foo       bar*",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: [{
+			type    : mds.Token_Type.Italic_Ast,
+			children: ["foo bar"]
+		}],
+	}]
+)
+
 test_single_write("Code Inline",
 	"`a`",
 	[{

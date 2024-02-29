@@ -63,7 +63,7 @@ mds.parser_end(parser)
 - [x] Line breaks
     - [x] Single line breaks don't end tokens
     - [x] Escaping line breaks
-- [ ] Remove leading root spaces
+- [x] Trim unnecessary spaces
 - [x] Headers
 - [x] Code Block with indent
 - [x] Code Block with triple backticks
