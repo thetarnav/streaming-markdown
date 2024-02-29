@@ -16,7 +16,7 @@ export const
 	HEADING_4   =    32, //  6
 	HEADING_5   =    64, //  7
 	HEADING_6   =   128, //  8
-	CODE_BLOCK  =   256, //  9
+	CODE_FENCE  =   256, //  9
 	CODE_INLINE =   512, // 10
 	ITALIC_AST  =  1024, // 11
 	ITALIC_UND  =  2048, // 12
@@ -27,7 +27,7 @@ export const
 	IMAGE       = 65536, // 17
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
 	HEADING     =   252,
-	/** `CODE_INLINE | CODE_BLOCK` */
+	/** `CODE_INLINE | code_fence` */
 	CODE        =   768,
 	/** `ITALIC_AST | ITALIC_UND` */
 	ITALIC      =  3072,
@@ -50,7 +50,7 @@ export const Token_Type = /** @type {const} */({
 	Heading_4:   HEADING_4,
 	Heading_5:   HEADING_5,
 	Heading_6:   HEADING_6,
-	Code_Block:  CODE_BLOCK,
+	Code_Fence:  CODE_FENCE,
 	Code_Inline: CODE_INLINE,
 	Italic_Ast:  ITALIC_AST,
 	Italic_Und:  ITALIC_UND,
@@ -74,7 +74,7 @@ export function token_type_to_string(type) {
 	case HEADING_4:  return "Heading_4"
 	case HEADING_5:  return "Heading_5"
 	case HEADING_6:  return "Heading_6"
-	case CODE_BLOCK: return "Code_Block"
+	case CODE_FENCE: return "Code_Fence"
 	case CODE_INLINE:return "Code_Inline"
 	case ITALIC_AST: return "Italic_Ast"
 	case ITALIC_UND: return "Italic_Und"
@@ -125,7 +125,7 @@ export function parser(renderer) {
 		pending   : "",
 		types     : /**@type {*}*/([ROOT,,,,,]),
 		len       : 0,
-		code_block: "",
+		code_fence: "",
 	}
 }
 
@@ -201,7 +201,7 @@ export function parser_write(p, chunk) {
 			case "#### ":   parser_add_token(p, HEADING_4)  ;continue
 			case "##### ":  parser_add_token(p, HEADING_5)  ;continue
 			case "###### ": parser_add_token(p, HEADING_6)  ;continue
-			case "```":     parser_add_token(p, CODE_BLOCK) ;continue
+			case "```":     parser_add_token(p, CODE_FENCE) ;continue
 			case "#":
 			case "##":
 			case "###":
@@ -234,15 +234,15 @@ export function parser_write(p, chunk) {
 			p.pending = char
 			continue
 		}
-		case CODE_BLOCK: {
+		case CODE_FENCE: {
 			console.assert(p.len === 1, "Code block is always a top-level token")
 
-			switch (p.code_block) {
+			switch (p.code_fence) {
 			case 1: /* can end */
 				switch (pending_with_char) {
 				case "\n```":
 				case "```":
-					p.code_block = ""
+					p.code_fence = ""
 					parser_add_text(p)
 					parser_end_token(p)
 					continue
@@ -258,7 +258,7 @@ export function parser_write(p, chunk) {
 					p.text += p.pending
 					p.pending = char
 				} else {
-					p.code_block = 0
+					p.code_fence = 0
 					p.text += pending_with_char
 					p.pending = ""
 				}
@@ -267,7 +267,7 @@ export function parser_write(p, chunk) {
 				console.assert(p.pending.length === 0, "Has pending text but cannot end")
 
 				if ('\n' === char) {
-					p.code_block = 1
+					p.code_fence = 1
 					p.pending = char
 				} else {
 					p.text += p.pending + char
@@ -276,10 +276,10 @@ export function parser_write(p, chunk) {
 				continue
 			default: /* parsing langiage */
 				if ('\n' === char) {
-					p.renderer.set_attr(p.renderer.data, LANG, p.code_block)
-					p.code_block = 1
+					p.renderer.set_attr(p.renderer.data, LANG, p.code_fence)
+					p.code_fence = 1
 				} else {
-					p.code_block += char
+					p.code_fence += char
 				}
 				continue
 			}
@@ -580,7 +580,7 @@ export function default_add_node(data, type) {
 	case CODE_INLINE:mount = slot = document.createElement("code")  ;break
 	case LINK:       mount = slot = document.createElement("a")     ;break
 	case IMAGE:      mount = slot = document.createElement("img")   ;break
-	case CODE_BLOCK:
+	case CODE_FENCE:
 		mount = document.createElement("pre")
 		slot  = document.createElement("code")
 		mount.appendChild(slot)

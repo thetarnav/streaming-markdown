@@ -11,12 +11,12 @@ export type Parser = {
 	types     : Token_Type[]
 	/** Number of tokens in {@link Parser.types types} without root */
 	len       : number
-	/** For Code_Block parsing      \
+	/** For Code_Fence parsing      \
 	 *  string: parsing language    \
 	 *  1     : can end             \
 	 *  0     : cannot end
 	 */
-	code_block: string | 0 | 1
+	code_fence: string | 0 | 1
 }
 
 export type Renderer_Add_Node<TData> = (data: TData, type: Token_Type) => void

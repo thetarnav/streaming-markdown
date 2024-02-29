@@ -232,43 +232,43 @@ test_single_write("Code with two line breaks",
 	}]
 )
 
-test_single_write("Empty Code_Block",
+test_single_write("Empty Code_Fence",
 	"```\n```",
 	[{
-		type    : mds.Token_Type.Code_Block,
+		type    : mds.Token_Type.Code_Fence,
 		children: []
 	}]
 )
 
-test_single_write("Code_Block",
+test_single_write("Code_Fence",
 	"```\nfoo\n```",
 	[{
-		type    : mds.Token_Type.Code_Block,
+		type    : mds.Token_Type.Code_Fence,
 		children: ["foo"]
 	}]
 )
 
-test_single_write("Code_Block with language",
+test_single_write("Code_Fence with language",
 	"```js\nfoo\n```",
 	[{
-		type    : mds.Token_Type.Code_Block,
+		type    : mds.Token_Type.Code_Fence,
 		children: ["foo"],
 		attrs   : {[mds.Attr_Type.Lang]: "js"}
 	}]
 )
 
-test_single_write("Code_Block with backticks inside",
+test_single_write("Code_Fence with backticks inside",
 	"```\na```b\n```",
 	[{
-		type    : mds.Token_Type.Code_Block,
+		type    : mds.Token_Type.Code_Fence,
 		children: ["a```b"]
 	}]
 )
 
-test_single_write("Code_Block with unfinished end backticks",
+test_single_write("Code_Fence with unfinished end backticks",
 	"```\na\n``\n```",
 	[{
-		type    : mds.Token_Type.Code_Block,
+		type    : mds.Token_Type.Code_Fence,
 		children: ["a\n``"]
 	}]
 )
