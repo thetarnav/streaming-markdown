@@ -1,6 +1,6 @@
 # Streaming *Markdown*
 
-[![version](https://img.shields.io/npm/v/streaming-markdown?style=for-the-badge)](https://www.npmjs.com/package/streaming-markdown)
+[![version](https://img.shields.io/npm/v/streaming-markdown?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/streaming-markdown) [![github](https://img.shields.io/badge/GitHub-streaming--markdown-orange?style=for-the-badge&logo=github)](https://github.com/thetarnav/streaming-markdown)
 
 **Experiment making a streaming makdown parser *à la ChatGPT.***
 

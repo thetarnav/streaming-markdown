@@ -31,13 +31,6 @@ body {
     margin: 2rem;
 }
 
-.github-link {
-	position: fixed;
-	z-index: 1000;
-	top: 0;
-	right: 0;
-}
-
 .prose {
     max-width: 80ch;
     margin: 0 auto;
