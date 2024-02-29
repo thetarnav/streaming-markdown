@@ -8,37 +8,38 @@ https://github.com/thetarnav/streaming-markdown
 export * from "./t.js"
 
 export const
-	ROOT        =     1, //  1
-	PARAGRAPH   =     2, //  2
-	HEADING_1   =     4, //  3
-	HEADING_2   =     8, //  4
-	HEADING_3   =    16, //  5
-	HEADING_4   =    32, //  6
-	HEADING_5   =    64, //  7
-	HEADING_6   =   128, //  8
-	CODE_FENCE  =   256, //  9
-	CODE_INLINE =   512, // 10
-	ITALIC_AST  =  1024, // 11
-	ITALIC_UND  =  2048, // 12
-	STRONG_AST  =  4096, // 13
-	STRONG_UND  =  8192, // 14
-	STRIKE      = 16384, // 15
-	LINK        = 32768, // 16
-	IMAGE       = 65536, // 17
+	ROOT        =      1, //  1
+	PARAGRAPH   =      2, //  2
+	HEADING_1   =      4, //  3
+	HEADING_2   =      8, //  4
+	HEADING_3   =     16, //  5
+	HEADING_4   =     32, //  6
+	HEADING_5   =     64, //  7
+	HEADING_6   =    128, //  8
+	CODE_BLOCK  =    256, //  9
+	CODE_FENCE  =    512, // 10
+	CODE_INLINE =   1024, // 11   
+	ITALIC_AST  =   2048, // 12
+	ITALIC_UND  =   4096, // 13
+	STRONG_AST  =   8192, // 14
+	STRONG_UND  =  16384, // 15
+	STRIKE      =  32768, // 16
+	LINK        =  65536, // 17
+	IMAGE       = 131072, // 18
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
-	HEADING     =   252,
-	/** `CODE_INLINE | code_fence` */
-	CODE        =   768,
+	HEADING     =    252,
+	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
+	CODE        =   1792,
 	/** `ITALIC_AST | ITALIC_UND` */
-	ITALIC      =  3072,
+	ITALIC      =   6144,
 	/** `STRONG_AST | STRONG_UND` */
-	STRONG      = 12288,
+	STRONG      =  24576,
 	/** `STRONG_AST | ITALIC_AST` */
-	ASTERISK    =  5120,
+	ASTERISK    =  10240,
 	/** `STRONG_UND | ITALIC_UND` */
-	UNDERSCORE  = 10240,
+	UNDERSCORE  =  20480,
 	/** `CODE | IMAGE` */
-	NO_FORMATTING = 66304
+	NO_FORMATTING = 132864
 
 /** @enum {(typeof Token_Type)[keyof typeof Token_Type]} */
 export const Token_Type = /** @type {const} */({
@@ -50,6 +51,7 @@ export const Token_Type = /** @type {const} */({
 	Heading_4:   HEADING_4,
 	Heading_5:   HEADING_5,
 	Heading_6:   HEADING_6,
+	Code_Block:  CODE_BLOCK,
 	Code_Fence:  CODE_FENCE,
 	Code_Inline: CODE_INLINE,
 	Italic_Ast:  ITALIC_AST,
@@ -74,6 +76,7 @@ export function token_type_to_string(type) {
 	case HEADING_4:  return "Heading_4"
 	case HEADING_5:  return "Heading_5"
 	case HEADING_6:  return "Heading_6"
+	case CODE_BLOCK: return "Code_Block"
 	case CODE_FENCE: return "Code_Fence"
 	case CODE_INLINE:return "Code_Inline"
 	case ITALIC_AST: return "Italic_Ast"
@@ -202,6 +205,11 @@ export function parser_write(p, chunk) {
 			case "##### ":  parser_add_token(p, HEADING_5)  ;continue
 			case "###### ": parser_add_token(p, HEADING_6)  ;continue
 			case "```":     parser_add_token(p, CODE_FENCE) ;continue
+			case "    ":
+			case "   \t":
+			case "  \t":
+			case " \t":
+			case "\t":      parser_add_token(p, CODE_BLOCK) ;continue
 			case "#":
 			case "##":
 			case "###":
@@ -211,6 +219,9 @@ export function parser_write(p, chunk) {
 			case "#######":
 			case "`":
 			case "``":
+			case " ":
+			case "  ":
+			case "   ":
 				p.pending = pending_with_char
 				continue
 			case "\n":
@@ -229,11 +240,37 @@ export function parser_write(p, chunk) {
 				continue
 			}
 
-			parser_add_token(p, PARAGRAPH)
 			p.text = p.pending
+			parser_add_token(p, PARAGRAPH)
 			p.pending = char
 			continue
 		}
+		case CODE_BLOCK:
+			switch (pending_with_char) {
+			case "\n    ":
+			case "\n   \t":
+			case "\n  \t":
+			case "\n \t":
+			case "\n\t":
+				p.text += "\n"
+				p.pending = ""
+				continue
+			case "\n":
+			case "\n ":
+			case "\n  ":
+			case "\n   ":
+				p.pending = pending_with_char
+				continue
+			default:
+				if (p.pending.length !== 0) {
+					parser_add_text(p)
+					parser_end_token(p)
+					p.pending = char
+				} else {
+					p.text += char
+				}
+				continue
+			}
 		case CODE_FENCE: {
 			console.assert(p.len === 1, "Code block is always a top-level token")
 
@@ -580,6 +617,7 @@ export function default_add_node(data, type) {
 	case CODE_INLINE:mount = slot = document.createElement("code")  ;break
 	case LINK:       mount = slot = document.createElement("a")     ;break
 	case IMAGE:      mount = slot = document.createElement("img")   ;break
+	case CODE_BLOCK:
 	case CODE_FENCE:
 		mount = document.createElement("pre")
 		slot  = document.createElement("code")

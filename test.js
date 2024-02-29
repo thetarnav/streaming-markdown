@@ -273,6 +273,70 @@ test_single_write("Code_Fence with unfinished end backticks",
 	}]
 )
 
+for (const indent of [
+	"    ",
+	"   \t",
+	"  \t",
+	" \t",
+	"\t",
+]) {
+	test_single_write("Code_Block",
+		indent + "foo",
+		[{
+			type    : mds.Token_Type.Code_Block,
+			children: ["foo"]
+		}]
+	)
+	
+	{
+		const title = "Code_Block multiple lines"
+		const markdown = 
+			indent + "foo\n"+
+			indent + "bar"
+	
+		t.test(title, () => {
+			const renderer = test_renderer()
+			const parser = mds.parser(renderer)
+		
+			mds.parser_write(parser, markdown)
+			mds.parser_end(parser)
+		
+			assert.deepEqual(renderer.data.root.children, [{
+				type    : mds.Token_Type.Code_Block,
+				children: ["foo\nbar"]
+			}])
+		})
+		
+		t.test(title + " (by char)", () => {
+			const renderer = test_renderer()
+			const parser = mds.parser(renderer)
+		
+			for (const char of markdown) {
+				mds.parser_write(parser, char)
+			}
+			mds.parser_end(parser)
+		
+			assert.deepEqual(renderer.data.root.children, [{
+				type    : mds.Token_Type.Code_Block,
+				children: ["foo", "\n", "bar"]
+			}])
+		})
+	}
+
+	test_single_write("Code_Block end",
+		indent+"foo\n" +
+		"bar",
+		[{
+			type    : mds.Token_Type.Code_Block,
+			children: ["foo"]
+		}, {
+			type    : mds.Token_Type.Paragraph,
+			children: ["bar"]
+		}]
+	)
+}
+
+
 for (const {c, italic, strong} of [{
 	c: "*",
 	italic: mds.Token_Type.Italic_Ast,
