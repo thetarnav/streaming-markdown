@@ -273,39 +273,133 @@ test_single_write("Code_Block with unfinished end backticks",
 	}]
 )
 
-for (const token of [
-	mds.Token_Type.Italic_Ast,
-	mds.Token_Type.Italic_Und,
-	mds.Token_Type.Strong_Ast,
-	mds.Token_Type.Strong_Und,
-]) {
-	/** @type {string} */
-	let char
-	/** @type {string} */
-	let escaped
-	switch (token) {
-		case mds.Token_Type.Italic_Ast: char = "*" ; escaped = "\\*"   ; break
-		case mds.Token_Type.Italic_Und: char = "_" ; escaped = "\\_"   ; break
-		case mds.Token_Type.Strong_Ast: char = "**"; escaped = "\\*\\*"; break
-		case mds.Token_Type.Strong_Und: char = "__"; escaped = "\\_\\_"; break
-		default: throw new Error("Invalid token")
-	}
+for (const {c, italic, strong} of [{
+	c: "*",
+	italic: mds.Token_Type.Italic_Ast,
+	strong: mds.Token_Type.Strong_Ast,
+}, {
+	c: "_",
+	italic: mds.Token_Type.Italic_Und,
+	strong: mds.Token_Type.Strong_Und,
+}]) {
+	const case_1 = ""+c+c+"bold"+c+"bold>em"+c+c+c+""
+	const case_2 = ""+c+c+c+"bold>em"+c+"bold"+c+c+""
+	const case_3 = ""+c+"em"+c+c+"em>bold"+c+c+c+""
+	const case_4 = ""+c+c+c+"bold>em"+c+c+"em"+c+""
 
-	test_single_write(`Escape ${mds.token_type_to_string(token)} Begin`,
-		escaped + "foo",
-		[{
-			type    : mds.Token_Type.Paragraph,
-			children: [char + "foo"]
-		}]
-	)
-
-	test_single_write(`Escape ${mds.token_type_to_string(token)} End`,
-		char + "foo" + escaped,
+	test_single_write("Italic & Bold \""+case_1+"\'",
+		case_1,
 		[{
 			type    : mds.Token_Type.Paragraph,
 			children: [{
-				type    : token,
-				children: ["foo" + char]
+				type    : strong,
+				children: ["bold", {
+					type    : italic,
+					children: ["bold>em"]
+				}]
+			}]
+		}]
+	)
+
+	test_single_write("Italic & Bold \""+case_2+"\'",
+		case_2,
+		[{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : strong,
+				children: [{
+					type    : italic,
+					children: ["bold>em"]
+				},
+				"bold"]
+			}]
+		}]
+	)
+
+	test_single_write("Italic & Bold \""+case_3+"\'",
+		case_3,
+		[{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : italic,
+				children: ["em", {
+					type    : strong,
+					children: ["em>bold"]
+				}]
+			}]
+		}]
+	)
+
+	test_single_write("Italic & Bold \""+case_4+"\'",
+		case_4,
+		[{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : strong,
+				children: [{
+					type    : italic,
+					children: ["bold>em"]
+				}]
+			}, {
+				type    : italic,
+				children: ["em"]
+			}]
+		}]
+	)
+}
+
+for (const {type, c} of [
+	{type: mds.Token_Type.Italic_Ast, c: "*" },
+	{type: mds.Token_Type.Italic_Und, c: "_" },
+	{type: mds.Token_Type.Strong_Ast, c: "**"},
+	{type: mds.Token_Type.Strong_Und, c: "__"},
+	{type: mds.Token_Type.Strike    , c: "~~"},
+]) {
+	let e = ""
+	for (const char of c) {
+		e += "\\" + char
+	}
+
+	test_single_write(mds.token_type_to_string(type),
+		c + "foo" + c,
+		[{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : type,
+				children: ["foo"]
+			}]
+		}]
+	)
+
+	test_single_write(mds.token_type_to_string(type) + " with Code",
+		c + "`foo`" + c,
+		[{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : type,
+				children: [{
+					type    : mds.Token_Type.Code_Inline,
+					children: ["foo"]
+				}]
+			}]
+		}]
+	)
+
+	test_single_write(`Escape ${mds.token_type_to_string(type)} Begin`,
+		e + "foo",
+		[{
+			type    : mds.Token_Type.Paragraph,
+			children: [c + "foo"]
+		}]
+	)
+
+	test_single_write(`Escape ${mds.token_type_to_string(type)} End`,
+		c + "foo" + e,
+		[{
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : type,
+				children: ["foo" + c]
 			}]
 		}]
 	)
@@ -432,78 +526,3 @@ test_single_write("Un-Escaped link Both",
 		}]
 	}]
 )
-
-for (const {c, italic, strong} of [{
-	c: "*",
-	italic: mds.Token_Type.Italic_Ast,
-	strong: mds.Token_Type.Strong_Ast,
-}, {
-	c: "_",
-	italic: mds.Token_Type.Italic_Und,
-	strong: mds.Token_Type.Strong_Und,
-}]) {
-	const case_1 = ""+c+c+"bold"+c+"bold>em"+c+c+c+""
-	const case_2 = ""+c+c+c+"bold>em"+c+"bold"+c+c+""
-	const case_3 = ""+c+"em"+c+c+"em>bold"+c+c+c+""
-	const case_4 = ""+c+c+c+"bold>em"+c+c+"em"+c+""
-
-	test_single_write("Italic & Bold \""+case_1+"\'",
-		case_1,
-		[{
-			type    : mds.Token_Type.Paragraph,
-			children: [{
-				type    : strong,
-				children: ["bold", {
-					type    : italic,
-					children: ["bold>em"]
-				}]
-			}]
-		}]
-	)
-
-	test_single_write("Italic & Bold \""+case_2+"\'",
-		case_2,
-		[{
-			type    : mds.Token_Type.Paragraph,
-			children: [{
-				type    : strong,
-				children: [{
-					type    : italic,
-					children: ["bold>em"]
-				},
-				"bold"]
-			}]
-		}]
-	)
-
-	test_single_write("Italic & Bold \""+case_3+"\'",
-		case_3,
-		[{
-			type    : mds.Token_Type.Paragraph,
-			children: [{
-				type    : italic,
-				children: ["em", {
-					type    : strong,
-					children: ["em>bold"]
-				}]
-			}]
-		}]
-	)
-
-	test_single_write("Italic & Bold \""+case_4+"\'",
-		case_4,
-		[{
-			type    : mds.Token_Type.Paragraph,
-			children: [{
-				type    : strong,
-				children: [{
-					type    : italic,
-					children: ["bold>em"]
-				}]
-			}, {
-				type    : italic,
-				children: ["em"]
-			}]
-		}]
-	)
-}

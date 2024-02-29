@@ -8,34 +8,37 @@ https://github.com/thetarnav/streaming-markdown
 export * from "./t.js"
 
 export const
-	ROOT        = 1,
-	PARAGRAPH   = 2,
-	HEADING_1   = 4,
-	HEADING_2   = 8,
-	HEADING_3   = 16,
-	HEADING_4   = 32,
-	HEADING_5   = 64,
-	HEADING_6   = 128,
-	ITALIC_AST  = 256,
-	ITALIC_UND  = 512,
-	STRONG_AST  = 1024,
-	STRONG_UND  = 2048,
-	CODE_INLINE = 4096,
-	CODE_BLOCK  = 8192,
-	LINK        = 16384,
-	IMAGE       = 32768,
-	/** `STRONG_AST | ITALIC_AST` */
-	ASTERISK    = 1280,
-	/** `STRONG_UND | ITALIC_UND` */
-	UNDERSCORE  = 2560,
-	/** `CODE_INLINE | CODE_BLOCK` */
-	CODE        = 12288,
+	ROOT        =     1, //  1
+	PARAGRAPH   =     2, //  2
+	HEADING_1   =     4, //  3
+	HEADING_2   =     8, //  4
+	HEADING_3   =    16, //  5
+	HEADING_4   =    32, //  6
+	HEADING_5   =    64, //  7
+	HEADING_6   =   128, //  8
+	CODE_BLOCK  =   256, //  9
+	CODE_INLINE =   512, // 10
+	ITALIC_AST  =  1024, // 11
+	ITALIC_UND  =  2048, // 12
+	STRONG_AST  =  4096, // 13
+	STRONG_UND  =  8192, // 14
+	STRIKE      = 16384, // 15
+	LINK        = 32768, // 16
+	IMAGE       = 65536, // 17
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
-	HEADING     = 252,
+	HEADING     =   252,
+	/** `CODE_INLINE | CODE_BLOCK` */
+	CODE        =   768,
 	/** `ITALIC_AST | ITALIC_UND` */
-	ITALIC      = 768,
+	ITALIC      =  3072,
 	/** `STRONG_AST | STRONG_UND` */
-	STRONG      = 3072
+	STRONG      = 12288,
+	/** `STRONG_AST | ITALIC_AST` */
+	ASTERISK    =  5120,
+	/** `STRONG_UND | ITALIC_UND` */
+	UNDERSCORE  = 10240,
+	/** `CODE | IMAGE` */
+	NO_FORMATTING = 66304
 
 /** @enum {(typeof Token_Type)[keyof typeof Token_Type]} */
 export const Token_Type = /** @type {const} */({
@@ -47,12 +50,13 @@ export const Token_Type = /** @type {const} */({
 	Heading_4:   HEADING_4,
 	Heading_5:   HEADING_5,
 	Heading_6:   HEADING_6,
+	Code_Block:  CODE_BLOCK,
+	Code_Inline: CODE_INLINE,
 	Italic_Ast:  ITALIC_AST,
 	Italic_Und:  ITALIC_UND,
 	Strong_Ast:  STRONG_AST,
 	Strong_Und:  STRONG_UND,
-	Code_Inline: CODE_INLINE,
-	Code_Block:  CODE_BLOCK,
+	Strike:      STRIKE,
 	Link:        LINK,
 	Image:       IMAGE,
 })
@@ -70,12 +74,13 @@ export function token_type_to_string(type) {
 	case HEADING_4:  return "Heading_4"
 	case HEADING_5:  return "Heading_5"
 	case HEADING_6:  return "Heading_6"
+	case CODE_BLOCK: return "Code_Block"
+	case CODE_INLINE:return "Code_Inline"
 	case ITALIC_AST: return "Italic_Ast"
 	case ITALIC_UND: return "Italic_Und"
 	case STRONG_AST: return "Strong_Ast"
 	case STRONG_UND: return "Strong_Und"
-	case CODE_INLINE:return "Code_Inline"
-	case CODE_BLOCK: return "Code_Block"
+	case STRIKE:     return "Strike"
 	case LINK:       return "Link"
 	case IMAGE:      return "Image"
 	}
@@ -362,6 +367,13 @@ export function parser_write(p, chunk) {
 			}
 			break
 		}
+		case STRIKE:
+			if ("~~" === pending_with_char) {
+				parser_add_text(p)
+				parser_end_token(p)
+				continue
+			}
+			break
 		case LINK:
 		case IMAGE:
 			if (']' === p.pending) {
@@ -416,7 +428,7 @@ export function parser_write(p, chunk) {
 			continue
 		/* Escape character */
 		case "\\":
-			if (in_token === CODE_INLINE) break
+			if (in_token & CODE) break
 
 			if ('\n' === char) {
 				// Escaped newline has the same affect as unescaped one
@@ -424,16 +436,15 @@ export function parser_write(p, chunk) {
 			} else {
 				const char_code = char.charCodeAt(0)
 				p.pending = ""
-				p.text +=
-					(char_code >= 48 && char_code <= 90) || // 0-9 A-Z
-					(char_code >= 97 && char_code <= 122)   // a-z
-					? pending_with_char
-					: char
+				p.text += (char_code >= 48 && char_code <= 90) || // 0-9 A-Z
+				          (char_code >= 97 && char_code <= 122)   // a-z
+				          ? pending_with_char
+				          : char
 			}
 			continue
 		/* `Code Inline` */
 		case "`":
-			if (!(in_token & (CODE_INLINE | IMAGE)) &&
+			if (!(in_token & NO_FORMATTING) &&
 				"\n"!== char &&
 				'`' !== char
 			) {
@@ -444,7 +455,7 @@ export function parser_write(p, chunk) {
 			}
 			break
 		case "*":
-			if (in_token & (CODE_INLINE | ASTERISK | IMAGE)) break
+			if (in_token & (NO_FORMATTING | ASTERISK)) break
 
 			parser_add_text(p)
 			/* **Strong** */
@@ -458,7 +469,7 @@ export function parser_write(p, chunk) {
 			}
 			continue
 		case "_":
-			if (in_token & (CODE_INLINE | UNDERSCORE | IMAGE)) break
+			if (in_token & (NO_FORMATTING | UNDERSCORE)) break
 
 			parser_add_text(p)
 			/* __Strong__ */
@@ -471,9 +482,19 @@ export function parser_write(p, chunk) {
 				p.pending = char
 			}
 			continue
+		/* ~~Strike~~ */
+		case "~":
+			if (!(in_token & (NO_FORMATTING | STRIKE)) &&
+				"~" === char
+			) {
+				parser_add_text(p)
+				parser_add_token(p, STRIKE)
+				continue
+			}
+			break
 		/* [Image](url) */
 		case "[":
-			if (!(in_token & (CODE_INLINE | IMAGE | LINK)) &&
+			if (!(in_token & (NO_FORMATTING | LINK)) &&
 				"\n"!== char &&
 				"]" !== char
 			) {
@@ -485,7 +506,7 @@ export function parser_write(p, chunk) {
 			break
 		/* ![Image](url) */
 		case "!":
-			if (!(in_token & (CODE_INLINE | IMAGE)) &&
+			if (!(in_token & NO_FORMATTING) &&
 				"[" === char
 			) {
 				parser_add_text(p)
@@ -555,6 +576,7 @@ export function default_add_node(data, type) {
 	case ITALIC_UND: mount = slot = document.createElement("em")    ;break
 	case STRONG_AST:
 	case STRONG_UND: mount = slot = document.createElement("strong");break
+	case STRIKE:     mount = slot = document.createElement("s")     ;break
 	case CODE_INLINE:mount = slot = document.createElement("code")  ;break
 	case LINK:       mount = slot = document.createElement("a")     ;break
 	case IMAGE:      mount = slot = document.createElement("img")   ;break

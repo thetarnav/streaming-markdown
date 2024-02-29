@@ -77,7 +77,7 @@ mds.parser_end(parser)
     - [x] ***bold>em*bold**
     - [x] *em**em>bold***
     - [x] ***bold>em**em*
-- [ ] Strikethrough
+- [x] ~~Strikethrough~~ with double tildes
 - [x] Escape characters (e.g. \* or \_ with \\\* or \\\_)
 - [x] \[Link\](url)
     - [x] href attr
