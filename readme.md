@@ -6,7 +6,7 @@
 
 ## Installation
 
-Install [`streaming-markdown` package](https://www.npmjs.com/package/streaming-markdown) from npm.
+Install `streaming-markdown` package from npm.
 
 ```bash
 npm install streaming-markdown
@@ -85,7 +85,10 @@ mds.parser_end(parser)
     - [x] Escaping escaping bug: \\[Link\\](url)
 - [x] Images
     - [x] src attr
-- [ ] Lists
+- [ ] Unordered lists
+- [ ] Ordered lists
+- [ ] Check lists
+- [ ] Nested lists
 - [ ] Blockquotes
 - [ ] Tables
 - [ ] Html tags (e.g. `<div>`, `<span>`, `<a>`, `<img>`, etc.)

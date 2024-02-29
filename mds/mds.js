@@ -27,19 +27,19 @@ export const
 	LINK        =  65536, // 17
 	IMAGE       = 131072, // 18
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
-	HEADING     =    252,
+	ANY_HEADING =    252,
 	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
-	CODE        =   1792,
+	ANY_CODE    =   1792,
 	/** `ITALIC_AST | ITALIC_UND` */
-	ITALIC      =   6144,
+	ANY_ITALIC  =   6144,
 	/** `STRONG_AST | STRONG_UND` */
-	STRONG      =  24576,
+	ANY_STRONG  =  24576,
 	/** `STRONG_AST | ITALIC_AST` */
-	ASTERISK    =  10240,
+	ANY_AST     =  10240,
 	/** `STRONG_UND | ITALIC_UND` */
-	UNDERSCORE  =  20480,
+	ANY_UND     =  20480,
 	/** `CODE | IMAGE` */
-	NO_FORMATTING = 132864
+	NO_NESTING  = 132864
 
 /** @enum {(typeof Token_Type)[keyof typeof Token_Type]} */
 export const Token_Type = /** @type {const} */({
@@ -230,7 +230,7 @@ export function parser_write(p, chunk) {
 
 			/* `Code Inline` */
 			if ('`' === p.pending &&
-				"\n"!== char &&
+				'\n'!== char &&
 				'`' !== char
 			) {
 				parser_add_token(p, PARAGRAPH)
@@ -413,7 +413,7 @@ export function parser_write(p, chunk) {
 			break
 		case LINK:
 		case IMAGE:
-			if (']' === p.pending) {
+			if ("]" === p.pending) {
 				/*
 				[Link](url)
 					 ^
@@ -427,8 +427,8 @@ export function parser_write(p, chunk) {
 				}
 				continue
 			}
-			if (p.pending[0] === "]" &&
-				p.pending[1] === "(") {
+			if (p.pending[0] === ']' &&
+				p.pending[1] === '(') {
 				/*
 				[Link](url)
 						  ^
@@ -465,7 +465,7 @@ export function parser_write(p, chunk) {
 			continue
 		/* Escape character */
 		case "\\":
-			if (in_token & CODE) break
+			if (in_token & ANY_CODE) break
 
 			if ('\n' === char) {
 				// Escaped newline has the same affect as unescaped one
@@ -481,8 +481,8 @@ export function parser_write(p, chunk) {
 			continue
 		/* `Code Inline` */
 		case "`":
-			if (!(in_token & NO_FORMATTING) &&
-				"\n"!== char &&
+			if (!(in_token & NO_NESTING) &&
+				'\n'!== char &&
 				'`' !== char
 			) {
 				parser_add_text(p)
@@ -492,7 +492,7 @@ export function parser_write(p, chunk) {
 			}
 			break
 		case "*":
-			if (in_token & (NO_FORMATTING | ASTERISK)) break
+			if (in_token & (NO_NESTING | ANY_AST)) break
 
 			parser_add_text(p)
 			/* **Strong** */
@@ -506,7 +506,7 @@ export function parser_write(p, chunk) {
 			}
 			continue
 		case "_":
-			if (in_token & (NO_FORMATTING | UNDERSCORE)) break
+			if (in_token & (NO_NESTING | ANY_UND)) break
 
 			parser_add_text(p)
 			/* __Strong__ */
@@ -521,8 +521,8 @@ export function parser_write(p, chunk) {
 			continue
 		/* ~~Strike~~ */
 		case "~":
-			if (!(in_token & (NO_FORMATTING | STRIKE)) &&
-				"~" === char
+			if (!(in_token & (NO_NESTING | STRIKE)) &&
+				'~' === char
 			) {
 				parser_add_text(p)
 				parser_add_token(p, STRIKE)
@@ -531,9 +531,9 @@ export function parser_write(p, chunk) {
 			break
 		/* [Image](url) */
 		case "[":
-			if (!(in_token & (NO_FORMATTING | LINK)) &&
-				"\n"!== char &&
-				"]" !== char
+			if (!(in_token & (NO_NESTING | LINK)) &&
+				'\n'!== char &&
+				']' !== char
 			) {
 				parser_add_text(p)
 				parser_add_token(p, LINK)
@@ -543,8 +543,8 @@ export function parser_write(p, chunk) {
 			break
 		/* ![Image](url) */
 		case "!":
-			if (!(in_token & NO_FORMATTING) &&
-				"[" === char
+			if (!(in_token & NO_NESTING) &&
+				'[' === char
 			) {
 				parser_add_text(p)
 				parser_add_token(p, IMAGE)

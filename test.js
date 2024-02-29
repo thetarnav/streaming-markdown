@@ -281,10 +281,10 @@ for (const indent of [
 	"\t",
 ]) {
 	test_single_write("Code_Block",
-		indent + "foo",
+		indent + "  foo",
 		[{
 			type    : mds.Token_Type.Code_Block,
-			children: ["foo"]
+			children: ["  foo"]
 		}]
 	)
 	
