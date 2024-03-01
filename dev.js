@@ -19,7 +19,7 @@ const MESSAGE_RELOAD  = "reload"
 
 function main() {
 	const server = makeHttpServer(requestListener)
-	const wss = makeWebSocketServer()
+	const wss = new ws.WebSocketServer({port: WEB_SOCKET_PORT})
 	
 	const watched_paths = /** @type {Set<string>} */(new Set())
 	
@@ -107,20 +107,6 @@ function makeHttpServer(requestListener) {
 	)
 
 	return server
-}
-
-/** @returns {ws.WebSocketServer} */
-function makeWebSocketServer() {
-	const wss = new ws.WebSocketServer({port: WEB_SOCKET_PORT})
-
-	// eslint-disable-next-line no-console
-	console.log(
-		`#` +`\n`+
-		`# WebSocket server running at http://127.0.0.1:` + WEB_SOCKET_PORT +`\n`+
-		`#`
-	)
-
-	return wss
 }
 
 /** @typedef {Parameters<ws.WebSocket["send"]>[0]} BufferLike */
