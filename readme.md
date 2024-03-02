@@ -89,6 +89,6 @@ mds.parser_end(parser)
 - [ ] Ordered lists
 - [ ] Check lists
 - [ ] Nested lists
-- [ ] Blockquotes
+- [x] Blockquotes
 - [ ] Tables
 - [ ] Html tags (e.g. `<div>`, `<span>`, `<a>`, `<img>`, etc.)

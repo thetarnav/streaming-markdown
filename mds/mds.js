@@ -202,7 +202,7 @@ export function parser_add_block_token(p, type) {
  * @param   {string} chunk
  * @returns {void  } */
 export function parser_write(p, chunk) {
-	char_loop:
+	chars:
 	for (const char of chunk) {
 		const in_token = p.types[p.len]
 		const pending_with_char = p.pending + char
@@ -213,14 +213,14 @@ export function parser_write(p, chunk) {
 			switch (p.pending) {
 			case " ":
 				p.pending = char
-				continue char_loop
+				continue chars
 			case ">":
 				p.pending = char
 
 				while (p.newline_blockquote_idx+1 < p.len) {
 					p.newline_blockquote_idx += 1
 					if (p.types[p.newline_blockquote_idx] === BLOCKQUOTE) {
-						continue char_loop
+						continue chars
 					}
 				}
 
@@ -230,7 +230,7 @@ export function parser_write(p, chunk) {
 				}
 				p.newline_blockquote_idx += 1
 				parser_add_token(p, BLOCKQUOTE)
-				continue char_loop
+				continue chars
 			case "\n":
 				while (p.newline_blockquote_idx < p.len) {
 					parser_end_token(p)
@@ -239,7 +239,7 @@ export function parser_write(p, chunk) {
 				p.pending = char
 				p.line_break=false
 				p.newline_blockquote_idx = 0
-				continue char_loop
+				continue chars
 			default:
 				p.line_break=false
 				parser_add_text(p)
@@ -292,7 +292,7 @@ export function parser_write(p, chunk) {
 					p.newline_blockquote_idx += 1
 					if (p.types[p.newline_blockquote_idx] === BLOCKQUOTE) {
 						p.pending = ""
-						continue char_loop
+						continue chars
 					}
 				}
 
