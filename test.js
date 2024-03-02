@@ -362,6 +362,21 @@ test_single_write("Paragraph with Italic",
 	}]
 )
 
+test_single_write("Italic new Paragraph",
+	"foo\n\n"+
+	"*bar*",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: ["foo"],
+	}, {
+		type    : mds.Token_Type.Paragraph,
+		children: [{
+			type    : mds.Token_Type.Italic_Ast,
+			children: ["bar"]
+		}],
+	}]
+)
+
 test_single_write("Paragraph trim leading spaces",
 	"  foo",
 	[{
@@ -683,6 +698,22 @@ test_single_write("Link with code",
 				type    : mds.Token_Type.Code_Inline,
 				children: ["title"],
 			}],
+		}]
+	}]
+)
+
+test_single_write("Link new paragraph",
+	"foo\n\n"+
+	"[title](url)",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: ["foo"]
+	},{
+		type    : mds.Token_Type.Paragraph,
+		children: [{
+			type    : mds.Token_Type.Link,
+			attrs   : {[mds.Attr_Type.Href]: "url"},
+			children: ["title"],
 		}]
 	}]
 )
