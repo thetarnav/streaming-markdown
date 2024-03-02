@@ -238,7 +238,7 @@ export function parser_write(p, chunk) {
 				p.len -= 1 // remove the line break
 				p.renderer.add_node(p.renderer.data, LINE_BREAK)
 				p.renderer.end_node(p.renderer.data)
-				char_i -= 1
+				char_i -= 1 // reprocess pending
 				continue
 			}
 		case DOCUMENT:

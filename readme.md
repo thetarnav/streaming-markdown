@@ -85,6 +85,7 @@ mds.parser_end(parser)
     - [x] Escaping escaping bug: \\[Link\\](url)
 - [x] Images
     - [x] src attr
+- [ ] Horizontal rules
 - [ ] Unordered lists
 - [ ] Ordered lists
 - [ ] Check lists
