@@ -8,42 +8,48 @@ https://github.com/thetarnav/streaming-markdown
 export * from "./t.js"
 
 export const
-	ROOT        =      1, //  1
+	DOCUMENT    =      1, //  1
 	PARAGRAPH   =      2, //  2
-	HEADING_1   =      4, //  3
-	HEADING_2   =      8, //  4
-	HEADING_3   =     16, //  5
-	HEADING_4   =     32, //  6
-	HEADING_5   =     64, //  7
-	HEADING_6   =    128, //  8
-	CODE_BLOCK  =    256, //  9
-	CODE_FENCE  =    512, // 10
-	CODE_INLINE =   1024, // 11   
-	ITALIC_AST  =   2048, // 12
-	ITALIC_UND  =   4096, // 13
-	STRONG_AST  =   8192, // 14
-	STRONG_UND  =  16384, // 15
-	STRIKE      =  32768, // 16
-	LINK        =  65536, // 17
-	IMAGE       = 131072, // 18
+	LINE_BREAK  =      4, //  3
+	HEADING_1   =      8, //  4
+	HEADING_2   =     16, //  5
+	HEADING_3   =     32, //  6
+	HEADING_4   =     64, //  7
+	HEADING_5   =    128, //  8
+	HEADING_6   =    256, //  9
+	CODE_BLOCK  =    512, // 10
+	CODE_FENCE  =   1024, // 11
+	CODE_INLINE =   2048, // 12
+	ITALIC_AST  =   4096, // 13
+	ITALIC_UND  =   8192, // 14
+	STRONG_AST  =  16384, // 15
+	STRONG_UND  =  32768, // 16
+	STRIKE      =  65536, // 17
+	LINK        = 131072, // 18
+	IMAGE       = 262144, // 19
+	BLOCKQUOTE  = 524288, // 20
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
-	ANY_HEADING =    252,
+	ANY_HEADING =    504,
 	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
-	ANY_CODE    =   1792,
+	ANY_CODE    =   3584,
 	/** `ITALIC_AST | ITALIC_UND` */
-	ANY_ITALIC  =   6144,
+	ANY_ITALIC  =  12288,
 	/** `STRONG_AST | STRONG_UND` */
-	ANY_STRONG  =  24576,
+	ANY_STRONG  =  49152,
 	/** `STRONG_AST | ITALIC_AST` */
-	ANY_AST     =  10240,
+	ANY_AST     =  20480,
 	/** `STRONG_UND | ITALIC_UND` */
-	ANY_UND     =  20480,
-	/** `CODE | IMAGE` */
-	NO_NESTING  = 132864
+	ANY_UND     =  40960,
+	/** `ANY_CODE | IMAGE` */
+	NO_NESTING  = 265728,
+	/** `DOCUMENT | BLOCKQUOTE` */
+	ANY_ROOT    = 524289
 
 /** @enum {(typeof Token_Type)[keyof typeof Token_Type]} */
 export const Token_Type = /** @type {const} */({
-	Root:        ROOT,
+	Document:    DOCUMENT,
+	Blockquote:  BLOCKQUOTE,
+	Line_Break:  LINE_BREAK,
 	Paragraph:   PARAGRAPH,
 	Heading_1:   HEADING_1,
 	Heading_2:   HEADING_2,
@@ -68,8 +74,10 @@ export const Token_Type = /** @type {const} */({
  * @returns {string    } */
 export function token_type_to_string(type) {
 	switch (type) {
-	case ROOT:       return "Root"
+	case DOCUMENT:   return "Document"
+	case BLOCKQUOTE: return "Blockquote"
 	case PARAGRAPH:  return "Paragraph"
+	case LINE_BREAK: return "Line_Break"
 	case HEADING_1:  return "Heading_1"
 	case HEADING_2:  return "Heading_2"
 	case HEADING_3:  return "Heading_3"
@@ -126,9 +134,11 @@ export function parser(renderer) {
 		renderer  : renderer,
 		text      : "",
 		pending   : "",
-		types     : /**@type {*}*/([ROOT,,,,,]),
+		types     : /**@type {*}*/([DOCUMENT,,,,,]),
 		len       : 0,
 		code_fence: "",
+		newline_blockquote_idx: 0,
+		line_break: false,
 	}
 }
 
@@ -137,7 +147,6 @@ export function parser(renderer) {
  * @param   {Parser} p
  * @returns {void  } */
 export function parser_end(p) {
-	if (p.len === 0) return
 	parser_write(p, "\n")
 	parser_add_text(p)
 }
@@ -174,20 +183,78 @@ export function parser_add_token(p, type) {
 }
 
 /**
+ * @param   {Parser    } p
+ * @param   {Token_Type} type
+ * @returns {void      } */
+export function parser_add_block_token(p, type) {
+	while (!(p.types[p.len] & ANY_ROOT)) {
+		parser_end_token(p)	
+	}
+	p.pending = ""
+	p.len += 1
+	p.types[p.len] = type
+	p.renderer.add_node(p.renderer.data, type)
+}
+
+/**
  * Parse and render another chunk of markdown.
  * @param   {Parser} p
  * @param   {string} chunk
  * @returns {void  } */
 export function parser_write(p, chunk) {
+	char_loop:
 	for (const char of chunk) {
 		const in_token = p.types[p.len]
 		const pending_with_char = p.pending + char
+
+		if (p.line_break) {
+			console.assert(p.text.length === 0, "Text when in line break")
+
+			switch (p.pending) {
+			case " ":
+				p.pending = char
+				continue char_loop
+			case ">":
+				p.pending = char
+
+				while (p.newline_blockquote_idx+1 < p.len) {
+					p.newline_blockquote_idx += 1
+					if (p.types[p.newline_blockquote_idx] === BLOCKQUOTE) {
+						continue char_loop
+					}
+				}
+
+				p.line_break=false;
+				while (p.newline_blockquote_idx < p.len) {
+					parser_end_token(p)
+				}
+				p.newline_blockquote_idx += 1
+				parser_add_token(p, BLOCKQUOTE)
+				continue char_loop
+			case "\n":
+				while (p.newline_blockquote_idx < p.len) {
+					parser_end_token(p)
+				}
+
+				p.pending = char
+				p.line_break=false
+				p.newline_blockquote_idx = 0
+				continue char_loop
+			default:
+				p.line_break=false
+				parser_add_text(p)
+				p.renderer.add_node(p.renderer.data, LINE_BREAK)
+				p.renderer.end_node(p.renderer.data)
+				break
+			}
+		}
 
 		/*
 		Token specific checks
 		*/
 		switch (in_token) {
-		case ROOT: {
+		case DOCUMENT:
+		case BLOCKQUOTE:
 			console.assert(p.text.length === 0, "Root should not have any text")
 
 			switch (pending_with_char) {
@@ -219,6 +286,19 @@ export function parser_write(p, chunk) {
 				continue
 			case "\n":
 				continue
+			case "> ":
+			case ">":
+				while (p.newline_blockquote_idx+1 <= p.len) {
+					p.newline_blockquote_idx += 1
+					if (p.types[p.newline_blockquote_idx] === BLOCKQUOTE) {
+						p.pending = ""
+						continue char_loop
+					}
+				}
+
+				p.newline_blockquote_idx += 1
+				parser_add_token(p, BLOCKQUOTE)
+				continue
 			}
 
 			switch (p.pending) {
@@ -233,7 +313,6 @@ export function parser_write(p, chunk) {
 			case " ":
 			case "  ":
 			case "   ":
-				parser_add_token(p, PARAGRAPH)
 				p.pending = char
 				continue
 			default:
@@ -242,8 +321,6 @@ export function parser_write(p, chunk) {
 				p.pending = char
 				continue
 			}
-
-		}
 		case CODE_BLOCK:
 			switch (pending_with_char) {
 			case "\n    ":
@@ -271,8 +348,6 @@ export function parser_write(p, chunk) {
 				continue
 			}
 		case CODE_FENCE: {
-			console.assert(p.len === 1, "Code block is always a top-level token")
-
 			switch (p.code_fence) {
 			case 1: /* can end */
 				switch (pending_with_char) {
@@ -323,6 +398,11 @@ export function parser_write(p, chunk) {
 		case CODE_INLINE: {
 			if ('\n' === char && p.pending.length === 0) {
 				p.pending = char
+				continue
+			}
+			if ('`' === p.pending) {
+				parser_add_text(p)
+				parser_end_token(p)
 				continue
 			}
 			if ('`' === char) {
@@ -449,19 +529,6 @@ export function parser_write(p, chunk) {
 		Common checks
 		*/
 		switch (p.pending) {
-		/* Newline */
-		case "\n":
-			parser_add_text(p)
-			/* Paragraph */
-			if ('\n' === char) {
-				while (p.len > 0) parser_end_token(p)
-			}
-			/* Line break */
-			else {
-				p.renderer.add_text(p.renderer.data, '\n')
-				p.pending = char
-			}
-			continue
 		/* Escape character */
 		case "\\":
 			if (in_token & ANY_CODE) break
@@ -472,16 +539,23 @@ export function parser_write(p, chunk) {
 			} else {
 				const char_code = char.charCodeAt(0)
 				p.pending = ""
-				p.text += (char_code >= 48 && char_code <= 90) || // 0-9 A-Z
-				          (char_code >= 97 && char_code <= 122)   // a-z
-				          ? pending_with_char
-				          : char
+				p.text += (char_code >= 48 && char_code <= 57) || // 0-9
+							(char_code >= 65 && char_code <= 90) || // A-Z
+							(char_code >= 97 && char_code <= 122)   // a-z
+							? pending_with_char
+							: char
 			}
+			continue
+		/* Newline */
+		case "\n":
+			p.line_break = true
+			p.newline_blockquote_idx = 0
+			p.pending = char
+			parser_add_text(p)
 			continue
 		/* `Code Inline` */
 		case "`":
 			if (!(in_token & NO_NESTING) &&
-				'\n'!== char &&
 				'`' !== char
 			) {
 				parser_add_text(p)
@@ -531,7 +605,6 @@ export function parser_write(p, chunk) {
 		/* [Image](url) */
 		case "[":
 			if (!(in_token & (NO_NESTING | LINK)) &&
-				'\n'!== char &&
 				']' !== char
 			) {
 				parser_add_text(p)
@@ -605,22 +678,24 @@ export function default_add_node(data, type) {
 	/**@type {HTMLElement}*/ let slot
 
 	switch (type) {
-	case ROOT: return // node is already root
-	case PARAGRAPH:  mount = slot = document.createElement("p")     ;break
-	case HEADING_1:  mount = slot = document.createElement("h1")    ;break
-	case HEADING_2:  mount = slot = document.createElement("h2")    ;break
-	case HEADING_3:  mount = slot = document.createElement("h3")    ;break
-	case HEADING_4:  mount = slot = document.createElement("h4")    ;break
-	case HEADING_5:  mount = slot = document.createElement("h5")    ;break
-	case HEADING_6:  mount = slot = document.createElement("h6")    ;break
+	case DOCUMENT: return // node is already a document
+	case BLOCKQUOTE: mount = slot = document.createElement("blockquote");break
+	case PARAGRAPH:  mount = slot = document.createElement("p")         ;break
+	case LINE_BREAK: mount = slot = document.createElement("br")        ;break
+	case HEADING_1:  mount = slot = document.createElement("h1")        ;break
+	case HEADING_2:  mount = slot = document.createElement("h2")        ;break
+	case HEADING_3:  mount = slot = document.createElement("h3")        ;break
+	case HEADING_4:  mount = slot = document.createElement("h4")        ;break
+	case HEADING_5:  mount = slot = document.createElement("h5")        ;break
+	case HEADING_6:  mount = slot = document.createElement("h6")        ;break
 	case ITALIC_AST:
-	case ITALIC_UND: mount = slot = document.createElement("em")    ;break
+	case ITALIC_UND: mount = slot = document.createElement("em")        ;break
 	case STRONG_AST:
-	case STRONG_UND: mount = slot = document.createElement("strong");break
-	case STRIKE:     mount = slot = document.createElement("s")     ;break
-	case CODE_INLINE:mount = slot = document.createElement("code")  ;break
-	case LINK:       mount = slot = document.createElement("a")     ;break
-	case IMAGE:      mount = slot = document.createElement("img")   ;break
+	case STRONG_UND: mount = slot = document.createElement("strong")    ;break
+	case STRIKE:     mount = slot = document.createElement("s")         ;break
+	case CODE_INLINE:mount = slot = document.createElement("code")      ;break
+	case LINK:       mount = slot = document.createElement("a")         ;break
+	case IMAGE:      mount = slot = document.createElement("img")       ;break
 	case CODE_BLOCK:
 	case CODE_FENCE:
 		mount = document.createElement("pre")
@@ -641,11 +716,7 @@ export function default_end_node(data) {
 
 /** @type {Default_Renderer_Add_Text} */
 export function default_add_text(data, text) {
-	switch (text) {
-	case ""  : break
-	case "\n": data.nodes[data.index].appendChild(document.createElement("br")) ;break
-	default  : data.nodes[data.index].appendChild(document.createTextNode(text))
-	}
+	data.nodes[data.index].appendChild(document.createTextNode(text))
 }
 
 /** @type {Default_Renderer_Set_Attr} */
