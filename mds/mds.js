@@ -138,6 +138,7 @@ export function parser(renderer) {
 		len       : 0,
 		code_fence: "",
 		newline_blockquote_idx: 0,
+		line_break: false,
 	}
 }
 
@@ -146,7 +147,6 @@ export function parser(renderer) {
  * @param   {Parser} p
  * @returns {void  } */
 export function parser_end(p) {
-	if (p.len === 0) return
 	parser_write(p, "\n")
 	parser_add_text(p)
 }
@@ -207,6 +207,48 @@ export function parser_write(p, chunk) {
 		const in_token = p.types[p.len]
 		const pending_with_char = p.pending + char
 
+		if (p.line_break) {
+			console.assert(p.text.length === 0, "Text when in line break")
+
+			switch (p.pending) {
+			case " ":
+				p.pending = char
+				continue char_loop
+			case ">":
+				p.pending = char
+
+				while (p.newline_blockquote_idx+1 < p.len) {
+					p.newline_blockquote_idx += 1
+					if (p.types[p.newline_blockquote_idx] === BLOCKQUOTE) {
+						continue char_loop
+					}
+				}
+
+				p.line_break=false;
+				while (p.newline_blockquote_idx < p.len) {
+					parser_end_token(p)
+				}
+				p.newline_blockquote_idx += 1
+				parser_add_token(p, BLOCKQUOTE)
+				continue char_loop
+			case "\n":
+				while (p.newline_blockquote_idx < p.len) {
+					parser_end_token(p)
+				}
+
+				p.pending = char
+				p.line_break=false
+				p.newline_blockquote_idx = 0
+				continue char_loop
+			default:
+				p.line_break=false
+				parser_add_text(p)
+				p.renderer.add_node(p.renderer.data, LINE_BREAK)
+				p.renderer.end_node(p.renderer.data)
+				break
+			}
+		}
+
 		/*
 		Token specific checks
 		*/
@@ -223,8 +265,6 @@ export function parser_write(p, chunk) {
 			case "##### ":  parser_add_token(p, HEADING_5)  ;continue
 			case "###### ": parser_add_token(p, HEADING_6)  ;continue
 			case "```":     parser_add_token(p, CODE_FENCE) ;continue
-			case "> ":
-			case ">":       parser_add_token(p, BLOCKQUOTE) ;continue
 			case "    ":
 			case "   \t":
 			case "  \t":
@@ -246,80 +286,25 @@ export function parser_write(p, chunk) {
 				continue
 			case "\n":
 				continue
-			}
-
-			switch (p.pending) {
-			/* `Code Inline` */
-			case "`":
-				parser_add_token(p, PARAGRAPH)
-				parser_add_text(p)
-				parser_add_token(p, CODE_INLINE)
-				p.text = char
-				continue
-			/* Trim leading spaces */
-			case " ":
-			case "  ":
-			case "   ":
-				p.pending = char
-				continue
-			default:
-				p.text = p.pending
-				parser_add_token(p, PARAGRAPH)
-				p.pending = char
-				continue
-			}
-		case LINE_BREAK:
-			console.assert(p.text.length === 0, "Text when in line break")
-
-			outer:
-			switch (pending_with_char) {
-			case "# ":      parser_add_block_token(p, HEADING_1)  ;continue
-			case "## ":     parser_add_block_token(p, HEADING_2)  ;continue
-			case "### ":    parser_add_block_token(p, HEADING_3)  ;continue
-			case "#### ":   parser_add_block_token(p, HEADING_4)  ;continue
-			case "##### ":  parser_add_block_token(p, HEADING_5)  ;continue
-			case "###### ": parser_add_block_token(p, HEADING_6)  ;continue
-			case "```":     parser_add_block_token(p, CODE_FENCE) ;continue
-			case "    ":
-			case "   \t":
-			case "  \t":
-			case " \t":
-			case "\t":      parser_add_block_token(p, CODE_BLOCK) ;continue
-			case "#":
-			case "##":
-			case "###":
-			case "####":
-			case "#####":
-			case "######":
-			case "#######":
-			case "`":
-			case "``":
-			case " ":
-			case "  ":
-			case "   ":
-				p.pending = pending_with_char
-				continue
-			case "\n":
-				console.log("-----------")
-				continue
 			case "> ":
 			case ">":
-				for (;p.newline_blockquote_idx < p.len; p.newline_blockquote_idx += 1) {
+				while (p.newline_blockquote_idx+1 <= p.len) {
+					p.newline_blockquote_idx += 1
 					if (p.types[p.newline_blockquote_idx] === BLOCKQUOTE) {
-						p.newline_blockquote_idx += 1
 						p.pending = ""
 						continue char_loop
 					}
 				}
 
-				parser_add_block_token(p, BLOCKQUOTE)
+				p.newline_blockquote_idx += 1
+				parser_add_token(p, BLOCKQUOTE)
 				continue
 			}
 
 			switch (p.pending) {
 			/* `Code Inline` */
 			case "`":
-				parser_end_token(p)
+				parser_add_token(p, PARAGRAPH)
 				parser_add_text(p)
 				parser_add_token(p, CODE_INLINE)
 				p.text = char
@@ -332,7 +317,7 @@ export function parser_write(p, chunk) {
 				continue
 			default:
 				p.text = p.pending
-				parser_end_token(p)
+				parser_add_token(p, PARAGRAPH)
 				p.pending = char
 				continue
 			}
@@ -563,43 +548,14 @@ export function parser_write(p, chunk) {
 			continue
 		/* Newline */
 		case "\n":
-			switch (char) {
-			/* Trim leading spaces */
-			case ' ':
-				continue
-			/* Paragraph */
-			case '\n':
-				parser_add_text(p)
-				while (p.len > 0) parser_end_token(p)
-				continue
-			/* Line break */
-			default:
-				parser_add_text(p)
-				parser_add_token(p, LINE_BREAK)
-				// p.renderer.add_text(p.renderer.data, '\n')
-				// p.after_line_break = true
-				p.newline_blockquote_idx = 1
-				p.pending = char
-				continue
-			}
-		// /* > Blockquote */
-		// case ">":
-		// 	if (!p.after_line_break || in_token & NO_NESTING) break
-
-		// 	for (;p.newline_blockquote_idx < p.len; p.newline_blockquote_idx += 1) {
-		// 		if (p.types[p.newline_blockquote_idx] === BLOCKQUOTE) {
-		// 			p.newline_blockquote_idx += 1
-		// 			continue
-		// 		}
-		// 	}
-
-		// 	parser_add_token(p, BLOCKQUOTE)
-		// 	p.pending = char
-		// 	continue
+			p.line_break = true
+			p.newline_blockquote_idx = 0
+			p.pending = char
+			parser_add_text(p)
+			continue
 		/* `Code Inline` */
 		case "`":
 			if (!(in_token & NO_NESTING) &&
-				'\n'!== char &&
 				'`' !== char
 			) {
 				parser_add_text(p)
@@ -649,7 +605,6 @@ export function parser_write(p, chunk) {
 		/* [Image](url) */
 		case "[":
 			if (!(in_token & (NO_NESTING | LINK)) &&
-				'\n'!== char &&
 				']' !== char
 			) {
 				parser_add_text(p)

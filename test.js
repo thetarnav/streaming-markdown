@@ -91,16 +91,14 @@ const br = {
 function compare_pad(len, h) {
 	let txt = ""
 	if (h < 0) {
-		txt += "\u001b[31m-"
+		txt += "\u001b[31m"
 	} else if (h > 0) {
-		txt += "\u001b[32m+"
+		txt += "\u001b[32m"
+	} else {
+		txt += "\u001b[30m"
 	}
-	else {
-		txt += " "
-	}
-	txt += " "
-	for (let i = 0; i < len; i += 1) {
-		txt += "  "
+	for (let i = 0; i <= len; i += 1) {
+		txt += ": "
 	}
 	txt += "\u001b[0m"
 	return txt
@@ -143,7 +141,7 @@ function compare_push_node(node, lines, len, h) {
  * @param {number} h
  * @returns {void} */
 function compare_push_type(type, lines, len, h) {
-	lines.push(compare_pad(len, h) + mds.token_type_to_string(type))
+	lines.push(compare_pad(len, h) + "\u001b[36m" + mds.token_type_to_string(type) + "\u001b[0m")
 }
 
 /**
@@ -853,7 +851,7 @@ test_single_write("Blockquote up blockquote",
 		type    : mds.Token_Type.Blockquote,
 		children: [{
 			type    : mds.Token_Type.Paragraph,
-			children: ["foo", br],
+			children: ["foo"],
 		}, {
 			type    : mds.Token_Type.Blockquote,
 			children: [{
@@ -864,7 +862,7 @@ test_single_write("Blockquote up blockquote",
 	}]
 )
 
-test_single_write("Blockquote down blockquote",
+test_single_write("Blockquote blockquote down",
 	"> > foo\n"+
 	"> \n"+
 	"> bar",
@@ -879,6 +877,73 @@ test_single_write("Blockquote down blockquote",
 		}, {
 			type    : mds.Token_Type.Paragraph,
 			children: ["bar"],
+		}]
+	}]
+)
+
+test_single_write("Blockquote blockquote continued",
+	"> > foo\n"+
+	"> >\n"+
+	"> > bar",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Blockquote,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: ["foo"],
+			}, {
+				type    : mds.Token_Type.Paragraph,
+				children: ["bar"],
+			}]
+		}]
+	}]
+)
+
+test_single_write("Blockquote up down",
+	"> > foo\n"+
+	">\n"+
+	"> > bar",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Blockquote,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: ["foo"],
+			}]
+		}, {
+			type    : mds.Token_Type.Blockquote,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: ["bar"],
+			}]
+		}]
+	}]
+)
+
+test_single_write("Blockquote with code and line break",
+	"> > `a\n"+
+	"b`\n"+
+	">\n"+
+	"> > c",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Blockquote,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: [{
+					type    : mds.Token_Type.Code_Inline,
+					children: ["a", br, "b"],
+				}]
+			}]
+		}, {
+			type    : mds.Token_Type.Blockquote,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: ["c"],
+			}],
 		}]
 	}]
 )
