@@ -17,6 +17,8 @@ export type Parser = {
 	 *  0     : cannot end
 	 */
 	code_fence: string | 0 | 1
+	/* For Blockquote parsing */
+	newline_blockquote_idx: number
 }
 
 export type Renderer_Add_Node<TData> = (data: TData, type: Token_Type) => void

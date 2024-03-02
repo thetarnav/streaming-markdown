@@ -29,7 +29,7 @@ import * as mds    from "./mds/mds.js"
 function test_renderer() {
 	/** @type {Test_Renderer_Node} */
 	const root = {
-		type    : mds.Token_Type.Root,
+		type    : mds.Token_Type.Document,
 		children: []
 	}
 	return {
@@ -55,12 +55,7 @@ function test_renderer_add_node(data, type) {
 }
 /** @type {Test_Add_Text} */
 function test_renderer_add_text(data, text) {
-	if (text === "") return
-
-	if (text !== "\n" &&
-		typeof data.node.children[data.node.children.length - 1] === "string" &&
-		data.node.children[data.node.children.length - 1] !== "\n"
-	) {
+	if (typeof data.node.children[data.node.children.length - 1] === "string") {
 		data.node.children[data.node.children.length - 1] += text
 	} else {
 		data.node.children.push(text)
@@ -83,6 +78,177 @@ function test_renderer_set_attr(data, type, value) {
 	}
 }
 
+/** @type {Test_Renderer_Node} */
+const br = {
+	type    : mds.Token_Type.Line_Break,
+	children: []
+}
+
+/**
+ * @param {number} len
+ * @param {number} h
+ * @returns {string} */
+function compare_pad(len, h) {
+	let txt = ""
+	if (h < 0) {
+		txt += "\u001b[31m"
+	} else if (h > 0) {
+		txt += "\u001b[32m"
+	} else {
+		txt += "\u001b[30m"
+	}
+	for (let i = 0; i <= len; i += 1) {
+		txt += ": "
+	}
+	txt += "\u001b[0m"
+	return txt
+}
+
+/**
+ * @param {string  } text
+ * @param {string[]} lines
+ * @param {number  } len
+ * @param {number} h
+ * @returns {void  } */
+function compare_push_text(text, lines, len, h) {
+	lines.push(compare_pad(len, h) + JSON.stringify(text))
+}
+
+/**
+ * @param {Test_Renderer_Node} node
+ * @param {string[]} lines
+ * @param {number} len
+ * @param {number} h
+ * @returns {void} */
+function compare_push_node(node, lines, len, h) {
+	compare_push_type(node.type, lines, len, h)
+	for (const child of node.children) {
+		if (typeof child === "string") {
+			compare_push_text(child, lines, len + 1, h)
+		} else {
+			compare_push_node(child, lines, len + 1, h)
+		}
+	}
+}
+
+/**
+ * @param {mds.Token_Type} type
+ * @param {string[]} lines
+ * @param {number} len
+ * @param {number} h
+ * @returns {void} */
+function compare_push_type(type, lines, len, h) {
+	lines.push(compare_pad(len, h) + "\u001b[36m" + mds.token_type_to_string(type) + "\u001b[0m")
+}
+
+/**
+ * @param {string | Test_Renderer_Node | undefined} actual
+ * @param {string | Test_Renderer_Node | undefined} expected
+ * @param {string[]} lines
+ * @param {number} len
+ * @returns {boolean} */
+function compare_child(actual, expected, lines, len) {
+	if (actual === undefined) {
+		if (expected === undefined) return true
+
+		if (typeof expected === "string") {
+			compare_push_text(expected, lines, len, -1)
+		} else {
+			compare_push_node(expected, lines, len, -1)
+		}
+
+		return false
+	}
+
+	if (expected === undefined) {
+		if (typeof actual === "string") {
+			compare_push_text(actual, lines, len, +1)
+		} else {
+			compare_push_node(actual, lines, len, +1)
+		}
+
+		return false
+	}
+
+	if (typeof actual === "string") {
+		if (typeof expected === "string") {
+			if (actual === expected) {
+				compare_push_text(expected, lines, len, 0)
+				return true
+			}
+
+			compare_push_text(actual,   lines, len, +1)
+			compare_push_text(expected, lines, len, -1)
+			return false
+		}
+
+		compare_push_text(actual, lines, len, +1)
+		compare_push_node(expected, lines, len, -1)
+		return false
+	}
+
+	if (typeof expected === "string") {
+		compare_push_text(expected, lines, len, -1)
+		compare_push_node(actual, lines, len, +1)
+		return false
+	}
+
+	if (actual.type === expected.type) {
+		compare_push_type(actual.type, lines, len, 0)
+	} else {
+		compare_push_type(actual.type, lines, len, +1)
+		compare_push_type(expected.type, lines, len, -1)
+		return false
+	}
+
+	if (JSON.stringify(actual.attrs) !== JSON.stringify(expected.attrs)) {
+		compare_push_text(JSON.stringify(actual.attrs),   lines, len + 1, +1)
+		compare_push_text(JSON.stringify(expected.attrs), lines, len + 1, -1)
+		return false
+	}
+
+	return compare_children(actual.children, expected.children, lines, len + 1)
+}
+
+/**
+ * @param {Children} children
+ * @param {Children} expected_children
+ * @param {string[]} lines
+ * @param {number} len
+ * @returns {boolean} */
+function compare_children(children, expected_children, lines, len) {
+	let result = true
+
+	let i = 0
+	for (; i < children.length; i += 1) {
+		result = compare_child(children[i], expected_children[i], lines, len) && result
+	}
+
+	for (; i < expected_children.length; i += 1) {
+		compare_child(undefined, expected_children[i], lines, len)
+		result = false
+	}
+
+	return result
+}
+
+/**
+ * @param {Children} children
+ * @param {Children} expected_children
+ * @returns {void} */
+function assert_children(children, expected_children) {
+	/** @type {string[]} */
+	const lines = []
+	const result = compare_children(children, expected_children, lines, 0)
+	if (!result) {
+		const stl = Error.stackTraceLimit
+		Error.stackTraceLimit = 0
+		const e = new Error("Children not equal:\n" + lines.join("\n") + "\n")
+		Error.stackTraceLimit = stl
+		throw e
+	}
+}
+
 /**
  * @param {string  } title
  * @param {string  } markdown
@@ -97,7 +263,7 @@ function test_single_write(title, markdown, expected_children) {
 		mds.parser_write(parser, markdown)
 		mds.parser_end(parser)
 
-		assert.deepEqual(renderer.data.root.children, expected_children)
+		assert_children(renderer.data.root.children, expected_children)
 	})
 
 	t.test(title + " (by char)", () => {
@@ -109,7 +275,7 @@ function test_single_write(title, markdown, expected_children) {
 		}
 		mds.parser_end(parser)
 
-		assert.deepEqual(renderer.data.root.children, expected_children)
+		assert_children(renderer.data.root.children, expected_children)
 	})
 }
 
@@ -151,7 +317,7 @@ test_single_write("Line Breaks",
 	"foo\nbar",
 	[{
 		type    : mds.Token_Type.Paragraph,
-		children: ["foo", "\n", "bar"],
+		children: ["foo", br, "bar"],
 	}]
 )
 
@@ -161,16 +327,16 @@ test_single_write("Line Breaks with Italic",
 		type    : mds.Token_Type.Paragraph,
 		children: [{
 			type    : mds.Token_Type.Italic_Ast,
-			children: ["a", "\n", "b"]
+			children: ["a", br, "b"]
 		}],
 	}]
 )
 
 test_single_write("Escaped Line Breaks",
-	'a'+'\\'+'\n'+'b',
+	"a\\\nb",
 	[{
 		type    : mds.Token_Type.Paragraph,
-		children: ['a', '\n', 'b'],
+		children: ["a", br, "b"],
 	}]
 )
 
@@ -192,6 +358,21 @@ test_single_write("Paragraph with Italic",
 		children: [{
 			type    : mds.Token_Type.Italic_Ast,
 			children: ["foo"]
+		}],
+	}]
+)
+
+test_single_write("Italic new Paragraph",
+	"foo\n\n"+
+	"*bar*",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: ["foo"],
+	}, {
+		type    : mds.Token_Type.Paragraph,
+		children: [{
+			type    : mds.Token_Type.Italic_Ast,
+			children: ["bar"]
 		}],
 	}]
 )
@@ -240,7 +421,7 @@ test_single_write("Code with line break",
 		type    : mds.Token_Type.Paragraph,
 		children: [{
 			type    : mds.Token_Type.Code_Inline,
-			children: ["a", "\n", "b"]
+			children: ["a", br, "b"]
 		}],
 	}]
 )
@@ -314,41 +495,15 @@ for (const indent of [
 			children: ["  foo"]
 		}]
 	)
-	
-	{
-		const title = "Code_Block multiple lines"
-		const markdown = 
-			indent + "foo\n"+
-			indent + "bar"
-	
-		t.test(title, () => {
-			const renderer = test_renderer()
-			const parser = mds.parser(renderer)
-		
-			mds.parser_write(parser, markdown)
-			mds.parser_end(parser)
-		
-			assert.deepEqual(renderer.data.root.children, [{
-				type    : mds.Token_Type.Code_Block,
-				children: ["foo\nbar"]
-			}])
-		})
-		
-		t.test(title + " (by char)", () => {
-			const renderer = test_renderer()
-			const parser = mds.parser(renderer)
-		
-			for (const char of markdown) {
-				mds.parser_write(parser, char)
-			}
-			mds.parser_end(parser)
-		
-			assert.deepEqual(renderer.data.root.children, [{
-				type    : mds.Token_Type.Code_Block,
-				children: ["foo", "\n", "bar"]
-			}])
-		})
-	}
+
+	test_single_write("Code_Block multiple lines",
+		indent + "foo\n" +
+		indent + "bar",
+		[{
+			type    : mds.Token_Type.Code_Block,
+			children: ["foo\nbar"]
+		}]
+	)
 
 	test_single_write("Code_Block end",
 		indent+"foo\n" +
@@ -547,6 +702,22 @@ test_single_write("Link with code",
 	}]
 )
 
+test_single_write("Link new paragraph",
+	"foo\n\n"+
+	"[title](url)",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: ["foo"]
+	},{
+		type    : mds.Token_Type.Paragraph,
+		children: [{
+			type    : mds.Token_Type.Link,
+			attrs   : {[mds.Attr_Type.Href]: "url"},
+			children: ["title"],
+		}]
+	}]
+)
+
 test_single_write("Image",
 	"![title](url)",
 	[{
@@ -614,6 +785,212 @@ test_single_write("Un-Escaped link Both",
 			type    : mds.Token_Type.Link,
 			attrs   : {[mds.Attr_Type.Href]: "url"},
 			children: ["foo\\"],
+		}]
+	}]
+)
+
+test_single_write("Blockquote",
+	"> foo",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: ["foo"],
+		}]
+	}]
+)
+
+test_single_write("Blockquote no-space",
+	">foo",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: ["foo"],
+		}]
+	}]
+)
+
+test_single_write("Blockquote Escape",
+	"\\> foo",
+	[{
+		type    : mds.Token_Type.Paragraph,
+		children: ["> foo"],
+	}]
+)
+
+test_single_write("Blockquote line break",
+	"> foo\nbar",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: ["foo", br, "bar"],
+		}]
+	}]
+)
+
+test_single_write("Blockquote continued",
+	"> foo\n> bar",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: ["foo", br, "bar"],
+		}]
+	}]
+)
+
+test_single_write("Blockquote end",
+	"> foo\n\nbar",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: ["foo"],
+		}]
+	}, {
+		type    : mds.Token_Type.Paragraph,
+		children: ["bar"],
+	}]
+)
+
+test_single_write("Blockquote heading",
+	"> # foo",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Heading_1,
+			children: ["foo"],
+		}]
+	}]
+)
+
+test_single_write("Blockquote codeblock",
+	"> ```\nfoo\n```",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Code_Fence,
+			children: ["foo"],
+		}]
+	}]
+)
+
+test_single_write("Blockquote blockquote",
+	"> > foo",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Blockquote,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: ["foo"],
+			}]
+		}]
+	}]
+)
+
+test_single_write("Blockquote up blockquote",
+	"> foo\n"+
+	"> > bar",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Paragraph,
+			children: ["foo"],
+		}, {
+			type    : mds.Token_Type.Blockquote,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: ["bar"],
+			}]
+		}]
+	}]
+)
+
+test_single_write("Blockquote blockquote down",
+	"> > foo\n"+
+	"> \n"+
+	"> bar",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Blockquote,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: ["foo"],
+			}]
+		}, {
+			type    : mds.Token_Type.Paragraph,
+			children: ["bar"],
+		}]
+	}]
+)
+
+test_single_write("Blockquote blockquote continued",
+	"> > foo\n"+
+	"> >\n"+
+	"> > bar",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Blockquote,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: ["foo"],
+			}, {
+				type    : mds.Token_Type.Paragraph,
+				children: ["bar"],
+			}]
+		}]
+	}]
+)
+
+test_single_write("Blockquote up down",
+	"> > foo\n"+
+	">\n"+
+	"> > bar",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Blockquote,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: ["foo"],
+			}]
+		}, {
+			type    : mds.Token_Type.Blockquote,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: ["bar"],
+			}]
+		}]
+	}]
+)
+
+test_single_write("Blockquote with code and line break",
+	"> > `a\n"+
+	"b`\n"+
+	">\n"+
+	"> > c",
+	[{
+		type    : mds.Token_Type.Blockquote,
+		children: [{
+			type    : mds.Token_Type.Blockquote,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: [{
+					type    : mds.Token_Type.Code_Inline,
+					children: ["a", br, "b"],
+				}]
+			}]
+		}, {
+			type    : mds.Token_Type.Blockquote,
+			children: [{
+				type    : mds.Token_Type.Paragraph,
+				children: ["c"],
+			}],
 		}]
 	}]
 )
