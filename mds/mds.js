@@ -188,7 +188,7 @@ export function parser_add_token(p, type) {
  * @returns {void      } */
 export function parser_add_block_token(p, type) {
 	while (!(p.types[p.len] & ANY_ROOT)) {
-		parser_end_token(p)	
+		parser_end_token(p)
 	}
 	p.pending = ""
 	p.len += 1
@@ -203,7 +203,8 @@ export function parser_add_block_token(p, type) {
  * @returns {void  } */
 export function parser_write(p, chunk) {
 	chars:
-	for (const char of chunk) {
+	for (let char_i = 0; char_i < chunk.length; char_i += 1) {
+		const char = chunk[char_i]
 		const in_token = p.types[p.len]
 		const pending_with_char = p.pending + char
 
@@ -316,9 +317,10 @@ export function parser_write(p, chunk) {
 				p.pending = char
 				continue
 			default:
-				p.text = p.pending
+				const pend = p.pending
 				parser_add_token(p, PARAGRAPH)
-				p.pending = char
+				p.pending = pend
+				char_i -= 1
 				continue
 			}
 		case CODE_BLOCK:
