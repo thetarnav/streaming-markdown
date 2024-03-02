@@ -122,9 +122,6 @@ function compare_push_text(text, lines, len, h) {
  * @returns {void} */
 function compare_push_node(node, lines, len, h) {
 	compare_push_type(node.type, lines, len, h)
-	// if (node.attrs !== undefined) {
-	// 	lines.push(h + compare_pad(len) + JSON.stringify(node.attrs))
-	// }
 	for (const child of node.children) {
 		if (typeof child === "string") {
 			compare_push_text(child, lines, len + 1, h)
@@ -145,72 +142,91 @@ function compare_push_type(type, lines, len, h) {
 }
 
 /**
+ * @param {string | Test_Renderer_Node | undefined} actual
+ * @param {string | Test_Renderer_Node | undefined} expected
+ * @param {string[]} lines
+ * @param {number} len
+ * @returns {boolean} */
+function compare_child(actual, expected, lines, len) {
+	if (actual === undefined) {
+		if (expected === undefined) return true
+
+		if (typeof expected === "string") {
+			compare_push_text(expected, lines, len, -1)
+		} else {
+			compare_push_node(expected, lines, len, -1)
+		}
+
+		return false
+	}
+
+	if (expected === undefined) {
+		if (typeof actual === "string") {
+			compare_push_text(actual, lines, len, +1)
+		} else {
+			compare_push_node(actual, lines, len, +1)
+		}
+
+		return false
+	}
+
+	if (typeof actual === "string") {
+		if (typeof expected === "string") {
+			if (actual === expected) {
+				compare_push_text(expected, lines, len, 0)
+				return true
+			}
+
+			compare_push_text(actual,   lines, len, +1)
+			compare_push_text(expected, lines, len, -1)
+			return false
+		}
+
+		compare_push_text(actual, lines, len, +1)
+		compare_push_node(expected, lines, len, -1)
+		return false
+	}
+
+	if (typeof expected === "string") {
+		compare_push_text(expected, lines, len, -1)
+		compare_push_node(actual, lines, len, +1)
+		return false
+	}
+
+	if (actual.type === expected.type) {
+		compare_push_type(actual.type, lines, len, 0)
+	} else {
+		compare_push_type(actual.type, lines, len, +1)
+		compare_push_type(expected.type, lines, len, -1)
+		return false
+	}
+
+	if (JSON.stringify(actual.attrs) !== JSON.stringify(expected.attrs)) {
+		compare_push_text(JSON.stringify(actual.attrs),   lines, len + 1, +1)
+		compare_push_text(JSON.stringify(expected.attrs), lines, len + 1, -1)
+		return false
+	}
+
+	return compare_children(actual.children, expected.children, lines, len + 1)
+}
+
+/**
  * @param {Children} children
  * @param {Children} expected_children
  * @param {string[]} lines
  * @param {number} len
  * @returns {boolean} */
 function compare_children(children, expected_children, lines, len) {
-	const path = /** @type {Test_Renderer_Node[]} */(new Array(10))
 	let result = true
 
 	let i = 0
 	for (; i < children.length; i += 1) {
-		const child    = children[i]
-		/** @type {string | Test_Renderer_Node | undefined} */
-		const expected = (expected_children[i])
-
-		if (typeof child === "string") {
-			if (typeof expected === "string") {
-				if (child === expected) {
-					compare_push_text(expected, lines, len, 0)
-				} else {
-					compare_push_text(child,    lines, len, +1)
-					compare_push_text(expected, lines, len, -1)
-					result = false
-				}
-			}
-			else if (expected === undefined) {
-				compare_push_text(child, lines, len, +1)
-				result = false
-			}
-			else {
-				compare_push_text(child, lines, len, +1)
-				compare_push_node(expected, lines, len, -1)
-				result = false
-			}
-		} else {
-			if (typeof expected === "string") {
-				compare_push_text(expected, lines, len, -1)
-				compare_push_node(child, lines, len, +1)
-				result = false
-			} 
-			else if (expected === undefined) {
-				compare_push_node(child, lines, len, +1)
-				result = false
-			}
-			else {
-				if (child.type === expected.type) {
-					compare_push_type(child.type, lines, len, 0)
-				} else {
-					compare_push_type(child.type, lines, len, +1)
-					compare_push_type(expected.type, lines, len, -1)
-					result = false
-				}
-				path[len] = child
-				result = compare_children(child.children, expected.children, lines, len + 1) && result
-			}
-		}
+		result = compare_child(children[i], expected_children[i], lines, len) && result
 	}
 
 	for (; i < expected_children.length; i += 1) {
-		const expected = expected_children[i]
-		if (typeof expected === "string") {
-			compare_push_text(expected, lines, len, -1)
-		} else {
-			compare_push_node(expected, lines, len, -1)
-			result = false
-		}
+		compare_child(undefined, expected_children[i], lines, len)
+		result = false
 	}
 
 	return result
