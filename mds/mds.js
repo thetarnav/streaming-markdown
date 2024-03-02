@@ -149,6 +149,9 @@ export function parser(renderer) {
 export function parser_end(p) {
 	parser_write(p, "\n")
 	parser_add_text(p)
+	while (p.len > 0) {
+		parser_end_token(p)
+	}
 }
 
 /**
@@ -156,7 +159,6 @@ export function parser_end(p) {
  * @returns {void  } */
 export function parser_add_text(p) {
 	if (p.text.length === 0) return
-	console.assert(p.text.length > 0, "No text to add")
 	console.assert(p.len > 0, "Never adding text to root")
 	p.renderer.add_text(p.renderer.data, p.text)
 	p.text = ""
@@ -228,7 +230,6 @@ export function parser_write(p, chunk) {
 				continue chars
 			default:
 				p.line_break=false
-				parser_add_text(p)
 				p.renderer.add_node(p.renderer.data, LINE_BREAK)
 				p.renderer.end_node(p.renderer.data)
 				break
@@ -292,7 +293,6 @@ export function parser_write(p, chunk) {
 			/* `Code Inline` */
 			case "`":
 				parser_add_token(p, PARAGRAPH)
-				parser_add_text(p)
 				parser_add_token(p, CODE_INLINE)
 				p.pending = ""
 				p.text = char
