@@ -138,7 +138,6 @@ export function parser(renderer) {
 		len       : 0,
 		code_fence: "",
 		newline_blockquote_idx: 0,
-		line_break: false,
 	}
 }
 
@@ -195,51 +194,53 @@ export function parser_write(p, chunk) {
 		const in_token = p.types[p.len]
 		const pending_with_char = p.pending + char
 
-		if (p.line_break) {
+		/*
+		Token specific checks
+		*/
+		switch (in_token) {
+		case LINE_BREAK:
+			console.assert(p.pending.length === 1, "Pending in line break should be one character")
 			console.assert(p.text.length === 0, "Text when in line break")
 
 			switch (p.pending) {
 			case " ":
 				p.pending = char
-				continue chars
+				continue
 			case ">":
 				p.pending = char
 
-				while (p.newline_blockquote_idx+1 < p.len) {
+				while (p.newline_blockquote_idx+1 < p.len-1) {
 					p.newline_blockquote_idx += 1
 					if (p.types[p.newline_blockquote_idx] === BLOCKQUOTE) {
 						continue chars
 					}
 				}
 
-				p.line_break=false;
+				p.len -= 1 // remove the line break
+
 				while (p.newline_blockquote_idx < p.len) {
 					parser_end_token(p)
 				}
+
 				p.newline_blockquote_idx += 1
 				parser_add_token(p, BLOCKQUOTE)
-				continue chars
+				continue
 			case "\n":
+				p.len -= 1 // remove the line break
+
 				while (p.newline_blockquote_idx < p.len) {
 					parser_end_token(p)
 				}
-
-				p.pending = char
-				p.line_break=false
 				p.newline_blockquote_idx = 0
-				continue chars
+				p.pending = char
+				continue
 			default:
-				p.line_break=false
+				p.len -= 1 // remove the line break
 				p.renderer.add_node(p.renderer.data, LINE_BREAK)
 				p.renderer.end_node(p.renderer.data)
-				break
+				char_i -= 1
+				continue
 			}
-		}
-
-		/*
-		Token specific checks
-		*/
-		switch (in_token) {
 		case DOCUMENT:
 		case BLOCKQUOTE:
 			console.assert(p.text.length === 0, "Root should not have any text")
@@ -536,15 +537,17 @@ export function parser_write(p, chunk) {
 				const char_code = char.charCodeAt(0)
 				p.pending = ""
 				p.text += (char_code >= 48 && char_code <= 57) || // 0-9
-							(char_code >= 65 && char_code <= 90) || // A-Z
-							(char_code >= 97 && char_code <= 122)   // a-z
-							? pending_with_char
-							: char
+				          (char_code >= 65 && char_code <= 90) || // A-Z
+				          (char_code >= 97 && char_code <= 122)   // a-z
+				          ? pending_with_char
+				          : char
 			}
 			continue
 		/* Newline */
 		case "\n":
-			p.line_break = true
+			/* Add Line_Break temporarily */
+			p.len += 1
+			p.types[p.len] = LINE_BREAK
 			p.newline_blockquote_idx = 0
 			p.pending = char
 			parser_add_text(p)
