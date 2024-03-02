@@ -10,40 +10,40 @@ export * from "./t.js"
 export const
 	DOCUMENT    =      1, //  1
 	PARAGRAPH   =      2, //  2
-	HEADING_1   =      4, //  3
-	HEADING_2   =      8, //  4
-	HEADING_3   =     16, //  5
-	HEADING_4   =     32, //  6
-	HEADING_5   =     64, //  7
-	HEADING_6   =    128, //  8
-	CODE_BLOCK  =    256, //  9
-	CODE_FENCE  =    512, // 10
-	CODE_INLINE =   1024, // 11
-	ITALIC_AST  =   2048, // 12
-	ITALIC_UND  =   4096, // 13
-	STRONG_AST  =   8192, // 14
-	STRONG_UND  =  16384, // 15
-	STRIKE      =  32768, // 16
-	LINK        =  65536, // 17
-	IMAGE       = 131072, // 18
-	BLOCKQUOTE  = 262144, // 19
-	LINE_BREAK  = 524288, // 20
+	LINE_BREAK  =      4, //  3
+	HEADING_1   =      8, //  4
+	HEADING_2   =     16, //  5
+	HEADING_3   =     32, //  6
+	HEADING_4   =     64, //  7
+	HEADING_5   =    128, //  8
+	HEADING_6   =    256, //  9
+	CODE_BLOCK  =    512, // 10
+	CODE_FENCE  =   1024, // 11
+	CODE_INLINE =   2048, // 12
+	ITALIC_AST  =   4096, // 13
+	ITALIC_UND  =   8192, // 14
+	STRONG_AST  =  16384, // 15
+	STRONG_UND  =  32768, // 16
+	STRIKE      =  65536, // 17
+	LINK        = 131072, // 18
+	IMAGE       = 262144, // 19
+	BLOCKQUOTE  = 524288, // 20
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
-	ANY_HEADING =    252,
+	ANY_HEADING =    504,
 	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
-	ANY_CODE    =   1792,
+	ANY_CODE    =   3584,
 	/** `ITALIC_AST | ITALIC_UND` */
-	ANY_ITALIC  =   6144,
+	ANY_ITALIC  =  12288,
 	/** `STRONG_AST | STRONG_UND` */
-	ANY_STRONG  =  24576,
+	ANY_STRONG  =  49152,
 	/** `STRONG_AST | ITALIC_AST` */
-	ANY_AST     =  10240,
+	ANY_AST     =  20480,
 	/** `STRONG_UND | ITALIC_UND` */
-	ANY_UND     =  20480,
-	/** `CODE | IMAGE` */
-	NO_NESTING  = 132864,
+	ANY_UND     =  40960,
+	/** `ANY_CODE | IMAGE` */
+	NO_NESTING  = 265728,
 	/** `DOCUMENT | BLOCKQUOTE` */
-	ANY_ROOT    = 262145
+	ANY_ROOT    = 524289
 
 /** @enum {(typeof Token_Type)[keyof typeof Token_Type]} */
 export const Token_Type = /** @type {const} */({
