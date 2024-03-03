@@ -4,6 +4,8 @@
 
 **Experiment making a streaming makdown parser *à la ChatGPT.***
 
+---
+
 ## Installation
 
 Install `streaming-markdown` package from npm.
@@ -85,7 +87,10 @@ mds.parser_end(parser)
     - [x] Escaping escaping bug: \\[Link\\](url)
 - [x] Images
     - [x] src attr
-- [ ] Horizontal rules
+- [x] Horizontal rules
+    - [x] With `---`
+    - [x] With `***`
+    - [x] With `___`
 - [ ] Unordered lists
 - [ ] Ordered lists
 - [ ] Check lists

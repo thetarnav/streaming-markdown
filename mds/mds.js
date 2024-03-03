@@ -1,72 +1,74 @@
 /*
 Streaming Markdown Parser and Renderer
 MIT License
-Copyright (c) 2024 Damian Tarnawski
+Copyright 2024 Damian Tarnawski
 https://github.com/thetarnav/streaming-markdown
 */
 
 export * from "./t.js"
 
 export const
-	DOCUMENT    =      1, //  1
-	PARAGRAPH   =      2, //  2
-	LINE_BREAK  =      4, //  3
-	HEADING_1   =      8, //  4
-	HEADING_2   =     16, //  5
-	HEADING_3   =     32, //  6
-	HEADING_4   =     64, //  7
-	HEADING_5   =    128, //  8
-	HEADING_6   =    256, //  9
-	CODE_BLOCK  =    512, // 10
-	CODE_FENCE  =   1024, // 11
-	CODE_INLINE =   2048, // 12
-	ITALIC_AST  =   4096, // 13
-	ITALIC_UND  =   8192, // 14
-	STRONG_AST  =  16384, // 15
-	STRONG_UND  =  32768, // 16
-	STRIKE      =  65536, // 17
-	LINK        = 131072, // 18
-	IMAGE       = 262144, // 19
-	BLOCKQUOTE  = 524288, // 20
+	DOCUMENT        =       1, //  1
+	PARAGRAPH       =       2, //  2
+	HEADING_1       =       4, //  3
+	HEADING_2       =       8, //  4
+	HEADING_3       =      16, //  5
+	HEADING_4       =      32, //  6
+	HEADING_5       =      64, //  7
+	HEADING_6       =     128, //  8
+	CODE_BLOCK      =     256, //  9
+	CODE_FENCE      =     512, // 10
+	CODE_INLINE     =    1024, // 11
+	ITALIC_AST      =    2048, // 12
+	ITALIC_UND      =    4096, // 13
+	STRONG_AST      =    8192, // 14
+	STRONG_UND      =   16384, // 15
+	STRIKE          =   32768, // 16
+	LINK            =   65536, // 17
+	IMAGE           =  131072, // 18
+	BLOCKQUOTE      =  262144, // 19
+	LINE_BREAK      =  524288, // 20
+	HORIZONTAL_RULE = 1048576, // 21
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
-	ANY_HEADING =    504,
+	ANY_HEADING     =     252,
 	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
-	ANY_CODE    =   3584,
+	ANY_CODE        =    1792,
 	/** `ITALIC_AST | ITALIC_UND` */
-	ANY_ITALIC  =  12288,
+	ANY_ITALIC      =    6144,
 	/** `STRONG_AST | STRONG_UND` */
-	ANY_STRONG  =  49152,
+	ANY_STRONG      =   24576,
 	/** `STRONG_AST | ITALIC_AST` */
-	ANY_AST     =  20480,
+	ANY_AST         =   10240,
 	/** `STRONG_UND | ITALIC_UND` */
-	ANY_UND     =  40960,
-	/** `ANY_CODE | IMAGE` */
-	NO_NESTING  = 265728,
+	ANY_UND         =   20480,
+	/** `ANY_CODE | IMAGE | HORIZONTAL_RULE` */
+	NO_NESTING      = 1181440,
 	/** `DOCUMENT | BLOCKQUOTE` */
-	ANY_ROOT    = 524289
+	ANY_ROOT        =  262145
 
 /** @enum {(typeof Token_Type)[keyof typeof Token_Type]} */
 export const Token_Type = /** @type {const} */({
-	Document:    DOCUMENT,
-	Blockquote:  BLOCKQUOTE,
-	Line_Break:  LINE_BREAK,
-	Paragraph:   PARAGRAPH,
-	Heading_1:   HEADING_1,
-	Heading_2:   HEADING_2,
-	Heading_3:   HEADING_3,
-	Heading_4:   HEADING_4,
-	Heading_5:   HEADING_5,
-	Heading_6:   HEADING_6,
-	Code_Block:  CODE_BLOCK,
-	Code_Fence:  CODE_FENCE,
-	Code_Inline: CODE_INLINE,
-	Italic_Ast:  ITALIC_AST,
-	Italic_Und:  ITALIC_UND,
-	Strong_Ast:  STRONG_AST,
-	Strong_Und:  STRONG_UND,
-	Strike:      STRIKE,
-	Link:        LINK,
-	Image:       IMAGE,
+	Document:        DOCUMENT,
+	Blockquote:      BLOCKQUOTE,
+	Paragraph:       PARAGRAPH,
+	Heading_1:       HEADING_1,
+	Heading_2:       HEADING_2,
+	Heading_3:       HEADING_3,
+	Heading_4:       HEADING_4,
+	Heading_5:       HEADING_5,
+	Heading_6:       HEADING_6,
+	Code_Block:      CODE_BLOCK,
+	Code_Fence:      CODE_FENCE,
+	Code_Inline:     CODE_INLINE,
+	Italic_Ast:      ITALIC_AST,
+	Italic_Und:      ITALIC_UND,
+	Strong_Ast:      STRONG_AST,
+	Strong_Und:      STRONG_UND,
+	Strike:          STRIKE,
+	Link:            LINK,
+	Image:           IMAGE,
+	Line_Break:      LINE_BREAK,
+	Horizontal_Rule: HORIZONTAL_RULE,
 })
 
 /**
@@ -74,26 +76,27 @@ export const Token_Type = /** @type {const} */({
  * @returns {string    } */
 export function token_type_to_string(type) {
 	switch (type) {
-	case DOCUMENT:   return "Document"
-	case BLOCKQUOTE: return "Blockquote"
-	case PARAGRAPH:  return "Paragraph"
-	case LINE_BREAK: return "Line_Break"
-	case HEADING_1:  return "Heading_1"
-	case HEADING_2:  return "Heading_2"
-	case HEADING_3:  return "Heading_3"
-	case HEADING_4:  return "Heading_4"
-	case HEADING_5:  return "Heading_5"
-	case HEADING_6:  return "Heading_6"
-	case CODE_BLOCK: return "Code_Block"
-	case CODE_FENCE: return "Code_Fence"
-	case CODE_INLINE:return "Code_Inline"
-	case ITALIC_AST: return "Italic_Ast"
-	case ITALIC_UND: return "Italic_Und"
-	case STRONG_AST: return "Strong_Ast"
-	case STRONG_UND: return "Strong_Und"
-	case STRIKE:     return "Strike"
-	case LINK:       return "Link"
-	case IMAGE:      return "Image"
+	case DOCUMENT:        return "Document"
+	case BLOCKQUOTE:      return "Blockquote"
+	case PARAGRAPH:       return "Paragraph"
+	case HEADING_1:       return "Heading_1"
+	case HEADING_2:       return "Heading_2"
+	case HEADING_3:       return "Heading_3"
+	case HEADING_4:       return "Heading_4"
+	case HEADING_5:       return "Heading_5"
+	case HEADING_6:       return "Heading_6"
+	case CODE_BLOCK:      return "Code_Block"
+	case CODE_FENCE:      return "Code_Fence"
+	case CODE_INLINE:     return "Code_Inline"
+	case ITALIC_AST:      return "Italic_Ast"
+	case ITALIC_UND:      return "Italic_Und"
+	case STRONG_AST:      return "Strong_Ast"
+	case STRONG_UND:      return "Strong_Und"
+	case STRIKE:          return "Strike"
+	case LINK:            return "Link"
+	case IMAGE:           return "Image"
+	case LINE_BREAK:      return "Line_Break"
+	case HORIZONTAL_RULE: return "Horizontal_Rule"
 	}
 }
 
@@ -138,6 +141,8 @@ export function parser(renderer) {
 		len       : 0,
 		code_fence: "",
 		newline_blockquote_idx: 0,
+		hr_char   : '',
+		hr_chars  : 0,
 	}
 }
 
@@ -189,10 +194,9 @@ export function parser_add_token(p, type) {
  * @returns {void  } */
 export function parser_write(p, chunk) {
 	chars:
-	for (let char_i = 0; char_i < chunk.length; char_i += 1) {
-		const char = chunk[char_i]
-		const in_token = p.types[p.len]
+	for (const char of chunk) {
 		const pending_with_char = p.pending + char
+		const in_token = p.types[p.len]
 
 		/*
 		Token specific checks
@@ -238,7 +242,7 @@ export function parser_write(p, chunk) {
 				p.len -= 1 // remove the line break
 				p.renderer.add_node(p.renderer.data, LINE_BREAK)
 				p.renderer.end_node(p.renderer.data)
-				char_i -= 1 // reprocess pending
+				parser_write(p, char)
 				continue
 			}
 		case DOCUMENT:
@@ -302,11 +306,72 @@ export function parser_write(p, chunk) {
 			case " ":
 			case "  ":
 			case "   ":
+			case "":
 				p.pending = char
 				continue
 			default:
+				console.assert(' ' !== p.pending[0], "Pending should not start with space")
+
+				/* Horizontal Rule
+				   "-- - --- - --"
+				*/
+				hr_check: {
+					if ('' === p.hr_char) {
+						console.log([...p.pending])
+						const first_pending = p.pending[0]
+						
+						if ('-' === first_pending ||
+							'*' === first_pending ||
+							'_' === first_pending
+						) {
+							p.hr_chars += 1
+	
+							for (let i = 1; i < p.pending.length; i += 1) {
+								switch (p.pending[i]) {
+								case first_pending:
+									p.hr_chars += 1
+									continue
+								case ' ':
+									continue
+								default:
+									p.hr_chars = 0
+									break hr_check
+								}
+							}
+	
+							p.hr_char = first_pending
+						} else {
+							break hr_check
+						}
+					}
+
+					switch (char) {
+					case p.hr_char:
+						p.hr_chars += 1
+						p.pending += char
+						continue
+					case ' ':
+						p.pending += char
+						continue
+					case '\n':
+						if (p.hr_chars < 3) break
+						p.renderer.add_node(p.renderer.data, HORIZONTAL_RULE)
+						p.renderer.end_node(p.renderer.data)
+						p.pending = ""
+						p.hr_char = ''
+						p.hr_chars = 0
+						parser_write(p, char)
+						continue
+					}
+
+					p.hr_char = ''
+					p.hr_chars = 0
+				}
+				
+				p.pending = ""
 				parser_add_token(p, PARAGRAPH)
-				char_i -= 1
+				/* The whole pending text needs to be reprocessed */
+				parser_write(p, pending_with_char)
 				continue
 			}
 		case CODE_BLOCK:
@@ -682,24 +747,25 @@ export function default_add_node(data, type) {
 	/**@type {HTMLElement}*/ let slot
 
 	switch (type) {
-	case DOCUMENT: return // node is already a document
-	case BLOCKQUOTE: mount = slot = document.createElement("blockquote");break
-	case PARAGRAPH:  mount = slot = document.createElement("p")         ;break
-	case LINE_BREAK: mount = slot = document.createElement("br")        ;break
-	case HEADING_1:  mount = slot = document.createElement("h1")        ;break
-	case HEADING_2:  mount = slot = document.createElement("h2")        ;break
-	case HEADING_3:  mount = slot = document.createElement("h3")        ;break
-	case HEADING_4:  mount = slot = document.createElement("h4")        ;break
-	case HEADING_5:  mount = slot = document.createElement("h5")        ;break
-	case HEADING_6:  mount = slot = document.createElement("h6")        ;break
+	case DOCUMENT: return // document is provided
+	case BLOCKQUOTE:     mount = slot = document.createElement("blockquote");break
+	case PARAGRAPH:      mount = slot = document.createElement("p")         ;break
+	case LINE_BREAK:     mount = slot = document.createElement("br")        ;break
+	case HORIZONTAL_RULE:mount = slot = document.createElement("hr")        ;break
+	case HEADING_1:      mount = slot = document.createElement("h1")        ;break
+	case HEADING_2:      mount = slot = document.createElement("h2")        ;break
+	case HEADING_3:      mount = slot = document.createElement("h3")        ;break
+	case HEADING_4:      mount = slot = document.createElement("h4")        ;break
+	case HEADING_5:      mount = slot = document.createElement("h5")        ;break
+	case HEADING_6:      mount = slot = document.createElement("h6")        ;break
 	case ITALIC_AST:
-	case ITALIC_UND: mount = slot = document.createElement("em")        ;break
+	case ITALIC_UND:     mount = slot = document.createElement("em")        ;break
 	case STRONG_AST:
-	case STRONG_UND: mount = slot = document.createElement("strong")    ;break
-	case STRIKE:     mount = slot = document.createElement("s")         ;break
-	case CODE_INLINE:mount = slot = document.createElement("code")      ;break
-	case LINK:       mount = slot = document.createElement("a")         ;break
-	case IMAGE:      mount = slot = document.createElement("img")       ;break
+	case STRONG_UND:     mount = slot = document.createElement("strong")    ;break
+	case STRIKE:         mount = slot = document.createElement("s")         ;break
+	case CODE_INLINE:    mount = slot = document.createElement("code")      ;break
+	case LINK:           mount = slot = document.createElement("a")         ;break
+	case IMAGE:          mount = slot = document.createElement("img")       ;break
 	case CODE_BLOCK:
 	case CODE_FENCE:
 		mount = document.createElement("pre")

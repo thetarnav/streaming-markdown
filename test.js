@@ -404,6 +404,37 @@ test_single_write("Trim too many spaces in italic",
 	}]
 )
 
+for (const c of ["*", "-", "_"]) {
+	for (let l = 3; l <= 6; l += 1) {
+		let txt = ""
+		for (let i = 0; i < l; i += 1) {
+			if (i % 2 === 0) {
+				txt += " " // mix in some spaces
+			}
+			txt += c
+		}
+
+		test_single_write('Horizontal Rule "' + txt + '"',
+			txt,
+			[{
+				type    : mds.Token_Type.Horizontal_Rule,
+				children: []
+			}]
+		)
+	}
+}
+
+test_single_write("Text after Horizontal Rule",
+	"---\nfoo",
+	[{
+		type    : mds.Token_Type.Horizontal_Rule,
+		children: []
+	}, {
+		type    : mds.Token_Type.Paragraph,
+		children: ["foo"],
+	}]
+)
+
 test_single_write("Code Inline",
 	"`a`",
 	[{

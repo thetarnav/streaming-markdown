@@ -19,6 +19,9 @@ export type Parser = {
 	code_fence: string | 0 | 1
 	/* For Blockquote parsing */
 	newline_blockquote_idx: number
+	/* For horizontal rule parsing */
+	hr_char: string
+	hr_chars: number
 }
 
 export type Renderer_Add_Node<TData> = (data: TData, type: Token_Type) => void
