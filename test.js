@@ -6,7 +6,7 @@ import * as mds    from "./mds/mds.js"
 /**
  * @typedef {(string | Test_Renderer_Node)[]} Children
  * @typedef {Map<Test_Renderer_Node, Test_Renderer_Node>} Parent_Map
- * @typedef {{[key in mds.Attr_Type]?: string}} Node_Attrs
+ * @typedef {{[key in mds.Attr]?: string}} Node_Attrs
  *
  * @typedef  {object} Test_Renderer_Data
  * @property {Test_Renderer_Node} root
@@ -14,27 +14,27 @@ import * as mds    from "./mds/mds.js"
  * @property {Parent_Map        } parent_map
  *
  * @typedef  {object} Test_Renderer_Node
- * @property {mds.Token_Type} type
- * @property {Children      } children
- * @property {Node_Attrs=   } attrs
+ * @property {mds.Token  } type
+ * @property {Children   } children
+ * @property {Node_Attrs=} attrs
  *
- * @typedef {mds.Renderer         <Test_Renderer_Data>} Test_Renderer
- * @typedef {mds.Renderer_Add_Node<Test_Renderer_Data>} Test_Add_Node
- * @typedef {mds.Renderer_End_Node<Test_Renderer_Data>} Test_End_Node
- * @typedef {mds.Renderer_Add_Text<Test_Renderer_Data>} Test_Add_Text
- * @typedef {mds.Renderer_Set_Attr<Test_Renderer_Data>} Test_Set_Attr
+ * @typedef {mds.Renderer          <Test_Renderer_Data>} Test_Renderer
+ * @typedef {mds.Renderer_Add_Token<Test_Renderer_Data>} Test_Add_Token
+ * @typedef {mds.Renderer_End_Token<Test_Renderer_Data>} Test_End_Token
+ * @typedef {mds.Renderer_Add_Text <Test_Renderer_Data>} Test_Add_Text
+ * @typedef {mds.Renderer_Set_Attr <Test_Renderer_Data>} Test_Set_Attr
  */
 
 /** @returns {Test_Renderer} */
 function test_renderer() {
 	/** @type {Test_Renderer_Node} */
 	const root = {
-		type    : mds.Token_Type.Document,
+		type    : mds.Token.Document,
 		children: []
 	}
 	return {
-		add_node: test_renderer_add_node,
-		end_node: test_renderer_end_node,
+		add_token: test_renderer_add_token,
+		end_token: test_renderer_end_token,
 		add_text: test_renderer_add_text,
 		set_attr: test_renderer_set_attr,
 		data    : {
@@ -44,8 +44,8 @@ function test_renderer() {
 		},
 	}
 }
-/** @type {Test_Add_Node} */
-function test_renderer_add_node(data, type) {
+/** @type {Test_Add_Token} */
+function test_renderer_add_token(data, type) {
 	/** @type {Test_Renderer_Node} */
     const node = {type, children: []}
 	const parent = data.node
@@ -61,8 +61,8 @@ function test_renderer_add_text(data, text) {
 		data.node.children.push(text)
 	}
 }
-/** @type {Test_End_Node} */
-function test_renderer_end_node(data) {
+/** @type {Test_End_Token} */
+function test_renderer_end_token(data) {
 	const parent = data.parent_map.get(data.node)
 	assert.notEqual(parent, undefined)
 	data.node = /** @type {Test_Renderer_Node} */(parent)
@@ -80,7 +80,7 @@ function test_renderer_set_attr(data, type, value) {
 
 /** @type {Test_Renderer_Node} */
 const br = {
-	type    : mds.Token_Type.Line_Break,
+	type    : mds.Token.Line_Break,
 	children: []
 }
 
@@ -132,13 +132,13 @@ function compare_push_node(node, lines, len, h) {
 }
 
 /**
- * @param {mds.Token_Type} type
+ * @param {mds.Token} type
  * @param {string[]} lines
  * @param {number} len
  * @param {number} h
  * @returns {void} */
 function compare_push_type(type, lines, len, h) {
-	lines.push(compare_pad(len, h) + "\u001b[36m" + mds.token_type_to_string(type) + "\u001b[0m")
+	lines.push(compare_pad(len, h) + "\u001b[36m" + mds.token_to_string(type) + "\u001b[0m")
 }
 
 /**
@@ -281,15 +281,15 @@ function test_single_write(title, markdown, expected_children) {
 
 for (let level = 1; level <= 6; level += 1) {
 
-	/** @type {mds.Token_Type} */
+	/** @type {mds.Token} */
 	let heading_type
 	switch (level) {
-		case 1: heading_type = mds.Token_Type.Heading_1; break
-		case 2: heading_type = mds.Token_Type.Heading_2; break
-		case 3: heading_type = mds.Token_Type.Heading_3; break
-		case 4: heading_type = mds.Token_Type.Heading_4; break
-		case 5: heading_type = mds.Token_Type.Heading_5; break
-		case 6: heading_type = mds.Token_Type.Heading_6; break
+		case 1: heading_type = mds.Token.Heading_1; break
+		case 2: heading_type = mds.Token.Heading_2; break
+		case 3: heading_type = mds.Token.Heading_3; break
+		case 4: heading_type = mds.Token.Heading_4; break
+		case 5: heading_type = mds.Token.Heading_5; break
+		case 6: heading_type = mds.Token.Heading_6; break
 		default: throw new Error("Invalid heading level")
 	}
 
@@ -306,7 +306,7 @@ for (let level = 1; level <= 6; level += 1) {
 		[{
 			type    : heading_type,
 			children: ["foo ", {
-				type    : mds.Token_Type.Italic_Ast,
+				type    : mds.Token.Italic_Ast,
 				children: ["bar"]
 			}]
 		}]
@@ -316,7 +316,7 @@ for (let level = 1; level <= 6; level += 1) {
 test_single_write("Line Breaks",
 	"foo\nbar",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["foo", br, "bar"],
 	}]
 )
@@ -324,9 +324,9 @@ test_single_write("Line Breaks",
 test_single_write("Line Breaks with Italic",
 	"*a\nb*",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: [{
-			type    : mds.Token_Type.Italic_Ast,
+			type    : mds.Token.Italic_Ast,
 			children: ["a", br, "b"]
 		}],
 	}]
@@ -335,7 +335,7 @@ test_single_write("Line Breaks with Italic",
 test_single_write("Escaped Line Breaks",
 	"a\\\nb",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["a", br, "b"],
 	}]
 )
@@ -343,10 +343,10 @@ test_single_write("Escaped Line Breaks",
 test_single_write("Paragraphs",
 	"foo\n\nbar",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["foo"],
 	}, {
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["bar"],
 	}]
 )
@@ -354,7 +354,7 @@ test_single_write("Paragraphs",
 test_single_write("Paragraph trim leading spaces",
 	"  foo",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["foo"],
 	}]
 )
@@ -362,7 +362,7 @@ test_single_write("Paragraph trim leading spaces",
 test_single_write("Trim too many spaces",
 	"foo       bar",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["foo bar"],
 	}]
 )
@@ -370,9 +370,9 @@ test_single_write("Trim too many spaces",
 test_single_write("Trim too many spaces in italic",
 	"*foo       bar*",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: [{
-			type    : mds.Token_Type.Italic_Ast,
+			type    : mds.Token.Italic_Ast,
 			children: ["foo bar"]
 		}],
 	}]
@@ -391,7 +391,7 @@ for (const c of ["*", "-", "_"]) {
 		test_single_write('Horizontal Rule "' + txt + '"',
 			txt,
 			[{
-				type    : mds.Token_Type.Horizontal_Rule,
+				type    : mds.Token.Horizontal_Rule,
 				children: []
 			}]
 		)
@@ -401,10 +401,10 @@ for (const c of ["*", "-", "_"]) {
 test_single_write("Text after Horizontal Rule",
 	"---\nfoo",
 	[{
-		type    : mds.Token_Type.Horizontal_Rule,
+		type    : mds.Token.Horizontal_Rule,
 		children: []
 	}, {
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["foo"],
 	}]
 )
@@ -412,9 +412,9 @@ test_single_write("Text after Horizontal Rule",
 test_single_write("Code Inline",
 	"`a`",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: [{
-			type    : mds.Token_Type.Code_Inline,
+			type    : mds.Token.Code_Inline,
 			children: ["a"]
 		}],
 	}]
@@ -423,9 +423,9 @@ test_single_write("Code Inline",
 test_single_write("Code with line break",
 	"`a\nb`",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: [{
-			type    : mds.Token_Type.Code_Inline,
+			type    : mds.Token.Code_Inline,
 			children: ["a", br, "b"]
 		}],
 	}]
@@ -434,13 +434,13 @@ test_single_write("Code with line break",
 test_single_write("Code with two line breaks",
 	"`a\n\nb",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: [{
-			type    : mds.Token_Type.Code_Inline,
+			type    : mds.Token.Code_Inline,
 			children: ["a"]
 		}],
 	}, {
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["b"],
 	}]
 )
@@ -448,7 +448,7 @@ test_single_write("Code with two line breaks",
 test_single_write("Empty Code_Fence",
 	"```\n```",
 	[{
-		type    : mds.Token_Type.Code_Fence,
+		type    : mds.Token.Code_Fence,
 		children: []
 	}]
 )
@@ -456,7 +456,7 @@ test_single_write("Empty Code_Fence",
 test_single_write("Code_Fence",
 	"```\nfoo\n```",
 	[{
-		type    : mds.Token_Type.Code_Fence,
+		type    : mds.Token.Code_Fence,
 		children: ["foo"]
 	}]
 )
@@ -464,16 +464,16 @@ test_single_write("Code_Fence",
 test_single_write("Code_Fence with language",
 	"```js\nfoo\n```",
 	[{
-		type    : mds.Token_Type.Code_Fence,
+		type    : mds.Token.Code_Fence,
 		children: ["foo"],
-		attrs   : {[mds.Attr_Type.Lang]: "js"}
+		attrs   : {[mds.Attr.Lang]: "js"}
 	}]
 )
 
 test_single_write("Code_Fence with backticks inside",
 	"```\na```b\n```",
 	[{
-		type    : mds.Token_Type.Code_Fence,
+		type    : mds.Token.Code_Fence,
 		children: ["a```b"]
 	}]
 )
@@ -481,7 +481,7 @@ test_single_write("Code_Fence with backticks inside",
 test_single_write("Code_Fence with unfinished end backticks",
 	"```\na\n``\n```",
 	[{
-		type    : mds.Token_Type.Code_Fence,
+		type    : mds.Token.Code_Fence,
 		children: ["a\n``"]
 	}]
 )
@@ -496,7 +496,7 @@ for (const indent of [
 	test_single_write("Code_Block",
 		indent + "  foo",
 		[{
-			type    : mds.Token_Type.Code_Block,
+			type    : mds.Token.Code_Block,
 			children: ["  foo"]
 		}]
 	)
@@ -505,7 +505,7 @@ for (const indent of [
 		indent + "foo\n" +
 		indent + "bar",
 		[{
-			type    : mds.Token_Type.Code_Block,
+			type    : mds.Token.Code_Block,
 			children: ["foo\nbar"]
 		}]
 	)
@@ -514,10 +514,10 @@ for (const indent of [
 		indent+"foo\n" +
 		"bar",
 		[{
-			type    : mds.Token_Type.Code_Block,
+			type    : mds.Token.Code_Block,
 			children: ["foo"]
 		}, {
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: ["bar"]
 		}]
 	)
@@ -526,12 +526,12 @@ for (const indent of [
 
 for (const {c, italic, strong} of [{
 	c: "*",
-	italic: mds.Token_Type.Italic_Ast,
-	strong: mds.Token_Type.Strong_Ast,
+	italic: mds.Token.Italic_Ast,
+	strong: mds.Token.Strong_Ast,
 }, {
 	c: "_",
-	italic: mds.Token_Type.Italic_Und,
-	strong: mds.Token_Type.Strong_Und,
+	italic: mds.Token.Italic_Und,
+	strong: mds.Token.Strong_Und,
 }]) {
 	const case_1 = ""+c+c+"bold"+c+"bold>em"+c+c+c+""
 	const case_2 = ""+c+c+c+"bold>em"+c+"bold"+c+c+""
@@ -541,7 +541,7 @@ for (const {c, italic, strong} of [{
 	test_single_write("Italic & Bold \""+case_1+"\'",
 		case_1,
 		[{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: [{
 				type    : strong,
 				children: ["bold", {
@@ -555,7 +555,7 @@ for (const {c, italic, strong} of [{
 	test_single_write("Italic & Bold \""+case_2+"\'",
 		case_2,
 		[{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: [{
 				type    : strong,
 				children: [{
@@ -570,7 +570,7 @@ for (const {c, italic, strong} of [{
 	test_single_write("Italic & Bold \""+case_3+"\'",
 		case_3,
 		[{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: [{
 				type    : italic,
 				children: ["em", {
@@ -584,7 +584,7 @@ for (const {c, italic, strong} of [{
 	test_single_write("Italic & Bold \""+case_4+"\'",
 		case_4,
 		[{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: [{
 				type    : strong,
 				children: [{
@@ -600,21 +600,21 @@ for (const {c, italic, strong} of [{
 }
 
 for (const {type, c} of [
-	{type: mds.Token_Type.Italic_Ast, c: "*" },
-	{type: mds.Token_Type.Italic_Und, c: "_" },
-	{type: mds.Token_Type.Strong_Ast, c: "**"},
-	{type: mds.Token_Type.Strong_Und, c: "__"},
-	{type: mds.Token_Type.Strike    , c: "~~"},
+	{type: mds.Token.Italic_Ast, c: "*" },
+	{type: mds.Token.Italic_Und, c: "_" },
+	{type: mds.Token.Strong_Ast, c: "**"},
+	{type: mds.Token.Strong_Und, c: "__"},
+	{type: mds.Token.Strike    , c: "~~"},
 ]) {
 	let e = ""
 	for (const char of c) {
 		e += "\\" + char
 	}
 
-	test_single_write(mds.token_type_to_string(type),
+	test_single_write(mds.token_to_string(type),
 		c + "foo" + c,
 		[{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: [{
 				type    : type,
 				children: ["foo"]
@@ -622,36 +622,36 @@ for (const {type, c} of [
 		}]
 	)
 
-	test_single_write(mds.token_type_to_string(type) + " space after begin",
+	test_single_write(mds.token_to_string(type) + " space after begin",
 		c + " foo" + c,
 		[{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: [c + " foo" + c]
 		}]
 	)
 
-	test_single_write(mds.token_type_to_string(type) + " with Code",
+	test_single_write(mds.token_to_string(type) + " with Code",
 		c + "`foo`" + c,
 		[{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: [{
 				type    : type,
 				children: [{
-					type    : mds.Token_Type.Code_Inline,
+					type    : mds.Token.Code_Inline,
 					children: ["foo"]
 				}]
 			}]
 		}]
 	)
 
-	test_single_write(mds.token_type_to_string(type) + " new Paragraph",
+	test_single_write(mds.token_to_string(type) + " new Paragraph",
 		"foo\n\n"+
 		c + "bar" + c,
 		[{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: ["foo"],
 		}, {
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: [{
 				type    : type,
 				children: ["bar"]
@@ -659,18 +659,18 @@ for (const {type, c} of [
 		}]
 	)
 
-	test_single_write(`Escape ${mds.token_type_to_string(type)} Begin`,
+	test_single_write(`Escape ${mds.token_to_string(type)} Begin`,
 		e + "foo",
 		[{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: [c + "foo"]
 		}]
 	)
 
-	test_single_write(`Escape ${mds.token_type_to_string(type)} End`,
+	test_single_write(`Escape ${mds.token_to_string(type)} End`,
 		c + "foo" + e,
 		[{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: [{
 				type    : type,
 				children: ["foo" + c]
@@ -682,7 +682,7 @@ for (const {type, c} of [
 test_single_write("Escape Backtick",
 	"\\`" + "foo",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["`" + "foo"]
 	}]
 )
@@ -690,7 +690,7 @@ test_single_write("Escape Backtick",
 test_single_write("Escape Backslash",
 	"\\\\" + "foo",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["\\" + "foo"]
 	}]
 )
@@ -698,7 +698,7 @@ test_single_write("Escape Backslash",
 test_single_write("Escape normal char",
 	"\\a",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["\\a"]
 	}]
 )
@@ -706,10 +706,10 @@ test_single_write("Escape normal char",
 test_single_write("Link",
 	"[title](url)",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: [{
-			type    : mds.Token_Type.Link,
-			attrs   : {[mds.Attr_Type.Href]: "url"},
+			type    : mds.Token.Link,
+			attrs   : {[mds.Attr.Href]: "url"},
 			children: ["title"],
 		}]
 	}]
@@ -718,12 +718,12 @@ test_single_write("Link",
 test_single_write("Link with code",
 	"[`title`](url)",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: [{
-			type    : mds.Token_Type.Link,
-			attrs   : {[mds.Attr_Type.Href]: "url"},
+			type    : mds.Token.Link,
+			attrs   : {[mds.Attr.Href]: "url"},
 			children: [{
-				type    : mds.Token_Type.Code_Inline,
+				type    : mds.Token.Code_Inline,
 				children: ["title"],
 			}],
 		}]
@@ -734,13 +734,13 @@ test_single_write("Link new paragraph",
 	"foo\n\n"+
 	"[title](url)",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["foo"]
 	},{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: [{
-			type    : mds.Token_Type.Link,
-			attrs   : {[mds.Attr_Type.Href]: "url"},
+			type    : mds.Token.Link,
+			attrs   : {[mds.Attr.Href]: "url"},
 			children: ["title"],
 		}]
 	}]
@@ -749,10 +749,10 @@ test_single_write("Link new paragraph",
 test_single_write("Image",
 	"![title](url)",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: [{
-			type    : mds.Token_Type.Image,
-			attrs   : {[mds.Attr_Type.Src]: "url"},
+			type    : mds.Token.Image,
+			attrs   : {[mds.Attr.Src]: "url"},
 			children: ["title"],
 		}]
 	}]
@@ -761,10 +761,10 @@ test_single_write("Image",
 test_single_write("Image with code",
 	"![`title`](url)",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: [{
-			type    : mds.Token_Type.Image,
-			attrs   : {[mds.Attr_Type.Src]: "url"},
+			type    : mds.Token.Image,
+			attrs   : {[mds.Attr.Src]: "url"},
 			children: ["`title`"],
 		}]
 	}]
@@ -773,13 +773,13 @@ test_single_write("Image with code",
 test_single_write("Link with Image",
 	"[![title](src)](href)",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: [{
-			type    : mds.Token_Type.Link,
-			attrs   : {[mds.Attr_Type.Href]: "href"},
+			type    : mds.Token.Link,
+			attrs   : {[mds.Attr.Href]: "href"},
 			children: [{
-				type    : mds.Token_Type.Image,
-				attrs   : {[mds.Attr_Type.Src]: "src"},
+				type    : mds.Token.Image,
+				attrs   : {[mds.Attr.Src]: "src"},
 				children: ["title"],
 			}],
 		}]
@@ -789,7 +789,7 @@ test_single_write("Link with Image",
 test_single_write("Escaped link Begin",
 	"\\[foo](url)",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["[foo](url)"]
 	}]
 )
@@ -797,9 +797,9 @@ test_single_write("Escaped link Begin",
 test_single_write("Escaped link End",
 	"[foo\\](url)",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: [{
-			type    : mds.Token_Type.Link,
+			type    : mds.Token.Link,
 			children: ["foo](url)"],
 		}]
 	}]
@@ -808,10 +808,10 @@ test_single_write("Escaped link End",
 test_single_write("Un-Escaped link Both",
 	"\\\\[foo\\\\](url)",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["\\", {
-			type    : mds.Token_Type.Link,
-			attrs   : {[mds.Attr_Type.Href]: "url"},
+			type    : mds.Token.Link,
+			attrs   : {[mds.Attr.Href]: "url"},
 			children: ["foo\\"],
 		}]
 	}]
@@ -820,9 +820,9 @@ test_single_write("Un-Escaped link Both",
 test_single_write("Blockquote",
 	"> foo",
 	[{
-		type    : mds.Token_Type.Blockquote,
+		type    : mds.Token.Blockquote,
 		children: [{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: ["foo"],
 		}]
 	}]
@@ -831,9 +831,9 @@ test_single_write("Blockquote",
 test_single_write("Blockquote no-space",
 	">foo",
 	[{
-		type    : mds.Token_Type.Blockquote,
+		type    : mds.Token.Blockquote,
 		children: [{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: ["foo"],
 		}]
 	}]
@@ -842,7 +842,7 @@ test_single_write("Blockquote no-space",
 test_single_write("Blockquote Escape",
 	"\\> foo",
 	[{
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["> foo"],
 	}]
 )
@@ -850,9 +850,9 @@ test_single_write("Blockquote Escape",
 test_single_write("Blockquote line break",
 	"> foo\nbar",
 	[{
-		type    : mds.Token_Type.Blockquote,
+		type    : mds.Token.Blockquote,
 		children: [{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: ["foo", br, "bar"],
 		}]
 	}]
@@ -861,9 +861,9 @@ test_single_write("Blockquote line break",
 test_single_write("Blockquote continued",
 	"> foo\n> bar",
 	[{
-		type    : mds.Token_Type.Blockquote,
+		type    : mds.Token.Blockquote,
 		children: [{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: ["foo", br, "bar"],
 		}]
 	}]
@@ -872,13 +872,13 @@ test_single_write("Blockquote continued",
 test_single_write("Blockquote end",
 	"> foo\n\nbar",
 	[{
-		type    : mds.Token_Type.Blockquote,
+		type    : mds.Token.Blockquote,
 		children: [{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: ["foo"],
 		}]
 	}, {
-		type    : mds.Token_Type.Paragraph,
+		type    : mds.Token.Paragraph,
 		children: ["bar"],
 	}]
 )
@@ -886,9 +886,9 @@ test_single_write("Blockquote end",
 test_single_write("Blockquote heading",
 	"> # foo",
 	[{
-		type    : mds.Token_Type.Blockquote,
+		type    : mds.Token.Blockquote,
 		children: [{
-			type    : mds.Token_Type.Heading_1,
+			type    : mds.Token.Heading_1,
 			children: ["foo"],
 		}]
 	}]
@@ -897,9 +897,9 @@ test_single_write("Blockquote heading",
 test_single_write("Blockquote codeblock",
 	"> ```\nfoo\n```",
 	[{
-		type    : mds.Token_Type.Blockquote,
+		type    : mds.Token.Blockquote,
 		children: [{
-			type    : mds.Token_Type.Code_Fence,
+			type    : mds.Token.Code_Fence,
 			children: ["foo"],
 		}]
 	}]
@@ -908,11 +908,11 @@ test_single_write("Blockquote codeblock",
 test_single_write("Blockquote blockquote",
 	"> > foo",
 	[{
-		type    : mds.Token_Type.Blockquote,
+		type    : mds.Token.Blockquote,
 		children: [{
-			type    : mds.Token_Type.Blockquote,
+			type    : mds.Token.Blockquote,
 			children: [{
-				type    : mds.Token_Type.Paragraph,
+				type    : mds.Token.Paragraph,
 				children: ["foo"],
 			}]
 		}]
@@ -923,14 +923,14 @@ test_single_write("Blockquote up blockquote",
 	"> foo\n"+
 	"> > bar",
 	[{
-		type    : mds.Token_Type.Blockquote,
+		type    : mds.Token.Blockquote,
 		children: [{
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: ["foo"],
 		}, {
-			type    : mds.Token_Type.Blockquote,
+			type    : mds.Token.Blockquote,
 			children: [{
-				type    : mds.Token_Type.Paragraph,
+				type    : mds.Token.Paragraph,
 				children: ["bar"],
 			}]
 		}]
@@ -942,15 +942,15 @@ test_single_write("Blockquote blockquote down",
 	"> \n"+
 	"> bar",
 	[{
-		type    : mds.Token_Type.Blockquote,
+		type    : mds.Token.Blockquote,
 		children: [{
-			type    : mds.Token_Type.Blockquote,
+			type    : mds.Token.Blockquote,
 			children: [{
-				type    : mds.Token_Type.Paragraph,
+				type    : mds.Token.Paragraph,
 				children: ["foo"],
 			}]
 		}, {
-			type    : mds.Token_Type.Paragraph,
+			type    : mds.Token.Paragraph,
 			children: ["bar"],
 		}]
 	}]
@@ -961,14 +961,14 @@ test_single_write("Blockquote blockquote continued",
 	"> >\n"+
 	"> > bar",
 	[{
-		type    : mds.Token_Type.Blockquote,
+		type    : mds.Token.Blockquote,
 		children: [{
-			type    : mds.Token_Type.Blockquote,
+			type    : mds.Token.Blockquote,
 			children: [{
-				type    : mds.Token_Type.Paragraph,
+				type    : mds.Token.Paragraph,
 				children: ["foo"],
 			}, {
-				type    : mds.Token_Type.Paragraph,
+				type    : mds.Token.Paragraph,
 				children: ["bar"],
 			}]
 		}]
@@ -980,17 +980,17 @@ test_single_write("Blockquote up down",
 	">\n"+
 	"> > bar",
 	[{
-		type    : mds.Token_Type.Blockquote,
+		type    : mds.Token.Blockquote,
 		children: [{
-			type    : mds.Token_Type.Blockquote,
+			type    : mds.Token.Blockquote,
 			children: [{
-				type    : mds.Token_Type.Paragraph,
+				type    : mds.Token.Paragraph,
 				children: ["foo"],
 			}]
 		}, {
-			type    : mds.Token_Type.Blockquote,
+			type    : mds.Token.Blockquote,
 			children: [{
-				type    : mds.Token_Type.Paragraph,
+				type    : mds.Token.Paragraph,
 				children: ["bar"],
 			}]
 		}]
@@ -1003,20 +1003,20 @@ test_single_write("Blockquote with code and line break",
 	">\n"+
 	"> > c",
 	[{
-		type    : mds.Token_Type.Blockquote,
+		type    : mds.Token.Blockquote,
 		children: [{
-			type    : mds.Token_Type.Blockquote,
+			type    : mds.Token.Blockquote,
 			children: [{
-				type    : mds.Token_Type.Paragraph,
+				type    : mds.Token.Paragraph,
 				children: [{
-					type    : mds.Token_Type.Code_Inline,
+					type    : mds.Token.Code_Inline,
 					children: ["a", br, "b"],
 				}]
 			}]
 		}, {
-			type    : mds.Token_Type.Blockquote,
+			type    : mds.Token.Blockquote,
 			children: [{
-				type    : mds.Token_Type.Paragraph,
+				type    : mds.Token.Paragraph,
 				children: ["c"],
 			}],
 		}]

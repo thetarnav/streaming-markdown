@@ -46,8 +46,8 @@ export const
 	/** `DOCUMENT | BLOCKQUOTE` */
 	ANY_ROOT        =  262145
 
-/** @enum {(typeof Token_Type)[keyof typeof Token_Type]} */
-export const Token_Type = /** @type {const} */({
+/** @enum {(typeof Token)[keyof typeof Token]} */
+export const Token = /** @type {const} */({
 	Document:        DOCUMENT,
 	Blockquote:      BLOCKQUOTE,
 	Paragraph:       PARAGRAPH,
@@ -72,9 +72,9 @@ export const Token_Type = /** @type {const} */({
 })
 
 /**
- * @param   {Token_Type} type
+ * @param   {Token} type
  * @returns {string    } */
-export function token_type_to_string(type) {
+export function token_to_string(type) {
 	switch (type) {
 	case DOCUMENT:        return "Document"
 	case BLOCKQUOTE:      return "Blockquote"
@@ -105,17 +105,17 @@ export const
 	SRC  = 2,
 	LANG = 4
 
-/** @enum {(typeof Attr_Type)[keyof typeof Attr_Type]} */
-export const Attr_Type = /** @type {const} */({
+/** @enum {(typeof Attr)[keyof typeof Attr]} */
+export const Attr = /** @type {const} */({
 	Href: HREF,
 	Src:  SRC,
 	Lang: LANG,
 })
 
 /**
- * @param   {Attr_Type} type
+ * @param   {Attr} type
  * @returns {string    } */
-export function attr_type_to_html_attr(type) {
+export function attr_to_html_attr(type) {
 	switch (type) {
 	case HREF: return "href"
 	case SRC : return "src"
@@ -174,17 +174,17 @@ export function parser_add_text(p) {
 export function parser_end_token(p) {
 	console.assert(p.len > 0, "No nodes to end")
 	p.len -= 1
-	p.renderer.end_node(p.renderer.data)
+	p.renderer.end_token(p.renderer.data)
 }
 
 /**
  * @param   {Parser    } p
- * @param   {Token_Type} type
+ * @param   {Token} type
  * @returns {void      } */
 export function parser_add_token(p, type) {
 	p.len += 1
 	p.types[p.len] = type
-	p.renderer.add_node(p.renderer.data, type)
+	p.renderer.add_token(p.renderer.data, type)
 }
 
 /**
@@ -240,8 +240,8 @@ export function parser_write(p, chunk) {
 				continue
 			default:
 				p.len -= 1 // remove the line break
-				p.renderer.add_node(p.renderer.data, LINE_BREAK)
-				p.renderer.end_node(p.renderer.data)
+				p.renderer.add_token(p.renderer.data, LINE_BREAK)
+				p.renderer.end_token(p.renderer.data)
 				parser_write(p, char)
 				continue
 			}
@@ -335,8 +335,8 @@ export function parser_write(p, chunk) {
 						continue
 					case '\n':
 						if (p.hr_chars < 3) break
-						p.renderer.add_node(p.renderer.data, HORIZONTAL_RULE)
-						p.renderer.end_node(p.renderer.data)
+						p.renderer.add_token(p.renderer.data, HORIZONTAL_RULE)
+						p.renderer.end_token(p.renderer.data)
 						p.pending = ""
 						p.hr_chars = 0
 						parser_write(p, char)
@@ -345,7 +345,7 @@ export function parser_write(p, chunk) {
 
 					p.hr_chars = 0
 				}
-				
+
 				p.pending = ""
 				parser_add_token(p, PARAGRAPH)
 				/* The whole pending text needs to be reprocessed */
@@ -450,7 +450,7 @@ export function parser_write(p, chunk) {
 		case STRONG_AST:
 		case STRONG_UND: {
 			/** @type {string    } */ let symbol = '*'
-			/** @type {Token_Type} */ let italic = ITALIC_AST
+			/** @type {Token} */ let italic = ITALIC_AST
 			if (in_token === STRONG_UND) {
 				symbol = '_'
 				italic = ITALIC_UND
@@ -479,7 +479,7 @@ export function parser_write(p, chunk) {
 		case ITALIC_AST:
 		case ITALIC_UND: {
 			/** @type {string    } */ let symbol = '*'
-			/** @type {Token_Type} */ let strong = STRONG_AST
+			/** @type {Token} */ let strong = STRONG_AST
 			if (in_token === ITALIC_UND) {
 				symbol = '_'
 				strong = STRONG_UND
@@ -619,14 +619,14 @@ export function parser_write(p, chunk) {
 		case "_":
 			if (in_token & (NO_NESTING | ANY_UND)) break
 
-			/* __Strong__ 
+			/* __Strong__
 			    ^
 			*/
 			if ('_' === char) {
 				p.pending = pending_with_char
 				continue
 			}
-			/* _Em_ 
+			/* _Em_
 			    ^
 			*/
 			if (' ' !== char && '\n' !== char) {
@@ -778,11 +778,11 @@ export function parser_write(p, chunk) {
 }
 
 /**
- * @typedef {import("./t.js").Default_Renderer         } Default_Renderer
- * @typedef {import("./t.js").Default_Renderer_Add_Node} Default_Renderer_Add_Node
- * @typedef {import("./t.js").Default_Renderer_End_Node} Default_Renderer_End_Node
- * @typedef {import("./t.js").Default_Renderer_Add_Text} Default_Renderer_Add_Text
- * @typedef {import("./t.js").Default_Renderer_Set_Attr} Default_Renderer_Set_Attr
+ * @typedef {import("./t.js").Default_Renderer          } Default_Renderer
+ * @typedef {import("./t.js").Default_Renderer_Add_Token} Default_Renderer_Add_Token
+ * @typedef {import("./t.js").Default_Renderer_End_Token} Default_Renderer_End_Token
+ * @typedef {import("./t.js").Default_Renderer_Add_Text } Default_Renderer_Add_Text
+ * @typedef {import("./t.js").Default_Renderer_Set_Attr } Default_Renderer_Set_Attr
  */
 
 /**
@@ -790,8 +790,8 @@ export function parser_write(p, chunk) {
  * @returns {Default_Renderer} */
 export function default_renderer(root) {
 	return {
-		add_node: default_add_node,
-		end_node: default_end_node,
+		add_token: default_add_token,
+		end_token: default_end_token,
 		add_text: default_add_text,
 		set_attr: default_set_attr,
 		data    : {
@@ -801,8 +801,8 @@ export function default_renderer(root) {
 	}
 }
 
-/** @type {Default_Renderer_Add_Node} */
-export function default_add_node(data, type) {
+/** @type {Default_Renderer_Add_Token} */
+export function default_add_token(data, type) {
 	/**@type {HTMLElement}*/ let mount
 	/**@type {HTMLElement}*/ let slot
 
@@ -839,8 +839,8 @@ export function default_add_node(data, type) {
 	data.nodes[data.index] = slot
 }
 
-/** @type {Default_Renderer_End_Node} */
-export function default_end_node(data) {
+/** @type {Default_Renderer_End_Token} */
+export function default_end_token(data) {
 	data.index -= 1
 }
 
@@ -851,37 +851,37 @@ export function default_add_text(data, text) {
 
 /** @type {Default_Renderer_Set_Attr} */
 export function default_set_attr(data, type, value) {
-	data.nodes[data.index].setAttribute(attr_type_to_html_attr(type), value)
+	data.nodes[data.index].setAttribute(attr_to_html_attr(type), value)
 }
 
 
 /**
- * @typedef {import("./t.js").Logger_Renderer         } Logger_Renderer
- * @typedef {import("./t.js").Logger_Renderer_Add_Node} Logger_Renderer_Add_Node
- * @typedef {import("./t.js").Logger_Renderer_End_Node} Logger_Renderer_End_Node
- * @typedef {import("./t.js").Logger_Renderer_Add_Text} Logger_Renderer_Add_Text
- * @typedef {import("./t.js").Logger_Renderer_Set_Attr} Logger_Renderer_Set_Attr
+ * @typedef {import("./t.js").Logger_Renderer          } Logger_Renderer
+ * @typedef {import("./t.js").Logger_Renderer_Add_Token} Logger_Renderer_Add_Token
+ * @typedef {import("./t.js").Logger_Renderer_End_Token} Logger_Renderer_End_Token
+ * @typedef {import("./t.js").Logger_Renderer_Add_Text } Logger_Renderer_Add_Text
+ * @typedef {import("./t.js").Logger_Renderer_Set_Attr } Logger_Renderer_Set_Attr
  */
 
 /** @returns {Logger_Renderer} */
 export function logger_renderer() {
 	return {
 		data: undefined,
-		add_node: logger_add_node,
-		end_node: logger_end_node,
+		add_token: logger_add_token,
+		end_token: logger_end_token,
 		add_text: logger_add_text,
 		set_attr: logger_set_attr,
 	}
 }
 
-/** @type {Logger_Renderer_Add_Node} */
-export function logger_add_node(data, type) {
-	console.log("add_node:", token_type_to_string(type))
+/** @type {Logger_Renderer_Add_Token} */
+export function logger_add_token(data, type) {
+	console.log("add_token:", token_to_string(type))
 }
 
-/** @type {Logger_Renderer_End_Node} */
-export function logger_end_node(data) {
-	console.log("end_node")
+/** @type {Logger_Renderer_End_Token} */
+export function logger_end_token(data) {
+	console.log("end_token")
 }
 
 /** @type {Logger_Renderer_Add_Text} */
@@ -891,5 +891,5 @@ export function logger_add_text(data, text) {
 
 /** @type {Logger_Renderer_Set_Attr} */
 export function logger_set_attr(data, type, value) {
-	console.log('set_attr: %s="%s"', attr_type_to_html_attr(type), value)
+	console.log('set_attr: %s="%s"', attr_to_html_attr(type), value)
 }
