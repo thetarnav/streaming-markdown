@@ -316,13 +316,12 @@ export function parser_write(p, chunk) {
 				   "-- - --- - --"
 				*/
 				if (p.hr_chars === 0 &&
-					p.pending.length === 1 &&
-						('-' === p.pending[0] ||
-						 '*' === p.pending[0] ||
-						 '_' === p.pending[0])
+				   ('-' === p.pending ||
+				    '*' === p.pending ||
+				    '_' === p.pending)
 				) {
 					p.hr_chars = 1
-					p.hr_char = p.pending[0]
+					p.hr_char = p.pending
 				}
 
 				if (p.hr_chars > 0) {
