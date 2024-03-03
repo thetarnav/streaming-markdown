@@ -80,11 +80,19 @@ mds.parser_end(parser)
     - [x] ***bold>em*bold**
     - [x] *em**em>bold***
     - [x] ***bold>em**em*
+- [ ] \* or \_ cannot be surrounded by spaces
 - [x] ~~Strikethrough~~ with double tildes
 - [x] Escape characters (e.g. \* or \_ with \\\* or \\\_)
 - [x] \[Link\](url)
     - [x] href attr
     - [x] Escaping escaping bug: \\[Link\\](url)
+- [ ] Raw URLs
+    - [ ] www.example.com
+    - [ ] http://example.com
+    - [ ] https://example.com
+    - [ ] example@fake.com
+    - [ ] mailto:example@fake.com
+    - [ ] With `<>`
 - [x] Images
     - [x] src attr
 - [x] Horizontal rules
