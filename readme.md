@@ -70,7 +70,8 @@ mds.parser_end(parser)
 - [x] Code Block with indent
 - [x] Code Block with triple backticks
     - [x] language attr
-- [x] `inline code` with backticks
+- [x] `` `inline code` `` with backticks
+- [ ] any number of backticks (to escape backticks inside)
 - [x] *italic* with single asterisks
 - [x] **Bold** with double asterisks
 - [x] _italic_ with underscores
@@ -80,7 +81,7 @@ mds.parser_end(parser)
     - [x] ***bold>em*bold**
     - [x] *em**em>bold***
     - [x] ***bold>em**em*
-- [ ] \* or \_ cannot be surrounded by spaces
+- [x] \* or \_ cannot be surrounded by spaces
 - [x] ~~Strikethrough~~ with double tildes
 - [x] Escape characters (e.g. \* or \_ with \\\* or \\\_)
 - [x] \[Link\](url)

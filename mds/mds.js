@@ -455,17 +455,25 @@ export function parser_write(p, chunk) {
 				symbol = '_'
 				italic = ITALIC_UND
 			}
+
 			if (symbol === p.pending) {
 				parser_add_text(p)
+				/* **Bold**
+						  ^
+				*/
 				if (symbol === char) {
 					parser_end_token(p)
 					p.pending = ""
-				} else {
-					parser_add_token(p, italic)
-					p.pending = char
+					continue
 				}
+				/* **Bold*Bold->Em*
+						  ^
+				*/
+				parser_add_token(p, italic)
+				p.pending = char
 				continue
 			}
+
 			break
 		}
 		case ITALIC_AST:
@@ -476,6 +484,7 @@ export function parser_write(p, chunk) {
 				symbol = '_'
 				strong = STRONG_UND
 			}
+
 			switch (p.pending) {
 			case symbol:
 				if (symbol === char) {
@@ -607,44 +616,117 @@ export function parser_write(p, chunk) {
 				continue
 			}
 			break
-		case "*":
-			if (in_token & (NO_NESTING | ANY_AST)) break
-
-			parser_add_text(p)
-			/* **Strong** */
-			if ('*' === char) {
-				parser_add_token(p, STRONG_AST)
-				p.pending = ""
-			}
-			/* *Em* */
-			else {
-				parser_add_token(p, ITALIC_AST)
-				p.pending = char
-			}
-			continue
 		case "_":
 			if (in_token & (NO_NESTING | ANY_UND)) break
 
-			parser_add_text(p)
-			/* __Strong__ */
+			/* __Strong__ 
+			    ^
+			*/
 			if ('_' === char) {
-				parser_add_token(p, STRONG_UND)
-				p.pending = ""
+				p.pending = pending_with_char
+				continue
 			}
-			/* _Em_ */
-			else {
+			/* _Em_ 
+			    ^
+			*/
+			if (' ' !== char && '\n' !== char) {
+				parser_add_text(p)
 				parser_add_token(p, ITALIC_UND)
 				p.pending = char
+				continue
 			}
-			continue
-		/* ~~Strike~~ */
+
+			break
+		case "__":
+			if (in_token & (NO_NESTING | ANY_UND)) break
+
+			/* ___Strong->Em___
+			     ^
+			*/
+			if ('_' === char) {
+				parser_add_text(p)
+				parser_add_token(p, STRONG_UND)
+				parser_add_token(p, ITALIC_UND)
+				p.pending = ""
+				continue
+			}
+			/* __Strong__
+			     ^
+			*/
+			if (' ' !== char && '\n' !== char) {
+				parser_add_text(p)
+				parser_add_token(p, STRONG_UND)
+				p.pending = char
+				continue
+			}
+
+			break
+		case "*":
+			if (in_token & (NO_NESTING | ANY_AST)) break
+
+			/* **Strong**
+				^
+			*/
+			if ('*' === char) {
+				p.pending = pending_with_char
+				continue
+			}
+			/* *Em*
+				^
+			*/
+			if (' ' !== char && '\n' !== char) {
+				parser_add_text(p)
+				parser_add_token(p, ITALIC_AST)
+				p.pending = char
+				continue
+			}
+
+			break
+		case "**":
+			if (in_token & (NO_NESTING | ANY_AST)) break
+
+			/* ***Strong->Em***
+			     ^
+			*/
+			if ('*' === char) {
+				parser_add_text(p)
+				parser_add_token(p, STRONG_AST)
+				parser_add_token(p, ITALIC_AST)
+				p.pending = ""
+				continue
+			}
+			/* **Strong**
+			     ^
+			*/
+			if (' ' !== char && '\n' !== char) {
+				parser_add_text(p)
+				parser_add_token(p, STRONG_AST)
+				p.pending = char
+				continue
+			}
+
+			break
 		case "~":
+			/* ~~Strike~~
+			    ^
+			*/
 			if (!(in_token & (NO_NESTING | STRIKE)) &&
 				'~' === char
 			) {
+				p.pending = pending_with_char
+				continue
+			}
+			break
+		case "~~":
+			/* ~~Strike~~
+			     ^
+			*/
+			if (!(in_token & (NO_NESTING | STRIKE)) &&
+				' ' !== char && '\n' !== char
+			) {
 				parser_add_text(p)
 				parser_add_token(p, STRIKE)
-				p.pending = ""
+				p.pending = char
 				continue
 			}
 			break

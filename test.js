@@ -351,32 +351,6 @@ test_single_write("Paragraphs",
 	}]
 )
 
-test_single_write("Paragraph with Italic",
-	"*foo*",
-	[{
-		type    : mds.Token_Type.Paragraph,
-		children: [{
-			type    : mds.Token_Type.Italic_Ast,
-			children: ["foo"]
-		}],
-	}]
-)
-
-test_single_write("Italic new Paragraph",
-	"foo\n\n"+
-	"*bar*",
-	[{
-		type    : mds.Token_Type.Paragraph,
-		children: ["foo"],
-	}, {
-		type    : mds.Token_Type.Paragraph,
-		children: [{
-			type    : mds.Token_Type.Italic_Ast,
-			children: ["bar"]
-		}],
-	}]
-)
-
 test_single_write("Paragraph trim leading spaces",
 	"  foo",
 	[{
@@ -648,6 +622,14 @@ for (const {type, c} of [
 		}]
 	)
 
+	test_single_write(mds.token_type_to_string(type) + " space after begin",
+		c + " foo" + c,
+		[{
+			type    : mds.Token_Type.Paragraph,
+			children: [c + " foo" + c]
+		}]
+	)
+
 	test_single_write(mds.token_type_to_string(type) + " with Code",
 		c + "`foo`" + c,
 		[{
@@ -659,6 +641,21 @@ for (const {type, c} of [
 					children: ["foo"]
 				}]
 			}]
+		}]
+	)
+
+	test_single_write(mds.token_type_to_string(type) + " new Paragraph",
+		"foo\n\n"+
+		c + "bar" + c,
+		[{
+			type    : mds.Token_Type.Paragraph,
+			children: ["foo"],
+		}, {
+			type    : mds.Token_Type.Paragraph,
+			children: [{
+				type    : type,
+				children: ["bar"]
+			}],
 		}]
 	)
 
