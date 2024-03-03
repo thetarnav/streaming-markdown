@@ -5,17 +5,20 @@ import * as url  from "node:url"
 import * as http from "node:http"
 import * as ws   from "ws"
 
-const dirname            = path.dirname(url.fileURLToPath(import.meta.url))
-const reload_client_path = path.join(dirname, "reload_client.js")
-const index_html_path    = path.join(dirname, "index.html")
-
-const reload_client_promise = fsp.readFile(reload_client_path, "utf8")
+const dirname         = path.dirname(url.fileURLToPath(import.meta.url))
+const index_html_path = path.join(dirname, "index.html")
 
 const HTTP_PORT       = 3000
 const WEB_SOCKET_PORT = 8080
 const HTTP_URL        = "http://localhost:" + HTTP_PORT
 const WEB_SOCKET_URL  = "ws://localhost:" + WEB_SOCKET_PORT
 const MESSAGE_RELOAD  = "reload"
+
+const reload_client_script = /*html*/`<script>
+new WebSocket("${WEB_SOCKET_URL}").addEventListener("message",
+	event => event.data === "${MESSAGE_RELOAD}" && location.reload(),
+)
+</script>`
 
 function main() {
 	const server = makeHttpServer(requestListener)
@@ -70,9 +73,8 @@ function main() {
 
 		if (req.url === "/") {
 			const html = await fsp.readFile(index_html_path, "utf8")
-			const reload_client = await reload_client_promise
 			void res.writeHead(200, {"Content-Type": "text/html; charset=UTF-8"})
-			void res.end(html + `<script>${reload_client}</script>`)
+			void res.end(html + reload_client_script)
 			watchFile(index_html_path)
 			return
 		}
