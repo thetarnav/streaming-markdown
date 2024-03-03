@@ -315,36 +315,17 @@ export function parser_write(p, chunk) {
 				/* Horizontal Rule
 				   "-- - --- - --"
 				*/
-				hr_check: {
-					if ('' === p.hr_char) {
-						console.log([...p.pending])
-						const first_pending = p.pending[0]
-						
-						if ('-' === first_pending ||
-							'*' === first_pending ||
-							'_' === first_pending
-						) {
-							p.hr_chars += 1
-	
-							for (let i = 1; i < p.pending.length; i += 1) {
-								switch (p.pending[i]) {
-								case first_pending:
-									p.hr_chars += 1
-									continue
-								case ' ':
-									continue
-								default:
-									p.hr_chars = 0
-									break hr_check
-								}
-							}
-	
-							p.hr_char = first_pending
-						} else {
-							break hr_check
-						}
-					}
+				if (p.hr_chars === 0 &&
+					p.pending.length === 1 &&
+						('-' === p.pending[0] ||
+						 '*' === p.pending[0] ||
+						 '_' === p.pending[0])
+				) {
+					p.hr_chars = 1
+					p.hr_char = p.pending[0]
+				}
 
+				if (p.hr_chars > 0) {
 					switch (char) {
 					case p.hr_char:
 						p.hr_chars += 1
@@ -358,13 +339,11 @@ export function parser_write(p, chunk) {
 						p.renderer.add_node(p.renderer.data, HORIZONTAL_RULE)
 						p.renderer.end_node(p.renderer.data)
 						p.pending = ""
-						p.hr_char = ''
 						p.hr_chars = 0
 						parser_write(p, char)
 						continue
 					}
 
-					p.hr_char = ''
 					p.hr_chars = 0
 				}
 				
