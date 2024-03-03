@@ -423,6 +423,20 @@ for (let l = 1; l <= 2; l += 1) {
 		}]
 	)
 
+	test_single_write(c + "Code Inline x2" + c,
+		c+"a"+c+" "+c+"b"+c,
+		[{
+			type    : mds.Token.Paragraph,
+			children: [{
+				type    : mds.Token.Code_Inline,
+				children: ["a"]
+			}, " ", {
+				type    : mds.Token.Code_Inline,
+				children: ["b"]
+			}],
+		}]
+	)
+
 	if (l > 1) {
 		const m = '`'.repeat(l - 1)
 

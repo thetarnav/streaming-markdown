@@ -449,6 +449,7 @@ export function parser_write(p, chunk) {
 			if ('`' === char) {
 				if (pending_with_char.length === p.backticks_count) {
 					p.pending = ""
+					p.backticks_count = 0
 					parser_add_text(p)
 					parser_end_token(p)
 				} else {
