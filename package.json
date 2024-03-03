@@ -8,6 +8,7 @@
 		"type": "git",
 		"url": "git+https://github.com/thetarnav/streaming-markdown.git"
 	},
+	"homepage": "https://thetarnav.github.io/streaming-markdown",
 	"private": false,
 	"sideEffects": false,
 	"type": "module",
