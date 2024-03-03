@@ -409,41 +409,61 @@ test_single_write("Text after Horizontal Rule",
 	}]
 )
 
-test_single_write("Code Inline",
-	"`a`",
-	[{
-		type    : mds.Token.Paragraph,
-		children: [{
-			type    : mds.Token.Code_Inline,
-			children: ["a"]
-		}],
-	}]
-)
+for (let l = 1; l <= 2; l += 1) {
+	const c = '`'.repeat(l)
 
-test_single_write("Code with line break",
-	"`a\nb`",
-	[{
-		type    : mds.Token.Paragraph,
-		children: [{
-			type    : mds.Token.Code_Inline,
-			children: ["a", br, "b"]
-		}],
-	}]
-)
+	test_single_write(c + "Code Inline" + c,
+		c + "a" + c,
+		[{
+			type    : mds.Token.Paragraph,
+			children: [{
+				type    : mds.Token.Code_Inline,
+				children: ["a"]
+			}],
+		}]
+	)
 
-test_single_write("Code with two line breaks",
-	"`a\n\nb",
-	[{
-		type    : mds.Token.Paragraph,
-		children: [{
-			type    : mds.Token.Code_Inline,
-			children: ["a"]
-		}],
-	}, {
-		type    : mds.Token.Paragraph,
-		children: ["b"],
-	}]
-)
+	if (l > 1) {
+		const m = '`'.repeat(l - 1)
+
+		test_single_write(c + "Code ` Inline" + c,
+		c + "a"+m+"b" + c,
+		[{
+			type    : mds.Token.Paragraph,
+			children: [{
+				type    : mds.Token.Code_Inline,
+				children: ["a"+m+"b"]
+			}],
+		}]
+	)	
+	}
+	
+	test_single_write(c + "Code with line break" + c,
+		c + "a\nb" + c,
+		[{
+			type    : mds.Token.Paragraph,
+			children: [{
+				type    : mds.Token.Code_Inline,
+				children: ["a", br, "b"]
+			}],
+		}]
+	)
+	
+	test_single_write(c + "Code with two line breaks" + c,
+		c + "a\n\nb" + c,
+		[{
+			type    : mds.Token.Paragraph,
+			children: [{
+				type    : mds.Token.Code_Inline,
+				children: ["a"]
+			}],
+		}, {
+			type    : mds.Token.Paragraph,
+			children: ["b" + c],
+		}]
+	)
+}
+
 
 test_single_write("Empty Code_Fence",
 	"```\n```",

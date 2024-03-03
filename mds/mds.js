@@ -143,6 +143,7 @@ export function parser(renderer) {
 		newline_blockquote_idx: 0,
 		hr_char   : '',
 		hr_chars  : 0,
+		backticks_count: 0,
 	}
 }
 
@@ -188,6 +189,18 @@ export function parser_add_token(p, type) {
 }
 
 /**
+ * Temporary add a line break token to handle LINE_BREAK in token switch.\
+ * Needs to flush text, so that it's not added when in line break.
+ * @param   {Parser} p
+ * @returns {void  } */
+function _parser_into_line_break(p) {
+	parser_add_text(p)
+	p.len += 1
+	p.types[p.len] = LINE_BREAK
+	p.newline_blockquote_idx = 0
+}
+
+/**
  * Parse and render another chunk of markdown.
  * @param   {Parser} p
  * @param   {string} chunk
@@ -203,7 +216,6 @@ export function parser_write(p, chunk) {
 		*/
 		switch (in_token) {
 		case LINE_BREAK:
-			console.assert(p.pending.length === 1, "Pending in line break should be one character")
 			console.assert(p.text.length === 0, "Text when in line break")
 
 			switch (p.pending) {
@@ -220,29 +232,35 @@ export function parser_write(p, chunk) {
 					}
 				}
 
-				p.len -= 1 // remove the line break
+				p.len -= 1 // end line break
 
 				while (p.newline_blockquote_idx < p.len) {
 					parser_end_token(p)
 				}
 
 				p.newline_blockquote_idx += 1
+				p.backticks_count = 0
 				parser_add_token(p, BLOCKQUOTE)
 				continue
 			case "\n":
-				p.len -= 1 // remove the line break
+				p.len -= 1 // end line break
 
 				while (p.newline_blockquote_idx < p.len) {
 					parser_end_token(p)
 				}
 				p.newline_blockquote_idx = 0
+				p.backticks_count = 0
+				p.pending = char
+				continue
+			case "":
 				p.pending = char
 				continue
 			default:
-				p.len -= 1 // remove the line break
+				p.len -= 1 // end line break
 				p.renderer.add_token(p.renderer.data, LINE_BREAK)
 				p.renderer.end_token(p.renderer.data)
-				parser_write(p, char)
+				p.pending = "" // reprocess whole pending in previous token
+				parser_write(p, pending_with_char)
 				continue
 			}
 		case DOCUMENT:
@@ -295,13 +313,6 @@ export function parser_write(p, chunk) {
 			}
 
 			switch (p.pending) {
-			/* `Code Inline` */
-			case "`":
-				parser_add_token(p, PARAGRAPH)
-				parser_add_token(p, CODE_INLINE)
-				p.pending = ""
-				p.text = char
-				continue
 			/* Trim leading spaces */
 			case " ":
 			case "  ":
@@ -428,29 +439,32 @@ export function parser_write(p, chunk) {
 			}
 		}
 		case CODE_INLINE: {
-			if ('\n' === char && p.pending.length === 0) {
-				p.pending = char
-				continue
-			}
-			if ('`' === p.pending) {
-				parser_add_text(p)
-				parser_end_token(p)
-				p.pending = ""
-				continue
-			}
-			if ('`' === char) {
+			if ('\n' === char) {
 				p.text += p.pending
-				parser_add_text(p)
-				parser_end_token(p)
 				p.pending = ""
+				_parser_into_line_break(p)
 				continue
 			}
-			break
+			
+			if ('`' === char) {
+				if (pending_with_char.length === p.backticks_count) {
+					p.pending = ""
+					parser_add_text(p)
+					parser_end_token(p)
+				} else {
+					p.pending = pending_with_char
+				}
+				continue
+			}
+
+			p.text += pending_with_char
+			p.pending = ""
+			continue
 		}
 		case STRONG_AST:
 		case STRONG_UND: {
-			/** @type {string    } */ let symbol = '*'
-			/** @type {Token} */ let italic = ITALIC_AST
+			/** @type {string} */ let symbol = '*'
+			/** @type {Token } */ let italic = ITALIC_AST
 			if (in_token === STRONG_UND) {
 				symbol = '_'
 				italic = ITALIC_UND
@@ -577,11 +591,9 @@ export function parser_write(p, chunk) {
 		/*
 		Common checks
 		*/
-		switch (p.pending) {
+		switch (p.pending[0]) {
 		/* Escape character */
 		case "\\":
-			if (in_token & ANY_CODE) break
-
 			if ('\n' === char) {
 				// Escaped newline has the same affect as unescaped one
 				p.pending = char
@@ -597,138 +609,140 @@ export function parser_write(p, chunk) {
 			continue
 		/* Newline */
 		case "\n":
-			/* Add Line_Break temporarily */
-			p.len += 1
-			p.types[p.len] = LINE_BREAK
-			p.newline_blockquote_idx = 0
+			_parser_into_line_break(p)
 			p.pending = char
-			parser_add_text(p)
 			continue
 		/* `Code Inline` */
 		case "`":
-			if (!(in_token & NO_NESTING) &&
-				'`' !== char
-			) {
+			if (in_token & NO_NESTING) break
+
+			switch (char) {
+			case '`':
+				p.backticks_count += 1
+				p.pending = pending_with_char
+				continue
+			case '\n':
+				p.text += p.pending
+				p.pending = char
+				p.backticks_count = 0
+				continue
+			default:
+				p.backticks_count += 1 // started at 0, and first wasn't counted
 				parser_add_text(p)
 				parser_add_token(p, CODE_INLINE)
 				p.text = char
 				p.pending = ""
 				continue
 			}
-			break
 		case "_":
 			if (in_token & (NO_NESTING | ANY_UND)) break
 
-			/* __Strong__
-			    ^
-			*/
-			if ('_' === char) {
-				p.pending = pending_with_char
-				continue
-			}
-			/* _Em_
-			    ^
-			*/
-			if (' ' !== char && '\n' !== char) {
-				parser_add_text(p)
-				parser_add_token(p, ITALIC_UND)
-				p.pending = char
-				continue
-			}
-
-			break
-		case "__":
-			if (in_token & (NO_NESTING | ANY_UND)) break
-
-			/* ___Strong->Em___
-			     ^
-			*/
-			if ('_' === char) {
-				parser_add_text(p)
-				parser_add_token(p, STRONG_UND)
-				parser_add_token(p, ITALIC_UND)
-				p.pending = ""
-				continue
-			}
-			/* __Strong__
-			     ^
-			*/
-			if (' ' !== char && '\n' !== char) {
-				parser_add_text(p)
-				parser_add_token(p, STRONG_UND)
-				p.pending = char
-				continue
+			if ("_" === p.pending) {
+				/* __Strong__
+					^
+				*/
+				if ('_' === char) {
+					p.pending = pending_with_char
+					continue
+				}
+				/* _Em_
+					^
+				*/
+				if (' ' !== char && '\n' !== char) {
+					parser_add_text(p)
+					parser_add_token(p, ITALIC_UND)
+					p.pending = char
+					continue
+				}
+			} else {
+				/* ___Strong->Em___
+					 ^
+				*/
+				if ('_' === char) {
+					parser_add_text(p)
+					parser_add_token(p, STRONG_UND)
+					parser_add_token(p, ITALIC_UND)
+					p.pending = ""
+					continue
+				}
+				/* __Strong__
+					 ^
+				*/
+				if (' ' !== char && '\n' !== char) {
+					parser_add_text(p)
+					parser_add_token(p, STRONG_UND)
+					p.pending = char
+					continue
+				}
 			}
 
 			break
 		case "*":
 			if (in_token & (NO_NESTING | ANY_AST)) break
 
-			/* **Strong**
-				^
-			*/
-			if ('*' === char) {
-				p.pending = pending_with_char
-				continue
-			}
-			/* *Em*
-				^
-			*/
-			if (' ' !== char && '\n' !== char) {
-				parser_add_text(p)
-				parser_add_token(p, ITALIC_AST)
-				p.pending = char
-				continue
-			}
-
-			break
-		case "**":
-			if (in_token & (NO_NESTING | ANY_AST)) break
-
-			/* ***Strong->Em***
-			     ^
-			*/
-			if ('*' === char) {
-				parser_add_text(p)
-				parser_add_token(p, STRONG_AST)
-				parser_add_token(p, ITALIC_AST)
-				p.pending = ""
-				continue
-			}
-			/* **Strong**
-			     ^
-			*/
-			if (' ' !== char && '\n' !== char) {
-				parser_add_text(p)
-				parser_add_token(p, STRONG_AST)
-				p.pending = char
-				continue
+			if ("*" === p.pending) {
+				/* **Strong**
+					^
+				*/
+				if ('*' === char) {
+					p.pending = pending_with_char
+					continue
+				}
+				/* *Em*
+					^
+				*/
+				if (' ' !== char && '\n' !== char) {
+					parser_add_text(p)
+					parser_add_token(p, ITALIC_AST)
+					p.pending = char
+					continue
+				}
+			} else {
+				/* ***Strong->Em***
+					 ^
+				*/
+				if ('*' === char) {
+					parser_add_text(p)
+					parser_add_token(p, STRONG_AST)
+					parser_add_token(p, ITALIC_AST)
+					p.pending = ""
+					continue
+				}
+				/* **Strong**
+					 ^
+				*/
+				if (' ' !== char && '\n' !== char) {
+					parser_add_text(p)
+					parser_add_token(p, STRONG_AST)
+					p.pending = char
+					continue
+				}
 			}
 
 			break
 		case "~":
-			/* ~~Strike~~
-			    ^
-			*/
-			if (!(in_token & (NO_NESTING | STRIKE)) &&
-				'~' === char
-			) {
-				p.pending = pending_with_char
-				continue
+			if (in_token & (NO_NESTING | STRIKE)) break
+
+			if ("~" === p.pending) {
+				/* ~~Strike~~
+					^
+				*/
+				if ('~' === char) {
+					p.pending = pending_with_char
+					continue
+				}
+			} else {
+				/* ~~Strike~~
+					 ^
+				*/
+				if (' ' !== char && '\n' !== char) {
+					parser_add_text(p)
+					parser_add_token(p, STRIKE)
+					p.pending = char
+					continue
+				}
 			}
-			break
-		case "~~":
-			/* ~~Strike~~
-			     ^
-			*/
-			if (!(in_token & (NO_NESTING | STRIKE)) &&
-				' ' !== char && '\n' !== char
-			) {
-				parser_add_text(p)
-				parser_add_token(p, STRIKE)
-				p.pending = char
-				continue
-			}
+
 			break
 		/* [Image](url) */
 		case "[":
@@ -762,16 +776,8 @@ export function parser_write(p, chunk) {
 		/*
 		No check hit
 		*/
-		switch (in_token) {
-		case CODE_INLINE:
-			p.text += p.pending + char
-			p.pending = ""
-			break
-		default:
-			p.text += p.pending
-			p.pending = char
-			break
-		}
+		p.text += p.pending
+		p.pending = char
 	}
 
 	parser_add_text(p)

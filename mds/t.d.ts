@@ -17,6 +17,7 @@ export type Parser = {
 	 *  0     : cannot end
 	 */
 	code_fence: string | 0 | 1
+	backticks_count: number
 	/* For Blockquote parsing */
 	newline_blockquote_idx: number
 	/* For horizontal rule parsing */

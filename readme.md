@@ -71,7 +71,8 @@ mds.parser_end(parser)
 - [x] Code Block with triple backticks
     - [x] language attr
 - [x] `` `inline code` `` with backticks
-- [ ] any number of backticks (to escape backticks inside)
+    - [x] with two backticks
+    - [ ] any number of backticks
 - [x] *italic* with single asterisks
 - [x] **Bold** with double asterisks
 - [x] _italic_ with underscores
