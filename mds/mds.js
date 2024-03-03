@@ -593,7 +593,7 @@ export function parser_write(p, chunk) {
 		*/
 		switch (p.pending[0]) {
 		/* Escape character */
-		case "\\":
+		case '\\':
 			if ('\n' === char) {
 				// Escaped newline has the same affect as unescaped one
 				p.pending = char
@@ -608,12 +608,12 @@ export function parser_write(p, chunk) {
 			}
 			continue
 		/* Newline */
-		case "\n":
+		case '\n':
 			_parser_into_line_break(p)
 			p.pending = char
 			continue
 		/* `Code Inline` */
-		case "`":
+		case '`':
 			if (in_token & NO_NESTING) break
 
 			switch (char) {
@@ -634,57 +634,23 @@ export function parser_write(p, chunk) {
 				p.pending = ""
 				continue
 			}
-		case "_":
-			if (in_token & (NO_NESTING | ANY_UND)) break
-
-			if ("_" === p.pending) {
-				/* __Strong__
-					^
-				*/
-				if ('_' === char) {
-					p.pending = pending_with_char
-					continue
-				}
-				/* _Em_
-					^
-				*/
-				if (' ' !== char && '\n' !== char) {
-					parser_add_text(p)
-					parser_add_token(p, ITALIC_UND)
-					p.pending = char
-					continue
-				}
-			} else {
-				/* ___Strong->Em___
-					 ^
-				*/
-				if ('_' === char) {
-					parser_add_text(p)
-					parser_add_token(p, STRONG_UND)
-					parser_add_token(p, ITALIC_UND)
-					p.pending = ""
-					continue
-				}
-				/* __Strong__
-					 ^
-				*/
-				if (' ' !== char && '\n' !== char) {
-					parser_add_text(p)
-					parser_add_token(p, STRONG_UND)
-					p.pending = char
-					continue
-				}
+		case '_':
+		case '*': {
+			/** @type {Token} */ let italic = ITALIC_AST
+			/** @type {Token} */ let strong = STRONG_AST
+			const symbol = p.pending[0]
+			if ('_' === symbol) {
+				italic = ITALIC_UND
+				strong = STRONG_UND
 			}
 
-			break
-		case "*":
-			if (in_token & (NO_NESTING | ANY_AST)) break
+			if (in_token & NO_NESTING) break
 
-			if ("*" === p.pending) {
+			if (p.pending.length === 1) {
 				/* **Strong**
 					^
 				*/
-				if ('*' === char) {
+				if (symbol === char) {
 					p.pending = pending_with_char
 					continue
 				}
@@ -693,7 +659,7 @@ export function parser_write(p, chunk) {
 				*/
 				if (' ' !== char && '\n' !== char) {
 					parser_add_text(p)
-					parser_add_token(p, ITALIC_AST)
+					parser_add_token(p, italic)
 					p.pending = char
 					continue
 				}
@@ -701,10 +667,10 @@ export function parser_write(p, chunk) {
 				/* ***Strong->Em***
 					 ^
 				*/
-				if ('*' === char) {
+				if (symbol === char) {
 					parser_add_text(p)
-					parser_add_token(p, STRONG_AST)
-					parser_add_token(p, ITALIC_AST)
+					parser_add_token(p, strong)
+					parser_add_token(p, italic)
 					p.pending = ""
 					continue
 				}
@@ -713,13 +679,14 @@ export function parser_write(p, chunk) {
 				*/
 				if (' ' !== char && '\n' !== char) {
 					parser_add_text(p)
-					parser_add_token(p, STRONG_AST)
+					parser_add_token(p, strong)
 					p.pending = char
 					continue
 				}
 			}
 
 			break
+		}
 		case "~":
 			if (in_token & (NO_NESTING | STRIKE)) break
 
