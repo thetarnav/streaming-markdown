@@ -70,7 +70,7 @@ mds.parser_end(parser)
 - [x] Code Block with indent
 - [x] Code Block with triple backticks
     - [x] language attr
-    - [ ] with many backticks
+    - [x] with many backticks
 - [x] `` `inline code` `` with backticks
     - [x] with many backticks
     - [ ] trim symmetrical spaces ` code `

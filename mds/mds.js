@@ -139,7 +139,7 @@ export function parser(renderer) {
 		pending   : "",
 		types     : /**@type {*}*/([DOCUMENT,,,,,]),
 		len       : 0,
-		code_fence: "",
+		code_fence_body: 0,
 		newline_blockquote_idx: 0,
 		hr_char   : '',
 		hr_chars  : 0,
@@ -152,10 +152,8 @@ export function parser(renderer) {
  * @param   {Parser} p
  * @returns {void  } */
 export function parser_end(p) {
-	parser_write(p, "\n")
-	parser_add_text(p)
-	while (p.len > 0) {
-		parser_end_token(p)
+	if (p.pending.length > 0) {
+		parser_write(p, "\n")
 	}
 }
 
@@ -384,7 +382,9 @@ export function parser_write(p, chunk) {
 				*/
 				if ('\n' === char) {
 					parser_add_token(p, CODE_FENCE)
-					p.renderer.set_attr(p.renderer.data, LANG, p.pending.slice(p.backticks_count))
+					if (p.pending.length > p.backticks_count) {
+						p.renderer.set_attr(p.renderer.data, LANG, p.pending.slice(p.backticks_count))
+					}
 					p.pending = ""
 					continue
 				}
@@ -440,52 +440,29 @@ export function parser_write(p, chunk) {
 				}
 				continue
 			}
-		case CODE_FENCE: {
-			switch (p.code_fence) {
-			case 1: /* can end */
-				switch (pending_with_char) {
-				case "\n```":
-				case "```":
-					p.code_fence = ""
+		case CODE_FENCE:
+			if ('`' === char) {
+				if (pending_with_char.length ===
+					p.backticks_count + p.code_fence_body // 0 or 1 for \n
+				) {
 					parser_add_text(p)
 					parser_end_token(p)
 					p.pending = ""
 					p.backticks_count = 0
-					continue
-				case "\n``":
-				case "\n`":
-				case "``":
-				case "`":
+					p.code_fence_body = 0
+				} else {
 					p.pending = pending_with_char
-					continue
 				}
-
-				if ('\n' === char) {
-					p.text += p.pending
-					p.pending = char
-				} else {
-					p.code_fence = 0
-					p.text += pending_with_char
-					p.pending = ""
-				}
-				continue
-			case 0: /* can't end */
-				console.assert(p.pending.length === 0, "Has pending text but cannot end")
-
-				if ('\n' === char) {
-					p.code_fence = 1
-					p.pending = char
-				} else {
-					p.text += p.pending + char
-					p.pending = ""
-				}
-				continue
-			default:
-				p.code_fence = 1 // TODO
-				p.pending = pending_with_char
-				continue
+			} else if ('\n' === char) {
+				p.text   += p.pending
+				p.pending = char
+				p.code_fence_body = 1
+			} else {
+				p.text   += pending_with_char
+				p.pending = ""
+				p.code_fence_body = 1
 			}
-		}
+			continue
 		case CODE_INLINE: {
 			if ('\n' === char) {
 				p.text += p.pending
@@ -496,10 +473,10 @@ export function parser_write(p, chunk) {
 			
 			if ('`' === char) {
 				if (pending_with_char.length === p.backticks_count) {
-					p.pending = ""
-					p.backticks_count = 0
 					parser_add_text(p)
 					parser_end_token(p)
+					p.pending = ""
+					p.backticks_count = 0
 				} else {
 					p.pending = pending_with_char
 				}

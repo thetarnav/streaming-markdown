@@ -11,12 +11,8 @@ export type Parser = {
 	types     : Token[]
 	/** Number of tokens in {@link Parser.types types} without root */
 	len       : number
-	/** For Code_Fence parsing      \
-	 *  string: parsing language    \
-	 *  1     : can end             \
-	 *  0     : cannot end
-	 */
-	code_fence: string | 0 | 1
+	/** For Code_Fence parsing */
+	code_fence_body: 0 | 1
 	backticks_count: number
 	/* For Blockquote parsing */
 	newline_blockquote_idx: number

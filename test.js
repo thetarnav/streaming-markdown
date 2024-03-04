@@ -266,7 +266,7 @@ function test_single_write(title, markdown, expected_children) {
 		assert_children(renderer.data.root.children, expected_children)
 	})
 
-	t.test(title + " (by char)", () => {
+	t.test(title + " - by char", () => {
 		const renderer = test_renderer()
 		const parser = mds.parser(renderer)
 
@@ -412,7 +412,7 @@ test_single_write("Text after Horizontal Rule",
 for (let l = 1; l <= 4; l += 1) {
 	const c = '`'.repeat(l)
 
-	test_single_write("Code Inline" + " "+l+" backticks",
+	test_single_write("Code Inline" + " - "+l+" backticks",
 		c + "a" + c,
 		[{
 			type    : mds.Token.Paragraph,
@@ -423,7 +423,7 @@ for (let l = 1; l <= 4; l += 1) {
 		}]
 	)
 
-	test_single_write("Code Inline x2" + " "+l+" backticks",
+	test_single_write("Code Inline x2" + " - "+l+" backticks",
 		c+"a"+c+" "+c+"b"+c,
 		[{
 			type    : mds.Token.Paragraph,
@@ -440,7 +440,7 @@ for (let l = 1; l <= 4; l += 1) {
 	if (l > 1) {
 		const m = '`'.repeat(l - 1)
 
-		test_single_write("Code ` Inline" + " "+l+" backticks",
+		test_single_write("Code ` Inline" + " - "+l+" backticks",
 		c + "a"+m+"b" + c,
 		[{
 			type    : mds.Token.Paragraph,
@@ -456,7 +456,7 @@ for (let l = 1; l <= 4; l += 1) {
 for (let l = 1; l <= 2; l += 1) {
 	const c = '`'.repeat(l)
 
-	test_single_write("Code with line break" + " "+l+" backticks",
+	test_single_write("Code with line break" + " - "+l+" backticks",
 		c + "a\nb" + c,
 		[{
 			type    : mds.Token.Paragraph,
@@ -467,7 +467,7 @@ for (let l = 1; l <= 2; l += 1) {
 		}]
 	)
 	
-	test_single_write("Code with two line breaks" + " "+l+" backticks",
+	test_single_write("Code with two line breaks" + " - "+l+" backticks",
 		c + "a\n\nb",
 		[{
 			type    : mds.Token.Paragraph,
@@ -482,47 +482,53 @@ for (let l = 1; l <= 2; l += 1) {
 	)
 }
 
+for (let l = 3; l <= 5; l += 1) {
+	const c = '`'.repeat(l)
 
-test_single_write("Empty Code_Fence",
-	"```\n```",
-	[{
-		type    : mds.Token.Code_Fence,
-		children: []
-	}]
-)
+	test_single_write("Empty Code_Fence - " + l + " backticks",
+		c+"\n"+c,
+		[{
+			type    : mds.Token.Code_Fence,
+			children: []
+		}]
+	)
+	
+	test_single_write("Code_Fence - " + l + " backticks",
+		c+"\nfoo\n"+c,
+		[{
+			type    : mds.Token.Code_Fence,
+			children: ["foo"]
+		}]
+	)
+	
+	test_single_write("Code_Fence with language - " + l + " backticks",
+		c+"js\nfoo\n"+c,
+		[{
+			type    : mds.Token.Code_Fence,
+			children: ["foo"],
+			attrs   : {[mds.Attr.Lang]: "js"}
+		}]
+	)
+	
+	const m = '`'.repeat(l - 1)
 
-test_single_write("Code_Fence",
-	"```\nfoo\n```",
-	[{
-		type    : mds.Token.Code_Fence,
-		children: ["foo"]
-	}]
-)
+	test_single_write("Code_Fence escaped backticks - " + l + " backticks",
+		c+"\n"+m+"\n"+c,
+		[{
+			type    : mds.Token.Code_Fence,
+			children: [m]
+		}]
+	)
+	
+	test_single_write("Code_Fence with unfinished end backticks - " + l + " backticks",
+		c+"\na\n"+m+"\n"+c,
+		[{
+			type    : mds.Token.Code_Fence,
+			children: ["a\n"+m+""]
+		}]
+	)
+}
 
-test_single_write("Code_Fence with language",
-	"```js\nfoo\n```",
-	[{
-		type    : mds.Token.Code_Fence,
-		children: ["foo"],
-		attrs   : {[mds.Attr.Lang]: "js"}
-	}]
-)
-
-test_single_write("Code_Fence with backticks inside",
-	"```\na```b\n```",
-	[{
-		type    : mds.Token.Code_Fence,
-		children: ["a```b"]
-	}]
-)
-
-test_single_write("Code_Fence with unfinished end backticks",
-	"```\na\n``\n```",
-	[{
-		type    : mds.Token.Code_Fence,
-		children: ["a\n``"]
-	}]
-)
 
 for (const indent of [
 	"    ",
