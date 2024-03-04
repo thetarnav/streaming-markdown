@@ -267,38 +267,46 @@ export function parser_write(p, chunk) {
 		case BLOCKQUOTE:
 			console.assert(p.text.length === 0, "Root should not have any text")
 
-			switch (pending_with_char) {
-			case "# ":      p.pending=""; parser_add_token(p, HEADING_1)  ;continue
-			case "## ":     p.pending=""; parser_add_token(p, HEADING_2)  ;continue
-			case "### ":    p.pending=""; parser_add_token(p, HEADING_3)  ;continue
-			case "#### ":   p.pending=""; parser_add_token(p, HEADING_4)  ;continue
-			case "##### ":  p.pending=""; parser_add_token(p, HEADING_5)  ;continue
-			case "###### ": p.pending=""; parser_add_token(p, HEADING_6)  ;continue
-			case "```":     p.pending=""; parser_add_token(p, CODE_FENCE) ;continue
-			case "    ":
-			case "   \t":
-			case "  \t":
-			case " \t":
-			case "\t":      p.pending=""; parser_add_token(p, CODE_BLOCK) ;continue
-			case "#":
-			case "##":
-			case "###":
-			case "####":
-			case "#####":
-			case "######":
-			case "#######":
-			case "`":
-			case "``":
-			case " ":
-			case "  ":
-			case "   ":
-				p.pending = pending_with_char
+			switch (p.pending[0]) {
+			/* Heading */
+			case '#':
+				switch (char) {
+				case '#':
+					if (p.pending.length < 6) {
+						p.pending = pending_with_char
+						continue
+					}
+					break // fail
+				case ' ':
+					switch (p.pending.length) {
+					case 1: parser_add_token(p, HEADING_1); p.pending=""; continue
+					case 2: parser_add_token(p, HEADING_2); p.pending=""; continue
+					case 3: parser_add_token(p, HEADING_3); p.pending=""; continue
+					case 4: parser_add_token(p, HEADING_4); p.pending=""; continue
+					case 5: parser_add_token(p, HEADING_5); p.pending=""; continue
+					case 6: parser_add_token(p, HEADING_6); p.pending=""; continue
+					}
+					console.assert(false, "Should not reach here")
+				}
+				break // fail
+			/* Trim leading spaces */
+			case undefined:
+			case ' ':
+				p.pending = ' ' === char
+					? p.pending.length < 3
+						? pending_with_char
+						: "\t"
+					: char
 				continue
-			case "\n":
-				continue
-			case "> ":
-			case ">":
+			/* Code Block */
+			case '\t':
+				parser_add_token(p, CODE_BLOCK)
 				p.pending = ""
+				parser_write(p, char)
+				continue
+			/* Blockquote */
+			case '>':
+				p.pending = char
 
 				while (p.newline_blockquote_idx+1 <= p.len) {
 					p.newline_blockquote_idx += 1
@@ -310,27 +318,14 @@ export function parser_write(p, chunk) {
 				p.newline_blockquote_idx += 1
 				parser_add_token(p, BLOCKQUOTE)
 				continue
-			}
-
-			switch (p.pending) {
-			/* Trim leading spaces */
-			case " ":
-			case "  ":
-			case "   ":
-			case "":
-				p.pending = char
-				continue
-			default:
-				console.assert(' ' !== p.pending[0], "Pending should not start with space")
-
-				/* Horizontal Rule
-				   "-- - --- - --"
-				*/
-				if (p.hr_chars === 0 &&
-				   ('-' === p.pending ||
-				    '*' === p.pending ||
-				    '_' === p.pending)
-				) {
+			/* Horizontal Rule
+			   "-- - --- - --"
+			*/
+			case '-':
+			case '*':
+			case '_':
+				if (p.hr_chars === 0) {
+					console.assert(p.pending.length === 1, "Pending should be one character")
 					p.hr_chars = 1
 					p.hr_char = p.pending
 				}
@@ -339,10 +334,10 @@ export function parser_write(p, chunk) {
 					switch (char) {
 					case p.hr_char:
 						p.hr_chars += 1
-						p.pending += char
+						p.pending = pending_with_char
 						continue
 					case ' ':
-						p.pending += char
+						p.pending = pending_with_char
 						continue
 					case '\n':
 						if (p.hr_chars < 3) break
@@ -350,19 +345,75 @@ export function parser_write(p, chunk) {
 						p.renderer.end_token(p.renderer.data)
 						p.pending = ""
 						p.hr_chars = 0
-						parser_write(p, char)
 						continue
 					}
 
 					p.hr_chars = 0
 				}
 
-				p.pending = ""
-				parser_add_token(p, PARAGRAPH)
-				/* The whole pending text needs to be reprocessed */
-				parser_write(p, pending_with_char)
+				break // fail
+			/* Code Fence */
+			case '`':
+				// TODO a lot of this could be collapsed under one switch
+				/*  ``?
+				      ^
+				*/
+				if (p.pending.length < 3) {
+					if ('`' === char) {
+						p.pending = pending_with_char
+						p.backticks_count = pending_with_char.length
+						continue
+					}
+					p.backticks_count = 0
+					break // fail
+				}
+
+				/*  ```?
+				       ^
+				*/
+				if (p.pending.length === p.backticks_count &&
+					'`' === char
+				) {
+					p.pending = pending_with_char
+					p.backticks_count = pending_with_char.length
+					continue
+				}
+
+				/*  ```lang\n
+				           ^
+				*/
+				if ('\n' === char) {
+					parser_add_token(p, CODE_FENCE)
+					p.renderer.set_attr(p.renderer.data, LANG, p.pending.slice(p.backticks_count))
+					p.pending = ""
+					continue
+				}
+
+				/*  ```code`
+				           ^
+				*/
+				if ('`' === char) {
+					parser_add_token(p, PARAGRAPH)
+					parser_add_token(p, CODE_INLINE)
+					p.text = p.pending.slice(p.backticks_count)
+					p.pending = ""
+					parser_write(p, char)
+					continue
+				}
+
+				/*  ```lang\n
+				        ^
+				*/
+				p.pending = pending_with_char
 				continue
 			}
+
+			/* Paragraph */
+			p.pending = ""
+			parser_add_token(p, PARAGRAPH)
+			/* The whole pending text needs to be reprocessed */
+			parser_write(p, pending_with_char)
+			continue
 		case CODE_BLOCK:
 			switch (pending_with_char) {
 			case "\n    ":
@@ -399,6 +450,7 @@ export function parser_write(p, chunk) {
 					parser_add_text(p)
 					parser_end_token(p)
 					p.pending = ""
+					p.backticks_count = 0
 					continue
 				case "\n``":
 				case "\n`":
@@ -428,13 +480,9 @@ export function parser_write(p, chunk) {
 					p.pending = ""
 				}
 				continue
-			default: /* parsing langiage */
-				if ('\n' === char) {
-					p.renderer.set_attr(p.renderer.data, LANG, p.code_fence)
-					p.code_fence = 1
-				} else {
-					p.code_fence += char
-				}
+			default:
+				p.code_fence = 1 // TODO
+				p.pending = pending_with_char
 				continue
 			}
 		}
@@ -493,8 +541,8 @@ export function parser_write(p, chunk) {
 		}
 		case ITALIC_AST:
 		case ITALIC_UND: {
-			/** @type {string    } */ let symbol = '*'
-			/** @type {Token} */ let strong = STRONG_AST
+			/** @type {string} */ let symbol = '*'
+			/** @type {Token } */ let strong = STRONG_AST
 			if (in_token === ITALIC_UND) {
 				symbol = '_'
 				strong = STRONG_UND
@@ -617,24 +665,17 @@ export function parser_write(p, chunk) {
 		case '`':
 			if (in_token & NO_NESTING) break
 
-			switch (char) {
-			case '`':
+			if ('`' === char) {
 				p.backticks_count += 1
 				p.pending = pending_with_char
-				continue
-			case '\n':
-				p.text += p.pending
-				p.pending = char
-				p.backticks_count = 0
-				continue
-			default:
+			} else {
 				p.backticks_count += 1 // started at 0, and first wasn't counted
 				parser_add_text(p)
 				parser_add_token(p, CODE_INLINE)
 				p.text = char
 				p.pending = ""
-				continue
 			}
+			continue
 		case '_':
 		case '*': {
 			/** @type {Token} */ let italic = ITALIC_AST

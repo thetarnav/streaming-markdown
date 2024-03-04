@@ -44,7 +44,7 @@ The parser is optimistic.
 When it sees the start of an inline code block or code block,
 it will immediately style the element accordingly.
 
-E.g. "\`print("hello wor" should be displayed as `print("hello wor`
+E.g. `` `print("hello wor `` should be rendered as `<code>print("hello wor</code>`
 
 While the text is streamed in, the user should be able to select the text that has already been streamed in and copy it.
 *(The parser is only adding new elements to the DOM, not modifying the existing ones.)*
@@ -70,9 +70,10 @@ mds.parser_end(parser)
 - [x] Code Block with indent
 - [x] Code Block with triple backticks
     - [x] language attr
+    - [ ] with many backticks
 - [x] `` `inline code` `` with backticks
-    - [x] with two backticks
-    - [ ] any number of backticks
+    - [x] with many backticks
+    - [ ] trim symmetrical spaces ` code `
 - [x] *italic* with single asterisks
 - [x] **Bold** with double asterisks
 - [x] _italic_ with underscores

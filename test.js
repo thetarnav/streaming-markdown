@@ -409,10 +409,10 @@ test_single_write("Text after Horizontal Rule",
 	}]
 )
 
-for (let l = 1; l <= 2; l += 1) {
+for (let l = 1; l <= 4; l += 1) {
 	const c = '`'.repeat(l)
 
-	test_single_write(c + "Code Inline" + c,
+	test_single_write("Code Inline" + " "+l+" backticks",
 		c + "a" + c,
 		[{
 			type    : mds.Token.Paragraph,
@@ -423,7 +423,7 @@ for (let l = 1; l <= 2; l += 1) {
 		}]
 	)
 
-	test_single_write(c + "Code Inline x2" + c,
+	test_single_write("Code Inline x2" + " "+l+" backticks",
 		c+"a"+c+" "+c+"b"+c,
 		[{
 			type    : mds.Token.Paragraph,
@@ -440,7 +440,7 @@ for (let l = 1; l <= 2; l += 1) {
 	if (l > 1) {
 		const m = '`'.repeat(l - 1)
 
-		test_single_write(c + "Code ` Inline" + c,
+		test_single_write("Code ` Inline" + " "+l+" backticks",
 		c + "a"+m+"b" + c,
 		[{
 			type    : mds.Token.Paragraph,
@@ -451,8 +451,12 @@ for (let l = 1; l <= 2; l += 1) {
 		}]
 	)	
 	}
-	
-	test_single_write(c + "Code with line break" + c,
+}
+
+for (let l = 1; l <= 2; l += 1) {
+	const c = '`'.repeat(l)
+
+	test_single_write("Code with line break" + " "+l+" backticks",
 		c + "a\nb" + c,
 		[{
 			type    : mds.Token.Paragraph,
@@ -463,8 +467,8 @@ for (let l = 1; l <= 2; l += 1) {
 		}]
 	)
 	
-	test_single_write(c + "Code with two line breaks" + c,
-		c + "a\n\nb" + c,
+	test_single_write("Code with two line breaks" + " "+l+" backticks",
+		c + "a\n\nb",
 		[{
 			type    : mds.Token.Paragraph,
 			children: [{
@@ -473,7 +477,7 @@ for (let l = 1; l <= 2; l += 1) {
 			}],
 		}, {
 			type    : mds.Token.Paragraph,
-			children: ["b" + c],
+			children: ["b"],
 		}]
 	)
 }
