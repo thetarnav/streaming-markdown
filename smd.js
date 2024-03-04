@@ -5,8 +5,6 @@ Copyright 2024 Damian Tarnawski
 https://github.com/thetarnav/streaming-markdown
 */
 
-export * from "./t.js"
-
 export const
 	DOCUMENT        =       1, //  1
 	PARAGRAPH       =       2, //  2
@@ -124,9 +122,59 @@ export function attr_to_html_attr(type) {
 }
 
 /**
- * @typedef {import("./t.js").Any_Renderer} Any_Renderer
- * @typedef {import("./t.js").Parser      } Parser
+ * @typedef  {object      } Parser
+ * @property {Any_Renderer} renderer        - {@link Renderer} interface
+ * @property {string      } text            - Text to be added to the last token in the next flush
+ * @property {string      } pending         - Characters for identifying tokens
+ * @property {Token[]     } types           - Current token and it's parents (a slice of a tree)
+ * @property {number      } len             - Number of tokens in types without root
+ * @property {0 | 1       } code_fence_body - For {@link Token.Code_Fence} parsing
+ * @property {number      } backticks_count
+ * @property {number      } blockquote_idx  - For Blockquote parsing
+ * @property {string      } hr_char         - For horizontal rule parsing
+ * @property {number      } hr_chars        - For horizontal rule parsing
  */
+
+/**
+ * @template T
+ * @callback Renderer_Add_Token
+ * @param   {T    } data
+ * @param   {Token} type
+ * @returns {void } */
+
+/**
+ * @template T
+ * @callback Renderer_End_Token
+ * @param   {T    } data
+ * @returns {void } */
+
+/**
+ * @template T
+ * @callback Renderer_Add_Text
+ * @param   {T     } data
+ * @param   {string} text
+ * @returns {void  } */
+
+/**
+ * @template T
+ * @callback Renderer_Set_Attr
+ * @param   {T     } data
+ * @param   {Attr  } type
+ * @param   {string} value
+ * @returns {void  } */
+
+/**
+ * The renderer interface.
+ * @template T
+ * @typedef  {object               } Renderer
+ * @property {T                    } data
+ * @property {Renderer_Add_Token<T>} add_token
+ * @property {Renderer_End_Token<T>} end_token
+ * @property {Renderer_Add_Text <T>} add_text
+ * @property {Renderer_Set_Attr <T>} set_attr
+ */
+
+/** @typedef {Renderer<any>} Any_Renderer */
 
 /**
  * Makes a new Parser object.
@@ -140,7 +188,7 @@ export function parser(renderer) {
 		types     : /**@type {*}*/([DOCUMENT,,,,,]),
 		len       : 0,
 		code_fence_body: 0,
-		newline_blockquote_idx: 0,
+		blockquote_idx: 0,
 		hr_char   : '',
 		hr_chars  : 0,
 		backticks_count: 0,
@@ -195,7 +243,7 @@ function _parser_into_line_break(p) {
 	parser_add_text(p)
 	p.len += 1
 	p.types[p.len] = LINE_BREAK
-	p.newline_blockquote_idx = 0
+	p.blockquote_idx = 0
 }
 
 /**
@@ -223,30 +271,30 @@ export function parser_write(p, chunk) {
 			case ">":
 				p.pending = char
 
-				while (p.newline_blockquote_idx+1 < p.len-1) {
-					p.newline_blockquote_idx += 1
-					if (p.types[p.newline_blockquote_idx] === BLOCKQUOTE) {
+				while (p.blockquote_idx+1 < p.len-1) {
+					p.blockquote_idx += 1
+					if (p.types[p.blockquote_idx] === BLOCKQUOTE) {
 						continue chars
 					}
 				}
 
 				p.len -= 1 // end line break
 
-				while (p.newline_blockquote_idx < p.len) {
+				while (p.blockquote_idx < p.len) {
 					parser_end_token(p)
 				}
 
-				p.newline_blockquote_idx += 1
+				p.blockquote_idx += 1
 				p.backticks_count = 0
 				parser_add_token(p, BLOCKQUOTE)
 				continue
 			case "\n":
 				p.len -= 1 // end line break
 
-				while (p.newline_blockquote_idx < p.len) {
+				while (p.blockquote_idx < p.len) {
 					parser_end_token(p)
 				}
-				p.newline_blockquote_idx = 0
+				p.blockquote_idx = 0
 				p.backticks_count = 0
 				p.pending = char
 				continue
@@ -306,14 +354,14 @@ export function parser_write(p, chunk) {
 			case '>':
 				p.pending = char
 
-				while (p.newline_blockquote_idx+1 <= p.len) {
-					p.newline_blockquote_idx += 1
-					if (p.types[p.newline_blockquote_idx] === BLOCKQUOTE) {
+				while (p.blockquote_idx+1 <= p.len) {
+					p.blockquote_idx += 1
+					if (p.types[p.blockquote_idx] === BLOCKQUOTE) {
 						continue chars
 					}
 				}
 
-				p.newline_blockquote_idx += 1
+				p.blockquote_idx += 1
 				parser_add_token(p, BLOCKQUOTE)
 				continue
 			/* Horizontal Rule
@@ -769,12 +817,17 @@ export function parser_write(p, chunk) {
 	parser_add_text(p)
 }
 
+
 /**
- * @typedef {import("./t.js").Default_Renderer          } Default_Renderer
- * @typedef {import("./t.js").Default_Renderer_Add_Token} Default_Renderer_Add_Token
- * @typedef {import("./t.js").Default_Renderer_End_Token} Default_Renderer_End_Token
- * @typedef {import("./t.js").Default_Renderer_Add_Text } Default_Renderer_Add_Text
- * @typedef {import("./t.js").Default_Renderer_Set_Attr } Default_Renderer_Set_Attr
+ * @typedef  {object} Default_Renderer_Data
+ * @property {HTMLElement[]} nodes
+ * @property {number       } index
+ * 
+ * @typedef {Renderer          <Default_Renderer_Data>} Default_Renderer
+ * @typedef {Renderer_Add_Token<Default_Renderer_Data>} Default_Renderer_Add_Token
+ * @typedef {Renderer_End_Token<Default_Renderer_Data>} Default_Renderer_End_Token
+ * @typedef {Renderer_Add_Text <Default_Renderer_Data>} Default_Renderer_Add_Text
+ * @typedef {Renderer_Set_Attr <Default_Renderer_Data>} Default_Renderer_Set_Attr
  */
 
 /**
@@ -848,11 +901,13 @@ export function default_set_attr(data, type, value) {
 
 
 /**
- * @typedef {import("./t.js").Logger_Renderer          } Logger_Renderer
- * @typedef {import("./t.js").Logger_Renderer_Add_Token} Logger_Renderer_Add_Token
- * @typedef {import("./t.js").Logger_Renderer_End_Token} Logger_Renderer_End_Token
- * @typedef {import("./t.js").Logger_Renderer_Add_Text } Logger_Renderer_Add_Text
- * @typedef {import("./t.js").Logger_Renderer_Set_Attr } Logger_Renderer_Set_Attr
+ * @typedef {undefined} Logger_Renderer_Data
+ * 
+ * @typedef {Renderer          <Logger_Renderer_Data>} Logger_Renderer
+ * @typedef {Renderer_Add_Token<Logger_Renderer_Data>} Logger_Renderer_Add_Token
+ * @typedef {Renderer_End_Token<Logger_Renderer_Data>} Logger_Renderer_End_Token
+ * @typedef {Renderer_Add_Text <Logger_Renderer_Data>} Logger_Renderer_Add_Text
+ * @typedef {Renderer_Set_Attr <Logger_Renderer_Data>} Logger_Renderer_Set_Attr
  */
 
 /** @returns {Logger_Renderer} */

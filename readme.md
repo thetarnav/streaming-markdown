@@ -14,7 +14,7 @@ Install `streaming-markdown` package from npm.
 npm install streaming-markdown
 ```
 
-*Or just copy [**`mds`**](https://github.com/thetarnav/streaming-markdown/blob/main/mds) dir to your project.*
+*Or just copy [**`smd`**](https://github.com/thetarnav/streaming-markdown/blob/main/smd.js) file to your project.*
 
 ## Usage
 
@@ -23,11 +23,11 @@ It's single argument is a `Renderer` object, which is an interface to render the
 There are two built-in renderers—`default_renderer` and `logger_renderer`—that you can try at first.
 
 ```js
-import * as mds from "streaming-markdown"
+import * as smd from "streaming-markdown"
 
 const element  = document.getElementById("markdown")
-const renderer = mds.default_renderer(element)
-const parser   = mds.parser(renderer)
+const renderer = smd.default_renderer(element)
+const parser   = smd.parser(renderer)
 ```
 
 ### `write` function
@@ -35,7 +35,7 @@ const parser   = mds.parser(renderer)
 Then, you can start streaming markdown to the `Parser` by calling `parser_write` function with the chunk of markdown string.
 
 ```js
-mds.parser_write(parser, "# Streaming Markdown\n\n")
+smd.parser_write(parser, "# Streaming Markdown\n\n")
 ```
 
 *You can write **as many times as you want** to stream the markdown.*
@@ -56,7 +56,7 @@ Finally, you can end the stream by calling `end` function.
 It will reset the `Parser` state and flush the remaining markdown.
 
 ```js
-mds.parser_end(parser)
+smd.parser_end(parser)
 ```
 
 ## TODO

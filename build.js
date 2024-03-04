@@ -3,9 +3,10 @@ import path from "node:path"
 import url  from "node:url"
 import ts   from "typescript"
 
-const dirname   = path.dirname(url.fileURLToPath(import.meta.url))
-const src_dir   = path.join(dirname, "mds")
-const src_entry = path.join(src_dir, "mds.js")
+const dirname       = path.dirname(url.fileURLToPath(import.meta.url))
+const file_js_path  = path.join(dirname, "smd.js")
+const file_dts_path = path.join(dirname, "smd.d.ts")
+const file_map_path = path.join(dirname, "smd.d.ts.map")
 
 /** @type {ts.CompilerOptions} */
 const ts_options = {
@@ -23,18 +24,12 @@ const ts_options = {
 function main() {
 	const begin = performance.now()
 
-	// Remove old .d.ts files except t.d.ts
-	const files = fs.readdirSync(src_dir)
-	for (const file of files) {
-		if ((file.endsWith(".d.ts") && file !== "t.d.ts") ||
-			 file.endsWith(".d.ts.map")
-		) {
-			fs.unlinkSync(path.join(src_dir, file))
-		}
-	}
+	// Remove old .d.ts files
+	if (fs.existsSync(file_dts_path)) fs.unlinkSync(file_dts_path)
+	if (fs.existsSync(file_map_path)) fs.unlinkSync(file_map_path)
 	
 	// Emit d.ts files
-    const program = ts.createProgram([src_entry], ts_options)
+    const program = ts.createProgram([file_js_path], ts_options)
     program.emit()
     console.log(`DTS complete in ${Math.ceil(performance.now() - begin)}ms`)
 }

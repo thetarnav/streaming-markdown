@@ -13,14 +13,16 @@
 	"sideEffects": false,
 	"type": "module",
 	"files": [
-		"mds"
+		"./smd.js",
+		"./smd.d.ts",
+		"./smd.d.ts.map"
 	],
-	"module": "./mds/mds.js",
-	"types": "./mds/mds.d.ts",
+	"module": "./smd.js",
+	"types": "./smd.d.ts",
 	"exports": {
 		"import": {
-			"types": "./mds/mds.d.ts",
-			"default": "./mds/mds.js"
+			"types": "./smd.d.ts",
+			"default": "./smd.js"
 		}
 	},
 	"scripts": {
