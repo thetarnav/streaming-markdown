@@ -27,6 +27,7 @@ export const
 	BLOCKQUOTE      =  262144, // 19
 	LINE_BREAK      =  524288, // 20
 	HORIZONTAL_RULE = 1048576, // 21
+	RAW_URL         = 4194304, // 22
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
 	ANY_HEADING     =     252,
 	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
@@ -64,6 +65,7 @@ export const Token = /** @type {const} */({
 	Strong_Und:      STRONG_UND,
 	Strike:          STRIKE,
 	Link:            LINK,
+	Raw_URL:         RAW_URL,
 	Image:           IMAGE,
 	Line_Break:      LINE_BREAK,
 	Horizontal_Rule: HORIZONTAL_RULE,
@@ -92,6 +94,7 @@ export function token_to_string(type) {
 	case STRONG_UND:      return "Strong_Und"
 	case STRIKE:          return "Strike"
 	case LINK:            return "Link"
+	case RAW_URL:         return "Raw URL"
 	case IMAGE:           return "Image"
 	case LINE_BREAK:      return "Line_Break"
 	case HORIZONTAL_RULE: return "Horizontal_Rule"
@@ -663,6 +666,20 @@ export function parser_write(p, chunk) {
 				continue
 			}
 			break
+		case RAW_URL:
+			/* http://example.com?
+			                     ^
+			*/
+			if (' ' === char || '\n' === char || '\\' === char) {
+				p.renderer.set_attr(p.renderer.data, HREF, p.pending)
+				parser_add_text(p)
+				parser_end_token(p)
+				p.pending = char
+			} else {
+				p.text   += char
+				p.pending = pending_with_char
+			}
+			continue
 		}
 
 		/*
@@ -757,7 +774,7 @@ export function parser_write(p, chunk) {
 
 			break
 		}
-		case "~":
+		case '~':
 			if (in_token & (NO_NESTING | STRIKE)) break
 
 			if ("~" === p.pending) {
@@ -782,7 +799,7 @@ export function parser_write(p, chunk) {
 
 			break
 		/* [Image](url) */
-		case "[":
+		case '[':
 			if (!(in_token & (NO_NESTING | LINK)) &&
 				']' !== char
 			) {
@@ -793,7 +810,7 @@ export function parser_write(p, chunk) {
 			}
 			break
 		/* ![Image](url) */
-		case "!":
+		case '!':
 			if (!(in_token & NO_NESTING) &&
 				'[' === char
 			) {
@@ -803,10 +820,33 @@ export function parser_write(p, chunk) {
 				continue
 			}
 			break
-		case " ":
-			if (char === " ") {
+		/* Trim spaces */
+		case ' ':
+			if (char === ' ') {
 				continue
 			}
+			break
+		/* Raw URLs */
+		case 'h':
+			if (in_token & NO_NESTING) break
+
+			if ("http://"  === pending_with_char ||
+			    "https://" === pending_with_char
+			) {
+				parser_add_text(p)
+				parser_add_token(p, RAW_URL)
+				p.pending = pending_with_char
+				p.text = pending_with_char
+				continue
+			}
+
+			if ("http://" [p.pending.length] === char ||
+			    "https://"[p.pending.length] === char
+			) {
+				p.pending = pending_with_char
+				continue
+			}
+
 			break
 		}
 
@@ -840,8 +880,8 @@ export function default_renderer(root) {
 	return {
 		add_token: default_add_token,
 		end_token: default_end_token,
-		add_text: default_add_text,
-		set_attr: default_set_attr,
+		add_text:  default_add_text,
+		set_attr:  default_set_attr,
 		data    : {
 			nodes: /**@type {*}*/([root,,,,,]),
 			index: 0,
@@ -872,6 +912,7 @@ export function default_add_token(data, type) {
 	case STRONG_UND:     mount = slot = document.createElement("strong")    ;break
 	case STRIKE:         mount = slot = document.createElement("s")         ;break
 	case CODE_INLINE:    mount = slot = document.createElement("code")      ;break
+	case RAW_URL:
 	case LINK:           mount = slot = document.createElement("a")         ;break
 	case IMAGE:          mount = slot = document.createElement("img")       ;break
 	case CODE_BLOCK:
@@ -916,11 +957,11 @@ export function default_set_attr(data, type, value) {
 /** @returns {Logger_Renderer} */
 export function logger_renderer() {
 	return {
-		data: undefined,
+		data:      undefined,
 		add_token: logger_add_token,
 		end_token: logger_end_token,
-		add_text: logger_add_text,
-		set_attr: logger_set_attr,
+		add_text:  logger_add_text,
+		set_attr:  logger_set_attr,
 	}
 }
 

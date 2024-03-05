@@ -757,6 +757,45 @@ test_single_write("Escape normal char",
 	}]
 )
 
+for (const url of [
+	"http://example.com/page",
+	"https://example.com/page",
+]) {
+	test_single_write("Raw URL " + url,
+		url,
+		[{
+			type    : smd.Token.Paragraph,
+			children: [{
+				type    : smd.Token.Raw_URL,
+				attrs   : {[smd.Attr.Href]: url},
+				children: [url],
+			}]
+		}]
+	)
+
+	test_single_write("Raw URL in text " + url,
+		"foo "+url+" bar",
+		[{	type    : smd.Token.Paragraph,
+			children: [
+				"foo ",
+				{	type    : smd.Token.Raw_URL,
+					attrs   : {[smd.Attr.Href]: url},
+					children: [url],
+				},
+				" bar",
+			]
+		}]
+	)
+}
+
+test_single_write("Doesn't match not_urls as urls",
+	"http:/wrong.com",
+	[{
+		type    : smd.Token.Paragraph,
+		children: ["http:/wrong.com"]
+	}]
+)
+
 test_single_write("Link",
 	"[title](url)",
 	[{

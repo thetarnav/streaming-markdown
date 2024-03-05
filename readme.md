@@ -14,7 +14,7 @@ Install `streaming-markdown` package from npm.
 npm install streaming-markdown
 ```
 
-*Or just copy [**`smd`**](https://github.com/thetarnav/streaming-markdown/blob/main/smd.js) file to your project.*
+*Or just copy [**`smd.js`**](https://github.com/thetarnav/streaming-markdown/blob/main/smd.js) file to your project.*
 
 ## Usage
 
@@ -91,8 +91,8 @@ smd.parser_end(parser)
     - [x] Escaping escaping bug: \\[Link\\](url)
 - [ ] Raw URLs
     - [ ] www.example.com
-    - [ ] http://example.com
-    - [ ] https://example.com
+    - [x] http://example.com
+    - [x] https://example.com
     - [ ] example@fake.com
     - [ ] mailto:example@fake.com
     - [ ] With `<>`
