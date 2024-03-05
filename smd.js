@@ -485,7 +485,8 @@ export function parser_write(p, chunk) {
 				continue
 			}
 		case CODE_FENCE:
-			if ('`' === char) {
+			switch (char) {
+			case '`':
 				if (pending_with_char.length ===
 					p.backticks_count + p.code_fence_body // 0 or 1 for \n
 				) {
@@ -497,25 +498,21 @@ export function parser_write(p, chunk) {
 				} else {
 					p.pending = pending_with_char
 				}
-			} else if ('\n' === char) {
+				continue
+			case '\n':
 				p.text   += p.pending
 				p.pending = char
 				p.code_fence_body = 1
-			} else {
+				continue
+			default:
 				p.text   += pending_with_char
 				p.pending = ""
 				p.code_fence_body = 1
-			}
-			continue
-		case CODE_INLINE: {
-			if ('\n' === char) {
-				p.text += p.pending
-				p.pending = ""
-				_parser_into_line_break(p)
 				continue
 			}
-			
-			if ('`' === char) {
+		case CODE_INLINE:
+			switch (char) {
+			case '`':
 				if (pending_with_char.length === p.backticks_count) {
 					parser_add_text(p)
 					parser_end_token(p)
@@ -525,12 +522,16 @@ export function parser_write(p, chunk) {
 					p.pending = pending_with_char
 				}
 				continue
+			case '\n':
+				p.text += p.pending
+				p.pending = ""
+				_parser_into_line_break(p)
+				continue
+			default:
+				p.text += pending_with_char
+				p.pending = ""
+				continue
 			}
-
-			p.text += pending_with_char
-			p.pending = ""
-			continue
-		}
 		case STRONG_AST:
 		case STRONG_UND: {
 			/** @type {string} */ let symbol = '*'
