@@ -400,7 +400,6 @@ export function parser_write(p, chunk) {
 				break // fail
 			/* Code Fence */
 			case '`':
-				// TODO a lot of this could be collapsed under one switch
 				/*  ``?
 				      ^
 				*/
@@ -414,46 +413,43 @@ export function parser_write(p, chunk) {
 					break // fail
 				}
 
-				/*  ```?
-				       ^
-				*/
-				if (p.pending.length === p.backticks_count &&
-					'`' === char
-				) {
-					p.pending = pending_with_char
-					p.backticks_count = pending_with_char.length
+				switch (char) {
+				case '`':
+					/*  ````?
+						   ^
+					*/
+					if (p.pending.length === p.backticks_count) {
+						p.pending = pending_with_char
+						p.backticks_count = pending_with_char.length
+					}
+					/*  ```code`
+							   ^
+					*/
+					else {
+						parser_add_token(p, PARAGRAPH)
+						parser_add_token(p, CODE_INLINE)
+						p.text = p.pending.slice(p.backticks_count)
+						p.pending = ""
+						parser_write(p, char)
+					}
 					continue
-				}
-
-				/*  ```lang\n
-				           ^
-				*/
-				if ('\n' === char) {
+				case '\n':
+					/*  ```lang\n
+								^
+					*/
 					parser_add_token(p, CODE_FENCE)
 					if (p.pending.length > p.backticks_count) {
 						p.renderer.set_attr(p.renderer.data, LANG, p.pending.slice(p.backticks_count))
 					}
 					p.pending = ""
 					continue
-				}
-
-				/*  ```code`
-				           ^
-				*/
-				if ('`' === char) {
-					parser_add_token(p, PARAGRAPH)
-					parser_add_token(p, CODE_INLINE)
-					p.text = p.pending.slice(p.backticks_count)
-					p.pending = ""
-					parser_write(p, char)
+				default:
+					/*  ```lang\n
+							^
+					*/
+					p.pending = pending_with_char
 					continue
 				}
-
-				/*  ```lang\n
-				        ^
-				*/
-				p.pending = pending_with_char
-				continue
 			}
 
 			/* Paragraph */
