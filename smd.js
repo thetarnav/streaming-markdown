@@ -136,6 +136,7 @@ export function attr_to_html_attr(type) {
  * @property {number      } blockquote_idx  - For Blockquote parsing
  * @property {string      } hr_char         - For horizontal rule parsing
  * @property {number      } hr_chars        - For horizontal rule parsing
+ * @property {boolean     } could_be_url    - For raw url parsing
  */
 
 /**
@@ -195,6 +196,7 @@ export function parser(renderer) {
 		hr_char   : '',
 		hr_chars  : 0,
 		backticks_count: 0,
+		could_be_url: false,
 	}
 }
 
@@ -259,6 +261,29 @@ export function parser_write(p, chunk) {
 	for (const char of chunk) {
 		const pending_with_char = p.pending + char
 		const in_token = p.types[p.len]
+
+		/* Raw URLs */
+		if (p.could_be_url) {
+			if ("http://"  === pending_with_char ||
+			    "https://" === pending_with_char
+			) {
+				parser_add_text(p)
+				parser_add_token(p, RAW_URL)
+				p.pending = pending_with_char
+				p.text    = pending_with_char
+				p.could_be_url = false
+				continue
+			}
+
+			if ("http://" [p.pending.length] === char ||
+			    "https://"[p.pending.length] === char
+			) {
+				p.pending = pending_with_char
+				continue
+			}
+
+			p.could_be_url = false
+		}
 
 		/*
 		Token specific checks
@@ -822,32 +847,24 @@ export function parser_write(p, chunk) {
 			break
 		/* Trim spaces */
 		case ' ':
-			if (char === ' ') {
+			if (' ' === char) {
 				continue
 			}
 			break
-		/* Raw URLs */
-		case 'h':
-			if (in_token & NO_NESTING) break
+		}
 
-			if ("http://"  === pending_with_char ||
-			    "https://" === pending_with_char
-			) {
-				parser_add_text(p)
-				parser_add_token(p, RAW_URL)
-				p.pending = pending_with_char
-				p.text = pending_with_char
-				continue
-			}
-
-			if ("http://" [p.pending.length] === char ||
-			    "https://"[p.pending.length] === char
-			) {
-				p.pending = pending_with_char
-				continue
-			}
-
-			break
+		/* foo http://...
+		       ^
+		*/
+		if (!(in_token & NO_NESTING) &&
+		    'h' === char &&
+		   (" " === p.pending ||
+		    ""  === p.pending)
+		) {
+			p.text   += p.pending
+			p.pending = char
+			p.could_be_url = true
+			continue
 		}
 
 		/*

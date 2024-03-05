@@ -786,6 +786,14 @@ for (const url of [
 			]
 		}]
 	)
+
+	test_single_write("Doesn't match urls in text",
+		"foo"+url,
+		[{
+			type    : smd.Token.Paragraph,
+			children: ["foo"+url]
+		}],
+	)
 }
 
 test_single_write("Doesn't match not_urls as urls",
