@@ -89,7 +89,7 @@ smd.parser_end(parser)
 - [x] \[Link\](url)
     - [x] href attr
     - [x] Escaping escaping bug: \\[Link\\](url)
-- [ ] Raw URLs
+- [x] Raw URLs
     - [ ] www.example.com
     - [x] http://example.com
     - [x] https://example.com

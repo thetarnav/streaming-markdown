@@ -23,11 +23,11 @@ export const
 	STRONG_UND      =   16384, // 15
 	STRIKE          =   32768, // 16
 	LINK            =   65536, // 17
-	IMAGE           =  131072, // 18
-	BLOCKQUOTE      =  262144, // 19
-	LINE_BREAK      =  524288, // 20
-	HORIZONTAL_RULE = 1048576, // 21
-	RAW_URL         = 4194304, // 22
+	RAW_URL         =  131072, // 18
+	IMAGE           =  262144, // 19
+	BLOCKQUOTE      =  524288, // 20
+	LINE_BREAK      = 1048576, // 21
+	HORIZONTAL_RULE = 4194304, // 22
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
 	ANY_HEADING     =     252,
 	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
@@ -41,7 +41,7 @@ export const
 	/** `STRONG_UND | ITALIC_UND` */
 	ANY_UND         =   20480,
 	/** `ANY_CODE | IMAGE | HORIZONTAL_RULE` */
-	NO_NESTING      = 1181440,
+	NO_NESTING      = 4458240,
 	/** `DOCUMENT | BLOCKQUOTE` */
 	ANY_ROOT        =  262145
 
