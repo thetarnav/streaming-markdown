@@ -129,8 +129,9 @@ export function attr_to_html_attr(type) {
  * @property {Any_Renderer} renderer        - {@link Renderer} interface
  * @property {string      } text            - Text to be added to the last token in the next flush
  * @property {string      } pending         - Characters for identifying tokens
- * @property {Token[]     } types           - Current token and it's parents (a slice of a tree)
+ * @property {Token[]     } tokens          - Current token and it's parents (a slice of a tree)
  * @property {number      } len             - Number of tokens in types without root
+ * @property {Token       } token           - Last token in the tree
  * @property {0 | 1       } code_fence_body - For {@link Token.Code_Fence} parsing
  * @property {number      } backticks_count
  * @property {number      } blockquote_idx  - For Blockquote parsing
@@ -189,8 +190,9 @@ export function parser(renderer) {
 		renderer  : renderer,
 		text      : "",
 		pending   : "",
-		types     : /**@type {*}*/([DOCUMENT,,,,,]),
+		tokens    : /**@type {*}*/([DOCUMENT,,,,,]),
 		len       : 0,
+		token     : DOCUMENT,
 		code_fence_body: 0,
 		blockquote_idx: 0,
 		hr_char   : '',
@@ -226,6 +228,7 @@ export function parser_add_text(p) {
 export function parser_end_token(p) {
 	console.assert(p.len > 0, "No nodes to end")
 	p.len -= 1
+	p.token = p.tokens[p.len]
 	p.renderer.end_token(p.renderer.data)
 }
 
@@ -235,20 +238,9 @@ export function parser_end_token(p) {
  * @returns {void      } */
 export function parser_add_token(p, type) {
 	p.len += 1
-	p.types[p.len] = type
+	p.tokens[p.len] = type
+	p.token = type
 	p.renderer.add_token(p.renderer.data, type)
-}
-
-/**
- * Temporary add a line break token to handle LINE_BREAK in token switch.\
- * Needs to flush text, so that it's not added when in line break.
- * @param   {Parser} p
- * @returns {void  } */
-function _parser_into_line_break(p) {
-	parser_add_text(p)
-	p.len += 1
-	p.types[p.len] = LINE_BREAK
-	p.blockquote_idx = 0
 }
 
 /**
@@ -260,7 +252,6 @@ export function parser_write(p, chunk) {
 	chars:
 	for (const char of chunk) {
 		const pending_with_char = p.pending + char
-		const in_token = p.types[p.len]
 
 		/* Raw URLs */
 		if (p.could_be_url) {
@@ -288,7 +279,7 @@ export function parser_write(p, chunk) {
 		/*
 		Token specific checks
 		*/
-		switch (in_token) {
+		switch (p.token) {
 		case LINE_BREAK:
 			console.assert(p.text.length === 0, "Text when in line break")
 
@@ -299,14 +290,12 @@ export function parser_write(p, chunk) {
 			case ">":
 				p.pending = char
 
-				while (p.blockquote_idx+1 < p.len-1) {
+				while (p.blockquote_idx+1 < p.len) {
 					p.blockquote_idx += 1
-					if (p.types[p.blockquote_idx] === BLOCKQUOTE) {
+					if (p.tokens[p.blockquote_idx] === BLOCKQUOTE) {
 						continue chars
 					}
 				}
-
-				p.len -= 1 // end line break
 
 				while (p.blockquote_idx < p.len) {
 					parser_end_token(p)
@@ -317,8 +306,6 @@ export function parser_write(p, chunk) {
 				parser_add_token(p, BLOCKQUOTE)
 				continue
 			case "\n":
-				p.len -= 1 // end line break
-
 				while (p.blockquote_idx < p.len) {
 					parser_end_token(p)
 				}
@@ -330,7 +317,7 @@ export function parser_write(p, chunk) {
 				p.pending = char
 				continue
 			default:
-				p.len -= 1 // end line break
+				p.token = p.tokens[p.len]
 				p.renderer.add_token(p.renderer.data, LINE_BREAK)
 				p.renderer.end_token(p.renderer.data)
 				p.pending = "" // reprocess whole pending in previous token
@@ -384,7 +371,7 @@ export function parser_write(p, chunk) {
 
 				while (p.blockquote_idx+1 <= p.len) {
 					p.blockquote_idx += 1
-					if (p.types[p.blockquote_idx] === BLOCKQUOTE) {
+					if (p.tokens[p.blockquote_idx] === BLOCKQUOTE) {
 						continue chars
 					}
 				}
@@ -554,7 +541,9 @@ export function parser_write(p, chunk) {
 			case '\n':
 				p.text += p.pending
 				p.pending = ""
-				_parser_into_line_break(p)
+				p.token = LINE_BREAK
+				p.blockquote_idx = 0
+				parser_add_text(p)
 				continue
 			/* Trim space before ` */
 			case ' ':
@@ -570,7 +559,7 @@ export function parser_write(p, chunk) {
 		case STRONG_UND: {
 			/** @type {string} */ let symbol = '*'
 			/** @type {Token } */ let italic = ITALIC_AST
-			if (in_token === STRONG_UND) {
+			if (p.token === STRONG_UND) {
 				symbol = '_'
 				italic = ITALIC_UND
 			}
@@ -599,7 +588,7 @@ export function parser_write(p, chunk) {
 		case ITALIC_UND: {
 			/** @type {string} */ let symbol = '*'
 			/** @type {Token } */ let strong = STRONG_AST
-			if (in_token === ITALIC_UND) {
+			if (p.token === ITALIC_UND) {
 				symbol = '_'
 				strong = STRONG_UND
 			}
@@ -611,7 +600,7 @@ export function parser_write(p, chunk) {
 					                             ^                       ^
 					   With the help of the next character
 					*/
-					if (p.types[p.len-1] === strong) {
+					if (p.tokens[p.len-1] === strong) {
 						p.pending = pending_with_char
 					}
 					/* *em**bold
@@ -633,6 +622,7 @@ export function parser_write(p, chunk) {
 				}
 				continue
 			case symbol+symbol:
+				const italic = p.token
 				parser_add_text(p)
 				parser_end_token(p)
 				parser_end_token(p)
@@ -640,7 +630,7 @@ export function parser_write(p, chunk) {
 				               ^                      ^
 				*/
 				if (symbol !== char) {
-					parser_add_token(p, in_token)
+					parser_add_token(p, italic)
 					p.pending = char
 				} else {
 					p.pending = ""
@@ -680,7 +670,7 @@ export function parser_write(p, chunk) {
 						  ^
 				*/
 				if (')' === char) {
-					const type = in_token === LINK ? HREF : SRC
+					const type = p.token === LINK ? HREF : SRC
 					const url = p.pending.slice(2)
 					p.renderer.set_attr(p.renderer.data, type, url)
 					parser_end_token(p)
@@ -728,12 +718,14 @@ export function parser_write(p, chunk) {
 			continue
 		/* Newline */
 		case '\n':
-			_parser_into_line_break(p)
+			parser_add_text(p)
+			p.token = LINE_BREAK
+			p.blockquote_idx = 0
 			p.pending = char
 			continue
 		/* `Code Inline` */
 		case '`':
-			if (in_token & NO_NESTING) break
+			if (p.token & NO_NESTING) break
 
 			if ('`' === char) {
 				p.backticks_count += 1
@@ -756,7 +748,7 @@ export function parser_write(p, chunk) {
 				strong = STRONG_UND
 			}
 
-			if (in_token & NO_NESTING) break
+			if (p.token & NO_NESTING) break
 
 			if (p.pending.length === 1) {
 				/* **Strong**
@@ -800,7 +792,7 @@ export function parser_write(p, chunk) {
 			break
 		}
 		case '~':
-			if (in_token & (NO_NESTING | STRIKE)) break
+			if (p.token & (NO_NESTING | STRIKE)) break
 
 			if ("~" === p.pending) {
 				/* ~~Strike~~
@@ -825,7 +817,7 @@ export function parser_write(p, chunk) {
 			break
 		/* [Image](url) */
 		case '[':
-			if (!(in_token & (NO_NESTING | LINK)) &&
+			if (!(p.token & (NO_NESTING | LINK)) &&
 				']' !== char
 			) {
 				parser_add_text(p)
@@ -836,7 +828,7 @@ export function parser_write(p, chunk) {
 			break
 		/* ![Image](url) */
 		case '!':
-			if (!(in_token & NO_NESTING) &&
+			if (!(p.token & NO_NESTING) &&
 				'[' === char
 			) {
 				parser_add_text(p)
@@ -856,7 +848,7 @@ export function parser_write(p, chunk) {
 		/* foo http://...
 		       ^
 		*/
-		if (!(in_token & NO_NESTING) &&
+		if (!(p.token & NO_NESTING) &&
 		    'h' === char &&
 		   (" " === p.pending ||
 		    ""  === p.pending)
