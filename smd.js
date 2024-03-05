@@ -427,10 +427,9 @@ export function parser_write(p, chunk) {
 					*/
 					else {
 						parser_add_token(p, PARAGRAPH)
-						parser_add_token(p, CODE_INLINE)
-						p.text = p.pending.slice(p.backticks_count)
 						p.pending = ""
-						parser_write(p, char)
+						p.backticks_count = 0
+						parser_write(p, pending_with_char)
 					}
 					continue
 				case '\n':
@@ -513,7 +512,9 @@ export function parser_write(p, chunk) {
 		case CODE_INLINE:
 			switch (char) {
 			case '`':
-				if (pending_with_char.length === p.backticks_count) {
+				if (pending_with_char.length ===
+					p.backticks_count + Number(p.pending[0] === ' ') // 0 or 1 for space
+				) {
 					parser_add_text(p)
 					parser_end_token(p)
 					p.pending = ""
@@ -526,6 +527,11 @@ export function parser_write(p, chunk) {
 				p.text += p.pending
 				p.pending = ""
 				_parser_into_line_break(p)
+				continue
+			/* Trim space before ` */
+			case ' ':
+				p.text += p.pending
+				p.pending = char
 				continue
 			default:
 				p.text += pending_with_char
@@ -694,7 +700,7 @@ export function parser_write(p, chunk) {
 				p.backticks_count += 1 // started at 0, and first wasn't counted
 				parser_add_text(p)
 				parser_add_token(p, CODE_INLINE)
-				p.text = char
+				p.text = ' ' === char || '\n' === char ? "" : char // trim leading space
 				p.pending = ""
 			}
 			continue
@@ -819,7 +825,7 @@ export function parser_write(p, chunk) {
  * @typedef  {object} Default_Renderer_Data
  * @property {HTMLElement[]} nodes
  * @property {number       } index
- * 
+ *
  * @typedef {Renderer          <Default_Renderer_Data>} Default_Renderer
  * @typedef {Renderer_Add_Token<Default_Renderer_Data>} Default_Renderer_Add_Token
  * @typedef {Renderer_End_Token<Default_Renderer_Data>} Default_Renderer_End_Token
@@ -899,7 +905,7 @@ export function default_set_attr(data, type, value) {
 
 /**
  * @typedef {undefined} Logger_Renderer_Data
- * 
+ *
  * @typedef {Renderer          <Logger_Renderer_Data>} Logger_Renderer
  * @typedef {Renderer_Add_Token<Logger_Renderer_Data>} Logger_Renderer_Add_Token
  * @typedef {Renderer_End_Token<Logger_Renderer_Data>} Logger_Renderer_End_Token

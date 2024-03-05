@@ -423,6 +423,17 @@ for (let l = 1; l <= 4; l += 1) {
 		}]
 	)
 
+	test_single_write("Code Inline trims spaces" + " - "+l+" backticks",
+		c + " a " + c,
+		[{
+			type    : smd.Token.Paragraph,
+			children: [{
+				type    : smd.Token.Code_Inline,
+				children: ["a"]
+			}],
+		}]
+	)
+
 	test_single_write("Code Inline x2" + " - "+l+" backticks",
 		c+"a"+c+" "+c+"b"+c,
 		[{

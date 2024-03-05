@@ -73,7 +73,7 @@ smd.parser_end(parser)
     - [x] with many backticks
 - [x] `` `inline code` `` with backticks
     - [x] with many backticks
-    - [ ] trim symmetrical spaces ` code `
+    - [x] trim spaces ` code `
 - [x] *italic* with single asterisks
 - [x] **Bold** with double asterisks
 - [x] _italic_ with underscores
