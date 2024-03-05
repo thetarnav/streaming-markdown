@@ -35,12 +35,12 @@ function test_renderer() {
 	return {
 		add_token: test_renderer_add_token,
 		end_token: test_renderer_end_token,
-		add_text: test_renderer_add_text,
-		set_attr: test_renderer_set_attr,
-		data    : {
+		set_attr : test_renderer_set_attr,
+		add_text : test_renderer_add_text,
+		data     : {
 			parent_map: new Map(),
-			root: root,
-			node: root,
+			root      : root,
+			node      : root,
 		},
 	}
 }
@@ -48,9 +48,8 @@ function test_renderer() {
 function test_renderer_add_token(data, type) {
 	/** @type {Test_Renderer_Node} */
     const node = {type, children: []}
-	const parent = data.node
-	parent.children.push(node)
-	data.parent_map.set(node, parent)
+	data.node.children.push(node)
+	data.parent_map.set(node, data.node)
 	data.node = node
 }
 /** @type {Test_Add_Text} */
@@ -64,7 +63,7 @@ function test_renderer_add_text(data, text) {
 /** @type {Test_End_Token} */
 function test_renderer_end_token(data) {
 	const parent = data.parent_map.get(data.node)
-	assert.notEqual(parent, undefined)
+	assert.notEqual(parent, undefined, "Parent not found")
 	data.node = /** @type {Test_Renderer_Node} */(parent)
 }
 /** @type {Test_Set_Attr} */
