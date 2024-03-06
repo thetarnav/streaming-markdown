@@ -6,69 +6,77 @@ https://github.com/thetarnav/streaming-markdown
 */
 
 export const
-	DOCUMENT        =       1, //  1
-	PARAGRAPH       =       2, //  2
-	HEADING_1       =       4, //  3
-	HEADING_2       =       8, //  4
-	HEADING_3       =      16, //  5
-	HEADING_4       =      32, //  6
-	HEADING_5       =      64, //  7
-	HEADING_6       =     128, //  8
-	CODE_BLOCK      =     256, //  9
-	CODE_FENCE      =     512, // 10
-	CODE_INLINE     =    1024, // 11
-	ITALIC_AST      =    2048, // 12
-	ITALIC_UND      =    4096, // 13
-	STRONG_AST      =    8192, // 14
-	STRONG_UND      =   16384, // 15
-	STRIKE          =   32768, // 16
-	LINK            =   65536, // 17
-	RAW_URL         =  131072, // 18
-	IMAGE           =  262144, // 19
-	BLOCKQUOTE      =  524288, // 20
-	LINE_BREAK      = 1048576, // 21
-	HORIZONTAL_RULE = 4194304, // 22
+	DOCUMENT       =       1, //  1
+	PARAGRAPH      =       2, //  2
+	HEADING_1      =       4, //  3
+	HEADING_2      =       8, //  4
+	HEADING_3      =      16, //  5
+	HEADING_4      =      32, //  6
+	HEADING_5      =      64, //  7
+	HEADING_6      =     128, //  8
+	CODE_BLOCK     =     256, //  9
+	CODE_FENCE     =     512, // 10
+	CODE_INLINE    =    1024, // 11
+	ITALIC_AST     =    2048, // 12
+	ITALIC_UND     =    4096, // 13
+	STRONG_AST     =    8192, // 14
+	STRONG_UND     =   16384, // 15
+	STRIKE         =   32768, // 16
+	LINK           =   65536, // 17
+	RAW_URL        =  131072, // 18
+	IMAGE          =  262144, // 19
+	BLOCKQUOTE     =  524288, // 20
+	LINE_BREAK     = 1048576, // 21
+	RULE           = 4194304, // 22
+	LIST_UNORDERED = 8388608, // 23
+	LIST_ORDERED   =16777216, // 24
+	LIST_ITEM      =33554432, // 25
+	LIST_TASK      =67108864, // 26
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
-	ANY_HEADING     =     252,
+	ANY_HEADING    =     252,
 	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
-	ANY_CODE        =    1792,
+	ANY_CODE       =    1792,
 	/** `ITALIC_AST | ITALIC_UND` */
-	ANY_ITALIC      =    6144,
+	ANY_ITALIC     =    6144,
 	/** `STRONG_AST | STRONG_UND` */
-	ANY_STRONG      =   24576,
+	ANY_STRONG     =   24576,
 	/** `STRONG_AST | ITALIC_AST` */
-	ANY_AST         =   10240,
+	ANY_AST        =   10240,
 	/** `STRONG_UND | ITALIC_UND` */
-	ANY_UND         =   20480,
+	ANY_UND        =   20480,
 	/** `ANY_CODE | IMAGE | HORIZONTAL_RULE` */
-	NO_NESTING      = 4458240,
+	NO_NESTING     = 4458240,
 	/** `DOCUMENT | BLOCKQUOTE` */
-	ANY_ROOT        =  262145
+	ANY_ROOT       =  262145
 
 /** @enum {(typeof Token)[keyof typeof Token]} */
 export const Token = /** @type {const} */({
-	Document:        DOCUMENT,
-	Blockquote:      BLOCKQUOTE,
-	Paragraph:       PARAGRAPH,
-	Heading_1:       HEADING_1,
-	Heading_2:       HEADING_2,
-	Heading_3:       HEADING_3,
-	Heading_4:       HEADING_4,
-	Heading_5:       HEADING_5,
-	Heading_6:       HEADING_6,
-	Code_Block:      CODE_BLOCK,
-	Code_Fence:      CODE_FENCE,
-	Code_Inline:     CODE_INLINE,
-	Italic_Ast:      ITALIC_AST,
-	Italic_Und:      ITALIC_UND,
-	Strong_Ast:      STRONG_AST,
-	Strong_Und:      STRONG_UND,
-	Strike:          STRIKE,
-	Link:            LINK,
-	Raw_URL:         RAW_URL,
-	Image:           IMAGE,
-	Line_Break:      LINE_BREAK,
-	Horizontal_Rule: HORIZONTAL_RULE,
+	Document:       DOCUMENT,
+	Blockquote:     BLOCKQUOTE,
+	Paragraph:      PARAGRAPH,
+	Heading_1:      HEADING_1,
+	Heading_2:      HEADING_2,
+	Heading_3:      HEADING_3,
+	Heading_4:      HEADING_4,
+	Heading_5:      HEADING_5,
+	Heading_6:      HEADING_6,
+	Code_Block:     CODE_BLOCK,
+	Code_Fence:     CODE_FENCE,
+	Code_Inline:    CODE_INLINE,
+	Italic_Ast:     ITALIC_AST,
+	Italic_Und:     ITALIC_UND,
+	Strong_Ast:     STRONG_AST,
+	Strong_Und:     STRONG_UND,
+	Strike:         STRIKE,
+	Link:           LINK,
+	Raw_URL:        RAW_URL,
+	Image:          IMAGE,
+	Line_Break:     LINE_BREAK,
+	Rule:           RULE,
+	List_Unordered: LIST_UNORDERED,
+	List_Ordered:   LIST_ORDERED,
+	List_Item:      LIST_ITEM,
+	List_Task:      LIST_TASK,
 })
 
 /**
@@ -76,28 +84,32 @@ export const Token = /** @type {const} */({
  * @returns {string    } */
 export function token_to_string(type) {
 	switch (type) {
-	case DOCUMENT:        return "Document"
-	case BLOCKQUOTE:      return "Blockquote"
-	case PARAGRAPH:       return "Paragraph"
-	case HEADING_1:       return "Heading_1"
-	case HEADING_2:       return "Heading_2"
-	case HEADING_3:       return "Heading_3"
-	case HEADING_4:       return "Heading_4"
-	case HEADING_5:       return "Heading_5"
-	case HEADING_6:       return "Heading_6"
-	case CODE_BLOCK:      return "Code_Block"
-	case CODE_FENCE:      return "Code_Fence"
-	case CODE_INLINE:     return "Code_Inline"
-	case ITALIC_AST:      return "Italic_Ast"
-	case ITALIC_UND:      return "Italic_Und"
-	case STRONG_AST:      return "Strong_Ast"
-	case STRONG_UND:      return "Strong_Und"
-	case STRIKE:          return "Strike"
-	case LINK:            return "Link"
-	case RAW_URL:         return "Raw URL"
-	case IMAGE:           return "Image"
-	case LINE_BREAK:      return "Line_Break"
-	case HORIZONTAL_RULE: return "Horizontal_Rule"
+	case DOCUMENT:       return "Document"
+	case BLOCKQUOTE:     return "Blockquote"
+	case PARAGRAPH:      return "Paragraph"
+	case HEADING_1:      return "Heading_1"
+	case HEADING_2:      return "Heading_2"
+	case HEADING_3:      return "Heading_3"
+	case HEADING_4:      return "Heading_4"
+	case HEADING_5:      return "Heading_5"
+	case HEADING_6:      return "Heading_6"
+	case CODE_BLOCK:     return "Code_Block"
+	case CODE_FENCE:     return "Code_Fence"
+	case CODE_INLINE:    return "Code_Inline"
+	case ITALIC_AST:     return "Italic_Ast"
+	case ITALIC_UND:     return "Italic_Und"
+	case STRONG_AST:     return "Strong_Ast"
+	case STRONG_UND:     return "Strong_Und"
+	case STRIKE:         return "Strike"
+	case LINK:           return "Link"
+	case RAW_URL:        return "Raw URL"
+	case IMAGE:          return "Image"
+	case LINE_BREAK:     return "Line_Break"
+	case RULE:           return "Rule"
+	case LIST_UNORDERED: return "List_Unordered"
+	case LIST_ORDERED:   return "List_Ordered"
+	case LIST_ITEM:      return "List_Item"
+	case LIST_TASK:      return "List_Task"
 	}
 }
 
@@ -402,7 +414,7 @@ export function parser_write(p, chunk) {
 						continue
 					case '\n':
 						if (p.hr_chars < 3) break
-						p.renderer.add_token(p.renderer.data, HORIZONTAL_RULE)
+						p.renderer.add_token(p.renderer.data, RULE)
 						p.renderer.end_token(p.renderer.data)
 						p.pending = ""
 						p.hr_chars = 0
@@ -410,6 +422,12 @@ export function parser_write(p, chunk) {
 					}
 
 					p.hr_chars = 0
+				}
+
+				if ((p.pending === "-" || p.pending === "*") && ' ' === char) {
+					parser_add_token(p, LIST_UNORDERED)
+					p.pending = ""
+					continue
 				}
 
 				break // fail
@@ -464,6 +482,36 @@ export function parser_write(p, chunk) {
 					p.pending = pending_with_char
 					continue
 				}
+			/* List Unordered */
+			case '+':
+				if (' ' === char) {
+					parser_add_token(p, LIST_UNORDERED)
+					p.pending = ""
+					continue
+				}
+				break // fail
+			/* List Ordered */
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				if ('.' === char) {
+					parser_add_token(p, LIST_ORDERED)
+					p.pending = ""
+					continue
+				}
+				const char_code = char.charCodeAt(0) // 48-57 are 0-9
+				if (char_code >= 48 && char_code <= 57) {
+					p.pending += char
+					continue
+				}
+				break // fail
 			}
 
 			/* Paragraph */
@@ -905,25 +953,34 @@ export function default_add_token(data, type) {
 
 	switch (type) {
 	case DOCUMENT: return // document is provided
-	case BLOCKQUOTE:     mount = slot = document.createElement("blockquote");break
-	case PARAGRAPH:      mount = slot = document.createElement("p")         ;break
-	case LINE_BREAK:     mount = slot = document.createElement("br")        ;break
-	case HORIZONTAL_RULE:mount = slot = document.createElement("hr")        ;break
-	case HEADING_1:      mount = slot = document.createElement("h1")        ;break
-	case HEADING_2:      mount = slot = document.createElement("h2")        ;break
-	case HEADING_3:      mount = slot = document.createElement("h3")        ;break
-	case HEADING_4:      mount = slot = document.createElement("h4")        ;break
-	case HEADING_5:      mount = slot = document.createElement("h5")        ;break
-	case HEADING_6:      mount = slot = document.createElement("h6")        ;break
+	case BLOCKQUOTE:    mount = slot = document.createElement("blockquote");break
+	case PARAGRAPH:     mount = slot = document.createElement("p")         ;break
+	case LINE_BREAK:    mount = slot = document.createElement("br")        ;break
+	case RULE:          mount = slot = document.createElement("hr")        ;break
+	case HEADING_1:     mount = slot = document.createElement("h1")        ;break
+	case HEADING_2:     mount = slot = document.createElement("h2")        ;break
+	case HEADING_3:     mount = slot = document.createElement("h3")        ;break
+	case HEADING_4:     mount = slot = document.createElement("h4")        ;break
+	case HEADING_5:     mount = slot = document.createElement("h5")        ;break
+	case HEADING_6:     mount = slot = document.createElement("h6")        ;break
 	case ITALIC_AST:
-	case ITALIC_UND:     mount = slot = document.createElement("em")        ;break
+	case ITALIC_UND:    mount = slot = document.createElement("em")        ;break
 	case STRONG_AST:
-	case STRONG_UND:     mount = slot = document.createElement("strong")    ;break
-	case STRIKE:         mount = slot = document.createElement("s")         ;break
-	case CODE_INLINE:    mount = slot = document.createElement("code")      ;break
+	case STRONG_UND:    mount = slot = document.createElement("strong")    ;break
+	case STRIKE:        mount = slot = document.createElement("s")         ;break
+	case CODE_INLINE:   mount = slot = document.createElement("code")      ;break
 	case RAW_URL:
-	case LINK:           mount = slot = document.createElement("a")         ;break
-	case IMAGE:          mount = slot = document.createElement("img")       ;break
+	case LINK:          mount = slot = document.createElement("a")         ;break
+	case IMAGE:         mount = slot = document.createElement("img")       ;break
+	case LIST_UNORDERED:mount = slot = document.createElement("ul")        ;break
+	case LIST_ORDERED:  mount = slot = document.createElement("ol")        ;break
+	case LIST_ITEM:     mount = slot = document.createElement("li")        ;break
+	case LIST_TASK:
+		const checkbox = document.createElement("input")
+		checkbox.type = "checkbox"
+		mount = slot = document.createElement("li")
+		slot.appendChild(checkbox)
+		break
 	case CODE_BLOCK:
 	case CODE_FENCE:
 		mount = document.createElement("pre")
