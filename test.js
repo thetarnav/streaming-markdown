@@ -677,10 +677,10 @@ for (const {type, c} of [
 	)
 
 	test_single_write(smd.token_to_string(type) + " space after begin",
-		c + " foo" + c,
+		"a " + c + " b" + c,
 		[{
 			type    : smd.Token.Paragraph,
-			children: [c + " foo" + c]
+			children: ["a " + c + " b" + c]
 		}]
 	)
 
@@ -1131,6 +1131,20 @@ test_single_write("Unordered List",
 		children: [{
 			type    : smd.Token.List_Item,
 			children: ["foo"]
+		}]
+	}]
+)
+
+test_single_write("Unordered List with italic",
+	"- *foo*",
+	[{
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: [{
+				type    : smd.Token.Italic_Ast,
+				children: ["foo"]
+			}]
 		}]
 	}]
 )

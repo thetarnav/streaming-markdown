@@ -424,9 +424,12 @@ export function parser_write(p, chunk) {
 					p.hr_chars = 0
 				}
 
-				if ((p.pending === "-" || p.pending === "*") && ' ' === char) {
+				if ("- " === p.pending ||
+				    "* " === p.pending
+				) {
 					parser_add_token(p, LIST_UNORDERED)
-					p.pending = ""
+					parser_add_token(p, LIST_ITEM)
+					p.pending = char
 					continue
 				}
 
