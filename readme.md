@@ -104,7 +104,7 @@ smd.parser_end(parser)
     - [x] With `___`
 - [x] Unordered lists
 - [ ] Ordered lists
-- [ ] Task lists
+- [x] Task lists
 - [ ] Nested lists
 - [x] Blockquotes
 - [ ] Tables

@@ -68,8 +68,6 @@ function test_renderer_end_token(data) {
 }
 /** @type {Test_Set_Attr} */
 function test_renderer_set_attr(data, type, value) {
-	if (value.length === 0) return
-
 	if (data.node.attrs === undefined) {
 		data.node.attrs = {[type]: value}
 	} else {
@@ -1216,6 +1214,58 @@ test_single_write("Unordered List with unchecked task",
 				type    : smd.Token.Checkbox,
 				children: [],
 			}, " foo"]
+		}]
+	}]
+)
+
+test_single_write("Unordered List with checked task",
+	"- [x] foo",
+	[{
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: [{
+				type    : smd.Token.Checkbox,
+				attrs   : {[smd.Attr.Checked]: ""},
+				children: [],
+			}, " foo"]
+		}]
+	}]
+)
+
+test_single_write("Unordered List with two tasks",
+	"- [ ] foo\n"+
+	"- [x] bar\n",
+	[{
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: [{
+				type    : smd.Token.Checkbox,
+				children: [],
+			}, " foo"]
+		}, {
+			type    : smd.Token.List_Item,
+			children: [{
+				type    : smd.Token.Checkbox,
+				attrs   : {[smd.Attr.Checked]: ""},
+				children: [],
+			}, " bar"]
+		}]
+	}]
+)
+
+test_single_write("Unordered List with link",
+	"- [x](url)",
+	[{
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: [{
+				type    : smd.Token.Link,
+				attrs   : {[smd.Attr.Href]: "url"},
+				children: ["x"],
+			}]
 		}]
 	}]
 )

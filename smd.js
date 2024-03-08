@@ -114,15 +114,17 @@ export function token_to_string(type) {
 }
 
 export const
-	HREF = 1,
-	SRC  = 2,
-	LANG = 4
+	HREF    = 1,
+	SRC     = 2,
+	LANG    = 4,
+	CHECKED = 8
 
 /** @enum {(typeof Attr)[keyof typeof Attr]} */
 export const Attr = /** @type {const} */({
-	Href: HREF,
-	Src:  SRC,
-	Lang: LANG,
+	Href   : HREF,
+	Src    : SRC,
+	Lang   : LANG,
+	Checked: CHECKED,
 })
 
 /**
@@ -130,9 +132,10 @@ export const Attr = /** @type {const} */({
  * @returns {string    } */
 export function attr_to_html_attr(type) {
 	switch (type) {
-	case HREF: return "href"
-	case SRC : return "src"
-	case LANG: return "lang"
+	case HREF:    return "href"
+	case SRC :    return "src"
+	case LANG:    return "lang"
+	case CHECKED: return "checked"
 	}
 }
 
@@ -276,24 +279,35 @@ export function parser_write(p, chunk) {
 
 		/* Checkboxes */
 		if (p.could_be_task) {
-			if ("[ ] " === pending_with_char ||
-			    "[x] " === pending_with_char
-			) {
+			switch (p.pending.length) {
+			case 0:
+				if ('[' !== char) break // fail
+				p.pending = pending_with_char
+				continue
+			case 1:
+				if (' ' !== char && 'x' !== char) break // fail
+				p.pending = pending_with_char
+				continue
+			case 2:
+				if (']' !== char) break // fail
+				p.pending = pending_with_char
+				continue
+			case 3:
+				if (' ' !== char) break // fail
 				p.renderer.add_token(p.renderer.data, CHECKBOX)
+				if ('x' === p.pending[1]) {
+					p.renderer.set_attr(p.renderer.data, CHECKED, "")
+				}
 				p.renderer.end_token(p.renderer.data)
 				p.pending = " "
 				p.could_be_task = false
 				continue
 			}
 
-			if ("[ ]"[p.pending.length] === char ||
-			    "[x]"[p.pending.length] === char
-			) {
-				p.pending = pending_with_char
-				continue
-			}
-
 			p.could_be_task = false
+			p.pending = ""
+			parser_write(p, pending_with_char)
+			continue
 		}
 		
 		/*
@@ -345,6 +359,7 @@ export function parser_write(p, chunk) {
 					
 					parser_add_token(p, LIST_ITEM)
 					p.pending = ""
+					p.could_be_task = true
 					continue
 				}
 
