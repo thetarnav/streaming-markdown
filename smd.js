@@ -6,48 +6,48 @@ https://github.com/thetarnav/streaming-markdown
 */
 
 export const
-	DOCUMENT       =       1, //  1
-	PARAGRAPH      =       2, //  2
-	HEADING_1      =       4, //  3
-	HEADING_2      =       8, //  4
-	HEADING_3      =      16, //  5
-	HEADING_4      =      32, //  6
-	HEADING_5      =      64, //  7
-	HEADING_6      =     128, //  8
-	CODE_BLOCK     =     256, //  9
-	CODE_FENCE     =     512, // 10
-	CODE_INLINE    =    1024, // 11
-	ITALIC_AST     =    2048, // 12
-	ITALIC_UND     =    4096, // 13
-	STRONG_AST     =    8192, // 14
-	STRONG_UND     =   16384, // 15
-	STRIKE         =   32768, // 16
-	LINK           =   65536, // 17
-	RAW_URL        =  131072, // 18
-	IMAGE          =  262144, // 19
-	BLOCKQUOTE     =  524288, // 20
-	LINE_BREAK     = 1048576, // 21
-	RULE           = 4194304, // 22
-	LIST_UNORDERED = 8388608, // 23
-	LIST_ORDERED   =16777216, // 24
-	LIST_ITEM      =33554432, // 25
-	LIST_TASK      =67108864, // 26
+	DOCUMENT       =        1, //  1
+	PARAGRAPH      =        2, //  2
+	HEADING_1      =        4, //  3
+	HEADING_2      =        8, //  4
+	HEADING_3      =       16, //  5
+	HEADING_4      =       32, //  6
+	HEADING_5      =       64, //  7
+	HEADING_6      =      128, //  8
+	CODE_BLOCK     =      256, //  9
+	CODE_FENCE     =      512, // 10
+	CODE_INLINE    =     1024, // 11
+	ITALIC_AST     =     2048, // 12
+	ITALIC_UND     =     4096, // 13
+	STRONG_AST     =     8192, // 14
+	STRONG_UND     =    16384, // 15
+	STRIKE         =    32768, // 16
+	LINK           =    65536, // 17
+	RAW_URL        =   131072, // 18
+	IMAGE          =   262144, // 19
+	BLOCKQUOTE     =   524288, // 20
+	LINE_BREAK     =  1048576, // 21
+	RULE           =  4194304, // 22
+	LIST_UNORDERED =  8388608, // 23
+	LIST_ORDERED   = 16777216, // 24
+	LIST_ITEM      = 33554432, // 25
+	CHECKBOX       = 67108864, // 26
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
-	ANY_HEADING    =     252,
+	ANY_HEADING    =      252,
 	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
-	ANY_CODE       =    1792,
+	ANY_CODE       =     1792,
 	/** `ITALIC_AST | ITALIC_UND` */
-	ANY_ITALIC     =    6144,
+	ANY_ITALIC     =     6144,
 	/** `STRONG_AST | STRONG_UND` */
-	ANY_STRONG     =   24576,
+	ANY_STRONG     =    24576,
 	/** `STRONG_AST | ITALIC_AST` */
-	ANY_AST        =   10240,
+	ANY_AST        =    10240,
 	/** `STRONG_UND | ITALIC_UND` */
-	ANY_UND        =   20480,
+	ANY_UND        =    20480,
 	/** `ANY_CODE | IMAGE | HORIZONTAL_RULE` */
-	NO_NESTING     = 4458240,
+	NO_NESTING     =  4458240,
 	/** `DOCUMENT | BLOCKQUOTE` */
-	ANY_ROOT       =  262145
+	ANY_ROOT       =   262145
 
 /** @enum {(typeof Token)[keyof typeof Token]} */
 export const Token = /** @type {const} */({
@@ -76,7 +76,7 @@ export const Token = /** @type {const} */({
 	List_Unordered: LIST_UNORDERED,
 	List_Ordered:   LIST_ORDERED,
 	List_Item:      LIST_ITEM,
-	List_Task:      LIST_TASK,
+	Checkbox:       CHECKBOX,
 })
 
 /**
@@ -109,7 +109,7 @@ export function token_to_string(type) {
 	case LIST_UNORDERED: return "List_Unordered"
 	case LIST_ORDERED:   return "List_Ordered"
 	case LIST_ITEM:      return "List_Item"
-	case LIST_TASK:      return "List_Task"
+	case CHECKBOX:       return "Checkbox"
 	}
 }
 
@@ -317,6 +317,42 @@ export function parser_write(p, chunk) {
 				p.backticks_count = 0
 				parser_add_token(p, BLOCKQUOTE)
 				continue
+			case "*":
+			case "-":
+			case "+":
+				if (' ' === char) {
+					// find first u-list
+					let idx = p.blockquote_idx
+					while (idx < p.len) {
+						if (p.tokens[idx] === LIST_UNORDERED) {
+							break
+						}
+						idx += 1
+					}
+
+					// if not found, create one
+					if (idx === p.len) {
+						while (p.blockquote_idx < p.len) {
+							parser_end_token(p)
+						}
+						p.blockquote_idx = 0
+						p.backticks_count = 0
+						parser_add_token(p, LIST_UNORDERED)
+						parser_add_token(p, LIST_ITEM)
+						p.pending = ""
+						continue
+					}
+
+					// if found, add list item
+					while (idx < p.len) {
+						parser_end_token(p)
+					}
+					parser_add_token(p, LIST_ITEM)
+					p.pending = ""
+					continue
+				}
+
+				break // fail
 			case "\n":
 				while (p.blockquote_idx < p.len) {
 					parser_end_token(p)
@@ -328,14 +364,15 @@ export function parser_write(p, chunk) {
 			case "":
 				p.pending = char
 				continue
-			default:
-				p.token = p.tokens[p.len]
-				p.renderer.add_token(p.renderer.data, LINE_BREAK)
-				p.renderer.end_token(p.renderer.data)
-				p.pending = "" // reprocess whole pending in previous token
-				parser_write(p, pending_with_char)
-				continue
 			}
+
+			/* Add a line break and continue in current token */
+			p.token = p.tokens[p.len]
+			p.renderer.add_token(p.renderer.data, LINE_BREAK)
+			p.renderer.end_token(p.renderer.data)
+			p.pending = "" // reprocess whole pending in previous token
+			parser_write(p, pending_with_char)
+			continue
 		case DOCUMENT:
 		case BLOCKQUOTE:
 			console.assert(p.text.length === 0, "Root should not have any text")
@@ -978,11 +1015,10 @@ export function default_add_token(data, type) {
 	case LIST_UNORDERED:mount = slot = document.createElement("ul")        ;break
 	case LIST_ORDERED:  mount = slot = document.createElement("ol")        ;break
 	case LIST_ITEM:     mount = slot = document.createElement("li")        ;break
-	case LIST_TASK:
+	case CHECKBOX:
 		const checkbox = document.createElement("input")
 		checkbox.type = "checkbox"
-		mount = slot = document.createElement("li")
-		slot.appendChild(checkbox)
+		mount = slot = checkbox
 		break
 	case CODE_BLOCK:
 	case CODE_FENCE:

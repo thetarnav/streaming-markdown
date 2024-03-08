@@ -1148,3 +1148,60 @@ test_single_write("Unordered List with italic",
 		}]
 	}]
 )
+
+test_single_write("Unordered List two items",
+	"- a\n"+
+	"- b",
+	[{
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: ["a"]
+		}, {
+			type    : smd.Token.List_Item,
+			children: ["b"]
+		}]
+	}]
+)
+
+test_single_write("Unordered List with line break",
+	"- a\nb",
+	[{
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: ["a", br, "b"]
+		}]
+	}]
+)
+
+test_single_write("Unordered List end",
+	"- a\n"+
+	"\n"+
+	"b",
+	[{
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: ["a"]
+		}]
+	}, {
+		type    : smd.Token.Paragraph,
+		children: ["b"]
+	}]
+)
+
+test_single_write("Unordered List after line break",
+	"a\n"+
+	"- b",
+	[{
+		type    : smd.Token.Paragraph,
+		children: ["a"]
+	}, {
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: ["b"]
+		}]
+	}]
+)
