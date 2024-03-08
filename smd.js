@@ -287,7 +287,6 @@ function parser_end_tokens_to_len(p, len) {
  * @param   {string} chunk
  * @returns {void  } */
 export function parser_write(p, chunk) {
-	chars:
 	for (const char of chunk) {
 		const pending_with_char = p.pending + char
 
@@ -350,19 +349,17 @@ export function parser_write(p, chunk) {
 				if (' ' === char) {
 					const list_idx = parser_idx_of(p, LIST_UNORDERED, p.blockquote_idx+1)
 
-					// if not found, create one
+					/*
+					Create a new list
+					or continue the last one
+					*/
 					if (list_idx === -1) {
 						parser_end_tokens_to_len(p, p.blockquote_idx)
-						p.blockquote_idx = 0
-						p.backticks_count = 0
 						parser_add_token(p, LIST_UNORDERED)
-						parser_add_token(p, LIST_ITEM)
-						p.pending = ""
-						continue
+					} else {
+						parser_end_tokens_to_len(p, list_idx)
 					}
-
-					// if found, add list item
-					parser_end_tokens_to_len(p, list_idx)
+					
 					parser_add_token(p, LIST_ITEM)
 					p.pending = ""
 					continue
@@ -380,7 +377,7 @@ export function parser_write(p, chunk) {
 				continue
 			}
 
-			/* Add a line break and continue in current token */
+			/* Add a line break and continue in previous token */
 			p.token = p.tokens[p.len]
 			p.renderer.add_token(p.renderer.data, LINE_BREAK)
 			p.renderer.end_token(p.renderer.data)
