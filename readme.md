@@ -59,7 +59,7 @@ It will reset the `Parser` state and flush the remaining markdown.
 smd.parser_end(parser)
 ```
 
-## TODO
+## Markdown features
 
 - [x] Paragraphs
 - [x] Line breaks
@@ -102,9 +102,9 @@ smd.parser_end(parser)
     - [x] With `---`
     - [x] With `***`
     - [x] With `___`
-- [ ] Unordered lists
+- [x] Unordered lists
 - [ ] Ordered lists
-- [ ] Check lists
+- [ ] Task lists
 - [ ] Nested lists
 - [x] Blockquotes
 - [ ] Tables

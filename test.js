@@ -390,7 +390,7 @@ for (const c of ["*", "-", "_"]) {
 		test_single_write('Horizontal Rule "' + txt + '"',
 			txt,
 			[{
-				type    : smd.Token.Horizontal_Rule,
+				type    : smd.Token.Rule,
 				children: []
 			}]
 		)
@@ -400,7 +400,7 @@ for (const c of ["*", "-", "_"]) {
 test_single_write("Text after Horizontal Rule",
 	"---\nfoo",
 	[{
-		type    : smd.Token.Horizontal_Rule,
+		type    : smd.Token.Rule,
 		children: []
 	}, {
 		type    : smd.Token.Paragraph,
@@ -459,7 +459,7 @@ for (let l = 1; l <= 4; l += 1) {
 				children: ["a"+m+"b"]
 			}],
 		}]
-	)	
+	)
 	}
 }
 
@@ -476,7 +476,7 @@ for (let l = 1; l <= 2; l += 1) {
 			}],
 		}]
 	)
-	
+
 	test_single_write("Code with two line breaks" + " - "+l+" backticks",
 		c + "a\n\nb",
 		[{
@@ -502,7 +502,7 @@ for (let l = 3; l <= 5; l += 1) {
 			children: []
 		}]
 	)
-	
+
 	test_single_write("Code_Fence - " + l + " backticks",
 		c+"\nfoo\n"+c,
 		[{
@@ -510,7 +510,7 @@ for (let l = 3; l <= 5; l += 1) {
 			children: ["foo"]
 		}]
 	)
-	
+
 	test_single_write("Code_Fence with language - " + l + " backticks",
 		c+"js\nfoo\n"+c,
 		[{
@@ -519,7 +519,7 @@ for (let l = 3; l <= 5; l += 1) {
 			attrs   : {[smd.Attr.Lang]: "js"}
 		}]
 	)
-	
+
 	const m = '`'.repeat(l - 1)
 
 	test_single_write("Code_Fence escaped backticks - " + l + " backticks",
@@ -529,7 +529,7 @@ for (let l = 3; l <= 5; l += 1) {
 			children: [m]
 		}]
 	)
-	
+
 	test_single_write("Code_Fence with unfinished end backticks - " + l + " backticks",
 		c+"\na\n"+m+"\n"+c,
 		[{
@@ -677,10 +677,10 @@ for (const {type, c} of [
 	)
 
 	test_single_write(smd.token_to_string(type) + " space after begin",
-		c + " foo" + c,
+		"a " + c + " b" + c,
 		[{
 			type    : smd.Token.Paragraph,
-			children: [c + " foo" + c]
+			children: ["a " + c + " b" + c]
 		}]
 	)
 
@@ -1120,6 +1120,88 @@ test_single_write("Blockquote with code and line break",
 				type    : smd.Token.Paragraph,
 				children: ["c"],
 			}],
+		}]
+	}]
+)
+
+test_single_write("Unordered List",
+	"- foo",
+	[{
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: ["foo"]
+		}]
+	}]
+)
+
+test_single_write("Unordered List with italic",
+	"- *foo*",
+	[{
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: [{
+				type    : smd.Token.Italic_Ast,
+				children: ["foo"]
+			}]
+		}]
+	}]
+)
+
+test_single_write("Unordered List two items",
+	"- a\n"+
+	"- b",
+	[{
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: ["a"]
+		}, {
+			type    : smd.Token.List_Item,
+			children: ["b"]
+		}]
+	}]
+)
+
+test_single_write("Unordered List with line break",
+	"- a\nb",
+	[{
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: ["a", br, "b"]
+		}]
+	}]
+)
+
+test_single_write("Unordered List end",
+	"- a\n"+
+	"\n"+
+	"b",
+	[{
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: ["a"]
+		}]
+	}, {
+		type    : smd.Token.Paragraph,
+		children: ["b"]
+	}]
+)
+
+test_single_write("Unordered List after line break",
+	"a\n"+
+	"- b",
+	[{
+		type    : smd.Token.Paragraph,
+		children: ["a"]
+	}, {
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: ["b"]
 		}]
 	}]
 )
