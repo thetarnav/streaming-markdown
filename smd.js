@@ -256,6 +256,21 @@ export function parser_add_token(p, token) {
 }
 
 /**
+ * @param   {Parser} p
+ * @param   {number} token
+ * @param   {number} start_idx
+ * @returns {number} */
+function parser_idx_of(p, token, start_idx) {
+	while (start_idx <= p.len) {
+		if (p.tokens[start_idx] & token) {
+			return start_idx
+		}
+		start_idx += 1
+	}
+	return -1
+}
+
+/**
  * End tokens until the parser has the given length.
  * @param   {Parser} p
  * @param   {number} len
@@ -310,36 +325,33 @@ export function parser_write(p, chunk) {
 			case " ":
 				p.pending = char
 				continue
-			case ">":
-				p.pending = char
+			case ">": {
+				const next_blockquote_idx = parser_idx_of(p, BLOCKQUOTE, p.blockquote_idx+1)
 
-				while (p.blockquote_idx+1 < p.len) {
+				/*
+				Only when there is no blockquote to the right of blockquote_idx
+				a new blockquote can be created
+				*/
+				if (next_blockquote_idx === -1) {
+					parser_end_tokens_to_len(p, p.blockquote_idx)
 					p.blockquote_idx += 1
-					if (p.tokens[p.blockquote_idx] === BLOCKQUOTE) {
-						continue chars
-					}
+					p.backticks_count = 0
+					parser_add_token(p, BLOCKQUOTE)
+				} else {
+					p.blockquote_idx = next_blockquote_idx
 				}
 
-				parser_end_tokens_to_len(p, p.blockquote_idx)
-				p.blockquote_idx += 1
-				p.backticks_count = 0
-				parser_add_token(p, BLOCKQUOTE)
+				p.pending = char
 				continue
+			}
 			case "*":
 			case "-":
 			case "+":
 				if (' ' === char) {
-					// find first u-list
-					let idx = p.blockquote_idx
-					while (idx < p.len) {
-						if (p.tokens[idx] === LIST_UNORDERED) {
-							break
-						}
-						idx += 1
-					}
+					const list_idx = parser_idx_of(p, LIST_UNORDERED, p.blockquote_idx+1)
 
 					// if not found, create one
-					if (idx === p.len) {
+					if (list_idx === -1) {
 						parser_end_tokens_to_len(p, p.blockquote_idx)
 						p.blockquote_idx = 0
 						p.backticks_count = 0
@@ -350,7 +362,7 @@ export function parser_write(p, chunk) {
 					}
 
 					// if found, add list item
-					parser_end_tokens_to_len(p, idx)
+					parser_end_tokens_to_len(p, list_idx)
 					parser_add_token(p, LIST_ITEM)
 					p.pending = ""
 					continue
@@ -417,19 +429,19 @@ export function parser_write(p, chunk) {
 				parser_write(p, char)
 				continue
 			/* Blockquote */
-			case '>':
-				p.pending = char
-
-				while (p.blockquote_idx+1 <= p.len) {
+			case '>': {
+				const next_blockquote_idx = parser_idx_of(p, BLOCKQUOTE, p.blockquote_idx+1)
+				
+				if (next_blockquote_idx === -1) {
 					p.blockquote_idx += 1
-					if (p.tokens[p.blockquote_idx] === BLOCKQUOTE) {
-						continue chars
-					}
+					parser_add_token(p, BLOCKQUOTE)
+				} else {
+					p.blockquote_idx = next_blockquote_idx
 				}
-
-				p.blockquote_idx += 1
-				parser_add_token(p, BLOCKQUOTE)
+				
+				p.pending = char
 				continue
+			}
 			/* Horizontal Rule
 			   "-- - --- - --"
 			*/
