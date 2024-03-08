@@ -245,14 +245,25 @@ export function parser_end_token(p) {
 }
 
 /**
- * @param   {Parser    } p
- * @param   {Token} type
- * @returns {void      } */
-export function parser_add_token(p, type) {
+ * @param   {Parser} p
+ * @param   {Token } token
+ * @returns {void  } */
+export function parser_add_token(p, token) {
 	p.len += 1
-	p.tokens[p.len] = type
-	p.token = type
-	p.renderer.add_token(p.renderer.data, type)
+	p.tokens[p.len] = token
+	p.token = token
+	p.renderer.add_token(p.renderer.data, token)
+}
+
+/**
+ * End tokens until the parser has the given length.
+ * @param   {Parser} p
+ * @param   {number} len
+ * @returns {void  } */
+function parser_end_tokens_to_len(p, len) {
+	while (p.len > len) {
+		parser_end_token(p)
+	}
 }
 
 /**
@@ -309,10 +320,7 @@ export function parser_write(p, chunk) {
 					}
 				}
 
-				while (p.blockquote_idx < p.len) {
-					parser_end_token(p)
-				}
-
+				parser_end_tokens_to_len(p, p.blockquote_idx)
 				p.blockquote_idx += 1
 				p.backticks_count = 0
 				parser_add_token(p, BLOCKQUOTE)
@@ -332,9 +340,7 @@ export function parser_write(p, chunk) {
 
 					// if not found, create one
 					if (idx === p.len) {
-						while (p.blockquote_idx < p.len) {
-							parser_end_token(p)
-						}
+						parser_end_tokens_to_len(p, p.blockquote_idx)
 						p.blockquote_idx = 0
 						p.backticks_count = 0
 						parser_add_token(p, LIST_UNORDERED)
@@ -344,9 +350,7 @@ export function parser_write(p, chunk) {
 					}
 
 					// if found, add list item
-					while (idx < p.len) {
-						parser_end_token(p)
-					}
+					parser_end_tokens_to_len(p, idx)
 					parser_add_token(p, LIST_ITEM)
 					p.pending = ""
 					continue
@@ -354,9 +358,7 @@ export function parser_write(p, chunk) {
 
 				break // fail
 			case "\n":
-				while (p.blockquote_idx < p.len) {
-					parser_end_token(p)
-				}
+				parser_end_tokens_to_len(p, p.blockquote_idx)
 				p.blockquote_idx = 0
 				p.backticks_count = 0
 				p.pending = char
