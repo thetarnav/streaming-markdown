@@ -387,6 +387,25 @@ export function parser_write(p, chunk) {
 			console.assert(p.text.length === 0, "Root should not have any text")
 
 			switch (p.pending[0]) {
+			/* Trim leading spaces */
+			case undefined:
+			case ' ':
+				p.pending = ' ' === char
+					? p.pending.length < 3
+						? pending_with_char
+						: "\t"
+					: char
+				continue
+			/* Ignore newlines in root */
+			case '\n':
+				p.pending = char
+				continue
+			/* Code Block */
+			case '\t':
+				parser_add_token(p, CODE_BLOCK)
+				p.pending = ""
+				parser_write(p, char)
+				continue
 			/* Heading */
 			case '#':
 				switch (char) {
@@ -408,21 +427,6 @@ export function parser_write(p, chunk) {
 					console.assert(false, "Should not reach here")
 				}
 				break // fail
-			/* Trim leading spaces */
-			case undefined:
-			case ' ':
-				p.pending = ' ' === char
-					? p.pending.length < 3
-						? pending_with_char
-						: "\t"
-					: char
-				continue
-			/* Code Block */
-			case '\t':
-				parser_add_token(p, CODE_BLOCK)
-				p.pending = ""
-				parser_write(p, char)
-				continue
 			/* Blockquote */
 			case '>': {
 				const next_blockquote_idx = parser_idx_of(p, BLOCKQUOTE, p.blockquote_idx+1)

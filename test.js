@@ -308,6 +308,14 @@ for (let level = 1; level <= 6; level += 1) {
 			}]
 		}]
 	)
+
+	test_single_write(`Heading_${level} after line break`,
+		"\n" + "#".repeat(level) + " " + "foo",
+		[{
+			type    : heading_type,
+			children: ["foo"]
+		}]
+	)
 }
 
 test_single_write("Line Breaks",
