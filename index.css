@@ -130,7 +130,6 @@ input[type="checkbox"] {
 	border-radius: 4px;
 	width:  0.8rem;
 	height: 0.8rem;
-	cursor: pointer;
 }
 input[type="checkbox"]::after,
 input[type="checkbox"]::before {

@@ -1074,6 +1074,7 @@ export function default_add_token(data, type) {
 	case CHECKBOX:
 		const checkbox = document.createElement("input")
 		checkbox.type = "checkbox"
+		checkbox.disabled = true
 		mount = slot = checkbox
 		break
 	case CODE_BLOCK:
