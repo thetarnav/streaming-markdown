@@ -120,3 +120,37 @@ body {
 .prose a::after {
 	content: "]";
 }
+
+input[type="checkbox"] {
+	position: relative;
+	vertical-align: middle;
+	appearance: none;
+	border: 2px solid var(--gray-2);
+	box-sizing: content-box;
+	border-radius: 4px;
+	width:  0.8rem;
+	height: 0.8rem;
+	cursor: pointer;
+}
+input[type="checkbox"]::after,
+input[type="checkbox"]::before {
+	content: "";
+	position: absolute;
+	top:    0.35rem;
+	height: 0.1rem;
+	left:   0.05rem;
+	width:  0.7rem;
+	background-color: var(--gray-3);
+	border-radius: 4px;
+	opacity: 0;
+}
+input[type="checkbox"]::after {
+	transform: rotate(-45deg);
+}
+input[type="checkbox"]::before {
+	transform: rotate(45deg);
+}
+input[type="checkbox"]:checked::after,
+input[type="checkbox"]:checked::before {
+	opacity: 1;
+}
