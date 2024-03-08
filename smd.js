@@ -150,48 +150,8 @@ export function attr_to_html_attr(type) {
  * @property {string      } hr_char         - For horizontal rule parsing
  * @property {number      } hr_chars        - For horizontal rule parsing
  * @property {boolean     } could_be_url    - For raw url parsing
+ * @property {boolean     } could_be_task   - For checkbox parsing
  */
-
-/**
- * @template T
- * @callback Renderer_Add_Token
- * @param   {T    } data
- * @param   {Token} type
- * @returns {void } */
-
-/**
- * @template T
- * @callback Renderer_End_Token
- * @param   {T    } data
- * @returns {void } */
-
-/**
- * @template T
- * @callback Renderer_Add_Text
- * @param   {T     } data
- * @param   {string} text
- * @returns {void  } */
-
-/**
- * @template T
- * @callback Renderer_Set_Attr
- * @param   {T     } data
- * @param   {Attr  } type
- * @param   {string} value
- * @returns {void  } */
-
-/**
- * The renderer interface.
- * @template T
- * @typedef  {object               } Renderer
- * @property {T                    } data
- * @property {Renderer_Add_Token<T>} add_token
- * @property {Renderer_End_Token<T>} end_token
- * @property {Renderer_Add_Text <T>} add_text
- * @property {Renderer_Set_Attr <T>} set_attr
- */
-
-/** @typedef {Renderer<any>} Any_Renderer */
 
 /**
  * Makes a new Parser object.
@@ -211,6 +171,7 @@ export function parser(renderer) {
 		hr_chars  : 0,
 		backticks_count: 0,
 		could_be_url: false,
+		could_be_task: false,
 	}
 }
 
@@ -303,8 +264,8 @@ export function parser_write(p, chunk) {
 				continue
 			}
 
-			if ("http://" [p.pending.length] === char ||
-			    "https://"[p.pending.length] === char
+			if ("http:/" [p.pending.length] === char ||
+			    "https:/"[p.pending.length] === char
 			) {
 				p.pending = pending_with_char
 				continue
@@ -313,6 +274,28 @@ export function parser_write(p, chunk) {
 			p.could_be_url = false
 		}
 
+		/* Checkboxes */
+		if (p.could_be_task) {
+			if ("[ ] " === pending_with_char ||
+			    "[x] " === pending_with_char
+			) {
+				p.renderer.add_token(p.renderer.data, CHECKBOX)
+				p.renderer.end_token(p.renderer.data)
+				p.pending = " "
+				p.could_be_task = false
+				continue
+			}
+
+			if ("[ ]"[p.pending.length] === char ||
+			    "[x]"[p.pending.length] === char
+			) {
+				p.pending = pending_with_char
+				continue
+			}
+
+			p.could_be_task = false
+		}
+		
 		/*
 		Token specific checks
 		*/
@@ -477,6 +460,7 @@ export function parser_write(p, chunk) {
 				) {
 					parser_add_token(p, LIST_UNORDERED)
 					parser_add_token(p, LIST_ITEM)
+					p.could_be_task = true
 					p.pending = char
 					continue
 				}
@@ -537,6 +521,8 @@ export function parser_write(p, chunk) {
 			case '+':
 				if (' ' === char) {
 					parser_add_token(p, LIST_UNORDERED)
+					parser_add_token(p, LIST_ITEM)
+					p.could_be_task = true
 					p.pending = ""
 					continue
 				}
@@ -554,6 +540,8 @@ export function parser_write(p, chunk) {
 			case '9':
 				if ('.' === char) {
 					parser_add_token(p, LIST_ORDERED)
+					parser_add_token(p, LIST_ITEM)
+					p.could_be_task = true
 					p.pending = ""
 					continue
 				}
@@ -967,6 +955,48 @@ export function parser_write(p, chunk) {
 
 	parser_add_text(p)
 }
+
+
+/**
+ * @template T
+ * @callback Renderer_Add_Token
+ * @param   {T    } data
+ * @param   {Token} type
+ * @returns {void } */
+
+/**
+ * @template T
+ * @callback Renderer_End_Token
+ * @param   {T    } data
+ * @returns {void } */
+
+/**
+ * @template T
+ * @callback Renderer_Add_Text
+ * @param   {T     } data
+ * @param   {string} text
+ * @returns {void  } */
+
+/**
+ * @template T
+ * @callback Renderer_Set_Attr
+ * @param   {T     } data
+ * @param   {Attr  } type
+ * @param   {string} value
+ * @returns {void  } */
+
+/**
+ * The renderer interface.
+ * @template T
+ * @typedef  {object               } Renderer
+ * @property {T                    } data
+ * @property {Renderer_Add_Token<T>} add_token
+ * @property {Renderer_End_Token<T>} end_token
+ * @property {Renderer_Add_Text <T>} add_text
+ * @property {Renderer_Set_Attr <T>} set_attr
+ */
+
+/** @typedef {Renderer<any>} Any_Renderer */
 
 
 /**

@@ -1205,3 +1205,17 @@ test_single_write("Unordered List after line break",
 		}]
 	}]
 )
+
+test_single_write("Unordered List with unchecked task",
+	"- [ ] foo",
+	[{
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: [{
+				type    : smd.Token.Checkbox,
+				children: [],
+			}, " foo"]
+		}]
+	}]
+)
