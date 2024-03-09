@@ -474,13 +474,20 @@ export function parser_write(p, chunk) {
 					p.hr_chars = 0
 				}
 
-				if ("- " === p.pending ||
-				    "* " === p.pending
+				/* Unordered list 
+				/  * foo
+				/  * *bar*
+				/  * **baz**
+				/*/
+				if (('-' === p.pending[0] ||
+				     '*' === p.pending[0]) &&
+				     ' ' === p.pending[1]
 				) {
 					parser_add_token(p, LIST_UNORDERED)
 					parser_add_token(p, LIST_ITEM)
 					p.could_be_task = true
-					p.pending = char
+					p.pending = ""
+					parser_write(p, pending_with_char.slice(2))
 					continue
 				}
 

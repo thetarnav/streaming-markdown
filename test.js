@@ -253,7 +253,7 @@ function assert_children(children, expected_children) {
  * @returns {void}
  */
 function test_single_write(title, markdown, expected_children) {
-	t.test(title, () => {
+	t.test(title + ";", () => {
 		const renderer = test_renderer()
 		const parser = smd.parser(renderer)
 
@@ -263,7 +263,7 @@ function test_single_write(title, markdown, expected_children) {
 		assert_children(renderer.data.root.children, expected_children)
 	})
 
-	t.test(title + " - by char", () => {
+	t.test(title + "; by_char;", () => {
 		const renderer = test_renderer()
 		const parser = smd.parser(renderer)
 
@@ -1130,150 +1130,154 @@ test_single_write("Blockquote with code and line break",
 	}]
 )
 
-test_single_write("Unordered List",
-	"- foo",
-	[{
-		type    : smd.Token.List_Unordered,
-		children: [{
-			type    : smd.Token.List_Item,
-			children: ["foo"]
-		}]
-	}]
-)
+for (const c of ["*", "-", "+"]) {
+	const suffix = "; char='"+c+"'"
 
-test_single_write("Unordered List with italic",
-	"- *foo*",
-	[{
-		type    : smd.Token.List_Unordered,
-		children: [{
-			type    : smd.Token.List_Item,
+	test_single_write("Unordered List" + suffix,
+		c+" foo",
+		[{
+			type    : smd.Token.List_Unordered,
 			children: [{
-				type    : smd.Token.Italic_Ast,
+				type    : smd.Token.List_Item,
 				children: ["foo"]
 			}]
 		}]
-	}]
-)
-
-test_single_write("Unordered List two items",
-	"- a\n"+
-	"- b",
-	[{
-		type    : smd.Token.List_Unordered,
-		children: [{
-			type    : smd.Token.List_Item,
-			children: ["a"]
-		}, {
-			type    : smd.Token.List_Item,
-			children: ["b"]
-		}]
-	}]
-)
-
-test_single_write("Unordered List with line break",
-	"- a\nb",
-	[{
-		type    : smd.Token.List_Unordered,
-		children: [{
-			type    : smd.Token.List_Item,
-			children: ["a", br, "b"]
-		}]
-	}]
-)
-
-test_single_write("Unordered List end",
-	"- a\n"+
-	"\n"+
-	"b",
-	[{
-		type    : smd.Token.List_Unordered,
-		children: [{
-			type    : smd.Token.List_Item,
-			children: ["a"]
-		}]
-	}, {
-		type    : smd.Token.Paragraph,
-		children: ["b"]
-	}]
-)
-
-test_single_write("Unordered List after line break",
-	"a\n"+
-	"- b",
-	[{
-		type    : smd.Token.Paragraph,
-		children: ["a"]
-	}, {
-		type    : smd.Token.List_Unordered,
-		children: [{
-			type    : smd.Token.List_Item,
-			children: ["b"]
-		}]
-	}]
-)
-
-test_single_write("Unordered List with unchecked task",
-	"- [ ] foo",
-	[{
-		type    : smd.Token.List_Unordered,
-		children: [{
-			type    : smd.Token.List_Item,
+	)
+	
+	test_single_write("Unordered List with italic" + suffix,
+		c+" *foo*",
+		[{
+			type    : smd.Token.List_Unordered,
 			children: [{
-				type    : smd.Token.Checkbox,
-				children: [],
-			}, " foo"]
-		}]
-	}]
-)
-
-test_single_write("Unordered List with checked task",
-	"- [x] foo",
-	[{
-		type    : smd.Token.List_Unordered,
-		children: [{
-			type    : smd.Token.List_Item,
-			children: [{
-				type    : smd.Token.Checkbox,
-				attrs   : {[smd.Attr.Checked]: ""},
-				children: [],
-			}, " foo"]
-		}]
-	}]
-)
-
-test_single_write("Unordered List with two tasks",
-	"- [ ] foo\n"+
-	"- [x] bar\n",
-	[{
-		type    : smd.Token.List_Unordered,
-		children: [{
-			type    : smd.Token.List_Item,
-			children: [{
-				type    : smd.Token.Checkbox,
-				children: [],
-			}, " foo"]
-		}, {
-			type    : smd.Token.List_Item,
-			children: [{
-				type    : smd.Token.Checkbox,
-				attrs   : {[smd.Attr.Checked]: ""},
-				children: [],
-			}, " bar"]
-		}]
-	}]
-)
-
-test_single_write("Unordered List with link",
-	"- [x](url)",
-	[{
-		type    : smd.Token.List_Unordered,
-		children: [{
-			type    : smd.Token.List_Item,
-			children: [{
-				type    : smd.Token.Link,
-				attrs   : {[smd.Attr.Href]: "url"},
-				children: ["x"],
+				type    : smd.Token.List_Item,
+				children: [{
+					type    : smd.Token.Italic_Ast,
+					children: ["foo"]
+				}]
 			}]
 		}]
-	}]
-)
+	)
+	
+	test_single_write("Unordered List two items" + suffix,
+		c+" a\n"+
+		c+" b",
+		[{
+			type    : smd.Token.List_Unordered,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: ["a"]
+			}, {
+				type    : smd.Token.List_Item,
+				children: ["b"]
+			}]
+		}]
+	)
+	
+	test_single_write("Unordered List with line break" + suffix,
+		c+" a\nb",
+		[{
+			type    : smd.Token.List_Unordered,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: ["a", br, "b"]
+			}]
+		}]
+	)
+	
+	test_single_write("Unordered List end" + suffix,
+		c+" a\n"+
+		"\n"+
+		"b",
+		[{
+			type    : smd.Token.List_Unordered,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: ["a"]
+			}]
+		}, {
+			type    : smd.Token.Paragraph,
+			children: ["b"]
+		}]
+	)
+	
+	test_single_write("Unordered List after line break" + suffix,
+		"a\n"+
+		c+" b",
+		[{
+			type    : smd.Token.Paragraph,
+			children: ["a"]
+		}, {
+			type    : smd.Token.List_Unordered,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: ["b"]
+			}]
+		}]
+	)
+	
+	test_single_write("Unordered List with unchecked task" + suffix,
+		c+" [ ] foo",
+		[{
+			type    : smd.Token.List_Unordered,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: [{
+					type    : smd.Token.Checkbox,
+					children: [],
+				}, " foo"]
+			}]
+		}]
+	)
+	
+	test_single_write("Unordered List with checked task" + suffix,
+		c+" [x] foo",
+		[{
+			type    : smd.Token.List_Unordered,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: [{
+					type    : smd.Token.Checkbox,
+					attrs   : {[smd.Attr.Checked]: ""},
+					children: [],
+				}, " foo"]
+			}]
+		}]
+	)
+	
+	test_single_write("Unordered List with two tasks" + suffix,
+		c+" [ ] foo\n"+
+		c+" [x] bar\n",
+		[{
+			type    : smd.Token.List_Unordered,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: [{
+					type    : smd.Token.Checkbox,
+					children: [],
+				}, " foo"]
+			}, {
+				type    : smd.Token.List_Item,
+				children: [{
+					type    : smd.Token.Checkbox,
+					attrs   : {[smd.Attr.Checked]: ""},
+					children: [],
+				}, " bar"]
+			}]
+		}]
+	)
+	
+	test_single_write("Unordered List with link" + suffix,
+		c+" [x](url)",
+		[{
+			type    : smd.Token.List_Unordered,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: [{
+					type    : smd.Token.Link,
+					attrs   : {[smd.Attr.Href]: "url"},
+					children: ["x"],
+				}]
+			}]
+		}]
+	)
+}
