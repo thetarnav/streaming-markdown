@@ -343,27 +343,25 @@ export function parser_write(p, chunk) {
 			case "*":
 			case "-":
 			case "+":
-				if (' ' === char) {
-					const list_idx = parser_idx_of(p, LIST_UNORDERED, p.blockquote_idx+1)
+				if (' ' !== char) break // fail
 
-					/*
-					Create a new list
-					or continue the last one
-					*/
-					if (list_idx === -1) {
-						parser_end_tokens_to_len(p, p.blockquote_idx)
-						parser_add_token(p, LIST_UNORDERED)
-					} else {
-						parser_end_tokens_to_len(p, list_idx)
-					}
-					
-					parser_add_token(p, LIST_ITEM)
-					p.pending = ""
-					p.could_be_task = true
-					continue
+				const list_idx = parser_idx_of(p, LIST_UNORDERED, p.blockquote_idx+1)
+
+				/*
+				Create a new list
+				or continue the last one
+				*/
+				if (list_idx === -1) {
+					parser_end_tokens_to_len(p, p.blockquote_idx)
+					parser_add_token(p, LIST_UNORDERED)
+				} else {
+					parser_end_tokens_to_len(p, list_idx)
 				}
-
-				break // fail
+				
+				parser_add_token(p, LIST_ITEM)
+				p.pending = ""
+				p.could_be_task = true
+				continue
 			case "\n":
 				parser_end_tokens_to_len(p, p.blockquote_idx)
 				p.blockquote_idx = 0
@@ -373,6 +371,42 @@ export function parser_write(p, chunk) {
 			case "":
 				p.pending = char
 				continue
+			}
+
+			ol: {
+				for (let i = 0; i < p.pending.length-1; i += 1) {
+					const c = p.pending[i]
+					if (c < '0' || c > '9') break ol
+				}
+				const last = p.pending[p.pending.length-1]
+				if ('.' === last) {
+					if (' ' === char) {
+						const list_idx = parser_idx_of(p, LIST_ORDERED, p.blockquote_idx+1)
+						/*
+						Create a new list
+						or continue the last one
+						*/
+						if (list_idx === -1) {
+							parser_end_tokens_to_len(p, p.blockquote_idx)
+							parser_add_token(p, LIST_ORDERED)
+						} else {
+							parser_end_tokens_to_len(p, list_idx)
+						}
+						
+						parser_add_token(p, LIST_ITEM)
+						p.pending = ""
+						p.could_be_task = true
+						continue
+					}
+					break ol
+				}
+				if (last >= '0' && last <= '9') {
+					if ('.' === char || (last >= '0' && last <= '9')) {
+						p.pending = pending_with_char
+						continue
+					}
+					break ol
+				}
 			}
 
 			/* Add a line break and continue in previous token */
@@ -563,17 +597,26 @@ export function parser_write(p, chunk) {
 			case '7':
 			case '8':
 			case '9':
-				if ('.' === char) {
-					parser_add_token(p, LIST_ORDERED)
-					parser_add_token(p, LIST_ITEM)
-					p.could_be_task = true
-					p.pending = ""
-					continue
-				}
-				const char_code = char.charCodeAt(0) // 48-57 are 0-9
-				if (char_code >= 48 && char_code <= 57) {
-					p.pending += char
-					continue
+				/*
+				12. foo
+				   ^
+				*/
+				if ('.' === p.pending[p.pending.length-1]) {
+					if (' ' === char) {
+						parser_add_token(p, LIST_ORDERED)
+						parser_add_token(p, LIST_ITEM)
+						p.could_be_task = true
+						p.pending = ""
+						continue
+					}
+				} else {
+					const char_code = char.charCodeAt(0)
+					if (46 === char_code ||                  // '.'
+						(char_code >= 48 && char_code <= 57) // 0-9
+					) {
+						p.pending = pending_with_char
+						continue
+					}
 				}
 				break // fail
 			}

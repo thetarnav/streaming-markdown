@@ -103,7 +103,8 @@ smd.parser_end(parser)
     - [x] With `***`
     - [x] With `___`
 - [x] Unordered lists
-- [ ] Ordered lists
+- [x] Ordered lists
+    - [ ] `start` attr
 - [x] Task lists
 - [ ] Nested lists
 - [x] Blockquotes

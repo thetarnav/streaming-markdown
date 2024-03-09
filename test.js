@@ -1130,13 +1130,22 @@ test_single_write("Blockquote with code and line break",
 	}]
 )
 
-for (const c of ["*", "-", "+"]) {
-	const suffix = "; char='"+c+"'"
+for (const [c, token] of /** @type {const} */([
+	["*",    smd.Token.List_Unordered],
+	["-",    smd.Token.List_Unordered],
+	["+",    smd.Token.List_Unordered],
+	["1.",   smd.Token.List_Ordered],
+	["420.", smd.Token.List_Ordered],
+])) {
+	const list_name = token === smd.Token.List_Unordered
+		? "List Unordered"
+		: "List Ordered"
+	const suffix = "; prefix='"+c+"'"
 
-	test_single_write("Unordered List" + suffix,
+	test_single_write(list_name + suffix,
 		c+" foo",
 		[{
-			type    : smd.Token.List_Unordered,
+			type    : token,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: ["foo"]
@@ -1144,10 +1153,10 @@ for (const c of ["*", "-", "+"]) {
 		}]
 	)
 	
-	test_single_write("Unordered List with italic" + suffix,
+	test_single_write(list_name + " with italic" + suffix,
 		c+" *foo*",
 		[{
-			type    : smd.Token.List_Unordered,
+			type    : token,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: [{
@@ -1158,11 +1167,11 @@ for (const c of ["*", "-", "+"]) {
 		}]
 	)
 	
-	test_single_write("Unordered List two items" + suffix,
+	test_single_write(list_name + " two items" + suffix,
 		c+" a\n"+
 		c+" b",
 		[{
-			type    : smd.Token.List_Unordered,
+			type    : token,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: ["a"]
@@ -1173,10 +1182,10 @@ for (const c of ["*", "-", "+"]) {
 		}]
 	)
 	
-	test_single_write("Unordered List with line break" + suffix,
+	test_single_write(list_name + " with line break" + suffix,
 		c+" a\nb",
 		[{
-			type    : smd.Token.List_Unordered,
+			type    : token,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: ["a", br, "b"]
@@ -1184,12 +1193,12 @@ for (const c of ["*", "-", "+"]) {
 		}]
 	)
 	
-	test_single_write("Unordered List end" + suffix,
+	test_single_write(list_name + " end" + suffix,
 		c+" a\n"+
 		"\n"+
 		"b",
 		[{
-			type    : smd.Token.List_Unordered,
+			type    : token,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: ["a"]
@@ -1200,14 +1209,14 @@ for (const c of ["*", "-", "+"]) {
 		}]
 	)
 	
-	test_single_write("Unordered List after line break" + suffix,
+	test_single_write(list_name + " after line break" + suffix,
 		"a\n"+
 		c+" b",
 		[{
 			type    : smd.Token.Paragraph,
 			children: ["a"]
 		}, {
-			type    : smd.Token.List_Unordered,
+			type    : token,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: ["b"]
@@ -1215,10 +1224,10 @@ for (const c of ["*", "-", "+"]) {
 		}]
 	)
 	
-	test_single_write("Unordered List with unchecked task" + suffix,
+	test_single_write(list_name + " with unchecked task" + suffix,
 		c+" [ ] foo",
 		[{
-			type    : smd.Token.List_Unordered,
+			type    : token,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: [{
@@ -1229,10 +1238,10 @@ for (const c of ["*", "-", "+"]) {
 		}]
 	)
 	
-	test_single_write("Unordered List with checked task" + suffix,
+	test_single_write(list_name + " with checked task" + suffix,
 		c+" [x] foo",
 		[{
-			type    : smd.Token.List_Unordered,
+			type    : token,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: [{
@@ -1244,11 +1253,11 @@ for (const c of ["*", "-", "+"]) {
 		}]
 	)
 	
-	test_single_write("Unordered List with two tasks" + suffix,
+	test_single_write(list_name + " with two tasks" + suffix,
 		c+" [ ] foo\n"+
 		c+" [x] bar\n",
 		[{
-			type    : smd.Token.List_Unordered,
+			type    : token,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: [{
@@ -1266,10 +1275,10 @@ for (const c of ["*", "-", "+"]) {
 		}]
 	)
 	
-	test_single_write("Unordered List with link" + suffix,
+	test_single_write(list_name + " with link" + suffix,
 		c+" [x](url)",
 		[{
-			type    : smd.Token.List_Unordered,
+			type    : token,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: [{
