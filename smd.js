@@ -246,6 +246,27 @@ function parser_end_tokens_to_len(p, len) {
 }
 
 /**
+ * Create a new list
+ * or continue the last one
+ * @param   {Parser} p
+ * @param   {Token } list_token
+ * @returns {void  } */
+function parser_add_list(p, list_token) {
+	const list_idx = parser_idx_of(p, list_token, p.blockquote_idx+1)
+	
+	if (list_idx === -1) {
+		parser_end_tokens_to_len(p, p.blockquote_idx)
+		parser_add_token(p, list_token)
+	} else {
+		parser_end_tokens_to_len(p, list_idx)
+	}
+	
+	parser_add_token(p, LIST_ITEM)
+	p.pending = ""
+	p.could_be_task = true
+}
+
+/**
  * Parse and render another chunk of markdown.
  * @param   {Parser} p
  * @param   {string} chunk
@@ -317,11 +338,12 @@ export function parser_write(p, chunk) {
 		case LINE_BREAK:
 			console.assert(p.text.length === 0, "Text when in line break")
 
-			switch (p.pending) {
-			case " ":
+			switch (p.pending[0]) {
+			case ' ':
+			case undefined:
 				p.pending = char
 				continue
-			case ">": {
+			case '>': {
 				const next_blockquote_idx = parser_idx_of(p, BLOCKQUOTE, p.blockquote_idx+1)
 
 				/*
@@ -340,73 +362,48 @@ export function parser_write(p, chunk) {
 				p.pending = char
 				continue
 			}
-			case "*":
-			case "-":
-			case "+":
+			case '*':
+			case '-':
+			case '+':
 				if (' ' !== char) break // fail
 
-				const list_idx = parser_idx_of(p, LIST_UNORDERED, p.blockquote_idx+1)
-
-				/*
-				Create a new list
-				or continue the last one
-				*/
-				if (list_idx === -1) {
-					parser_end_tokens_to_len(p, p.blockquote_idx)
-					parser_add_token(p, LIST_UNORDERED)
-				} else {
-					parser_end_tokens_to_len(p, list_idx)
-				}
-				
-				parser_add_token(p, LIST_ITEM)
-				p.pending = ""
-				p.could_be_task = true
+				parser_add_list(p, LIST_UNORDERED)
 				continue
-			case "\n":
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				/*
+				12. foo
+				   ^
+				*/
+				if ('.' === p.pending[p.pending.length-1]) {
+					if (' ' === char) {
+						parser_add_list(p, LIST_ORDERED)
+						continue
+					}
+				} else {
+					const char_code = char.charCodeAt(0)
+					if (46 === char_code ||                  // '.'
+						(char_code >= 48 && char_code <= 57) // 0-9
+					) {
+						p.pending = pending_with_char
+						continue
+					}
+				}
+				break // fail
+			case '\n':
 				parser_end_tokens_to_len(p, p.blockquote_idx)
 				p.blockquote_idx = 0
 				p.backticks_count = 0
 				p.pending = char
 				continue
-			case "":
-				p.pending = char
-				continue
-			}
-
-			ol: {
-				for (let i = 0; i < p.pending.length-1; i += 1) {
-					const c = p.pending[i]
-					if (c < '0' || c > '9') break ol
-				}
-				const last = p.pending[p.pending.length-1]
-				if ('.' === last) {
-					if (' ' === char) {
-						const list_idx = parser_idx_of(p, LIST_ORDERED, p.blockquote_idx+1)
-						/*
-						Create a new list
-						or continue the last one
-						*/
-						if (list_idx === -1) {
-							parser_end_tokens_to_len(p, p.blockquote_idx)
-							parser_add_token(p, LIST_ORDERED)
-						} else {
-							parser_end_tokens_to_len(p, list_idx)
-						}
-						
-						parser_add_token(p, LIST_ITEM)
-						p.pending = ""
-						p.could_be_task = true
-						continue
-					}
-					break ol
-				}
-				if (last >= '0' && last <= '9') {
-					if ('.' === char || (last >= '0' && last <= '9')) {
-						p.pending = pending_with_char
-						continue
-					}
-					break ol
-				}
 			}
 
 			/* Add a line break and continue in previous token */
@@ -516,10 +513,7 @@ export function parser_write(p, chunk) {
 				if ('_' !== p.pending[0] &&
 				    ' ' === p.pending[1]
 				) {
-					parser_add_token(p, LIST_UNORDERED)
-					parser_add_token(p, LIST_ITEM)
-					p.could_be_task = true
-					p.pending = ""
+					parser_add_list(p, LIST_UNORDERED)
 					parser_write(p, pending_with_char.slice(2))
 					continue
 				}
@@ -578,14 +572,10 @@ export function parser_write(p, chunk) {
 				}
 			/* List Unordered */
 			case '+':
-				if (' ' === char) {
-					parser_add_token(p, LIST_UNORDERED)
-					parser_add_token(p, LIST_ITEM)
-					p.could_be_task = true
-					p.pending = ""
-					continue
-				}
-				break // fail
+				if (' ' !== char) break // fail
+
+				parser_add_list(p, LIST_UNORDERED)
+				continue
 			/* List Ordered */
 			case '0':
 			case '1':
@@ -603,10 +593,7 @@ export function parser_write(p, chunk) {
 				*/
 				if ('.' === p.pending[p.pending.length-1]) {
 					if (' ' === char) {
-						parser_add_token(p, LIST_ORDERED)
-						parser_add_token(p, LIST_ITEM)
-						p.could_be_task = true
-						p.pending = ""
+						parser_add_list(p, LIST_ORDERED)
 						continue
 					}
 				} else {
