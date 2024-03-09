@@ -479,9 +479,8 @@ export function parser_write(p, chunk) {
 				/  * *bar*
 				/  * **baz**
 				/*/
-				if (('-' === p.pending[0] ||
-				     '*' === p.pending[0]) &&
-				     ' ' === p.pending[1]
+				if ('_' !== p.pending[0] &&
+				    ' ' === p.pending[1]
 				) {
 					parser_add_token(p, LIST_UNORDERED)
 					parser_add_token(p, LIST_ITEM)
