@@ -1289,4 +1289,44 @@ for (const [c, token] of /** @type {const} */([
 			}]
 		}]
 	)
+
+	test_single_write(list_name + " nested ul" + suffix,
+		c+" a\n"+
+		"  * b",
+		[{
+			type    : token,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: ["a", {
+					type    : smd.Token.List_Unordered,
+					children: [{
+						type    : smd.Token.List_Item,
+						children: ["b"]
+					}]
+				}]
+			}]
+		}]
+	)
+
+	test_single_write(list_name + " nested ul multiple items" + suffix,
+		c+" a\n"+
+		"  * b\n"+
+		"  * c\n",
+		[{
+			type    : token,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: ["a", {
+					type    : smd.Token.List_Unordered,
+					children: [{
+						type    : smd.Token.List_Item,
+						children: ["b"]
+					}, {
+						type    : smd.Token.List_Item,
+						children: ["c"]
+					}]
+				}]
+			}]
+		}]
+	)
 }

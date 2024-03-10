@@ -44,6 +44,8 @@ export const
 	ANY_AST        =    10240,
 	/** `STRONG_UND | ITALIC_UND` */
 	ANY_UND        =    20480,
+	/** `LIST_UNORDERED | LIST_ORDERED` */
+	ANY_LIST       = 25165824,
 	/** `ANY_CODE | IMAGE | HORIZONTAL_RULE` */
 	NO_NESTING     =  4458240,
 	/** `DOCUMENT | BLOCKQUOTE` */
@@ -154,6 +156,7 @@ export function attr_to_html_attr(type) {
  * @property {number      } hr_chars        - For horizontal rule parsing
  * @property {boolean     } could_be_url    - For raw url parsing
  * @property {boolean     } could_be_task   - For checkbox parsing
+ * @property {number      } spaces
  */
 
 /**
@@ -175,6 +178,7 @@ export function parser(renderer) {
 		backticks_count: 0,
 		could_be_url: false,
 		could_be_task: false,
+		spaces    : 0,
 	}
 }
 
@@ -248,22 +252,41 @@ function parser_end_tokens_to_len(p, len) {
 /**
  * Create a new list
  * or continue the last one
- * @param   {Parser} p
- * @param   {Token } list_token
- * @returns {void  } */
+ * @param   {Parser } p
+ * @param   {Token  } list_token
+ * @returns {void   } */
 function parser_add_list(p, list_token) {
-	const list_idx = parser_idx_of(p, list_token, p.blockquote_idx+1)
+	let list_idx = parser_idx_of(p, ANY_LIST, p.blockquote_idx)
 	
 	if (list_idx === -1) {
 		parser_end_tokens_to_len(p, p.blockquote_idx)
 		parser_add_token(p, list_token)
 	} else {
-		parser_end_tokens_to_len(p, list_idx)
+		while (true) {
+			if (p.spaces < 2) {
+				if (p.tokens[list_idx] === list_token) {
+					parser_end_tokens_to_len(p, list_idx)
+				} else {
+					parser_end_tokens_to_len(p, list_idx+1)
+					parser_add_token(p, list_token)
+				}
+				break
+			}
+			const next_idx = parser_idx_of(p, ANY_LIST, list_idx+1)
+			if (next_idx === -1) {
+				parser_end_tokens_to_len(p, list_idx+1)
+				parser_add_token(p, list_token)
+				break
+			}
+			list_idx = next_idx
+			p.spaces -= 2
+		}
 	}
 	
 	parser_add_token(p, LIST_ITEM)
 	p.pending = ""
 	p.could_be_task = true
+	p.spaces = 0
 }
 
 /**
@@ -339,9 +362,16 @@ export function parser_write(p, chunk) {
 			console.assert(p.text.length === 0, "Text when in line break")
 
 			switch (p.pending[0]) {
-			case ' ':
 			case undefined:
 				p.pending = char
+				continue
+			case ' ':
+				p.pending = char
+				p.spaces += 1
+				continue
+			case '\t':
+				p.pending = char
+				p.spaces += 3
 				continue
 			case '>': {
 				const next_blockquote_idx = parser_idx_of(p, BLOCKQUOTE, p.blockquote_idx+1)
