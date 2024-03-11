@@ -1,6 +1,6 @@
 {
 	"name": "streaming-markdown",
-	"version": "0.0.11",
+	"version": "0.0.12",
 	"author": "Damian Tarnawski <gthetarnav@gmail.com>",
 	"description": "Streaming Markdown parser, à la ChatGPT",
 	"license": "MIT",
