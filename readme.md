@@ -63,10 +63,11 @@ smd.parser_end(parser)
 
 - [x] Paragraphs
 - [x] Line breaks
-    - [x] Single line breaks don't end tokens
+    - [x] don't end tokens
     - [x] Escaping line breaks
 - [x] Trim unnecessary spaces
 - [x] Headers
+    - [ ] ~~Alternate syntax~~ *(not planned)*
 - [x] Code Block with indent
 - [x] Code Block with triple backticks
     - [x] language attr
@@ -84,11 +85,10 @@ smd.parser_end(parser)
     - [x] *em**em>bold***
     - [x] ***bold>em**em*
 - [x] \* or \_ cannot be surrounded by spaces
-- [x] ~~Strikethrough~~ with double tildes
+- [x] Strikethrough ~~example~~
 - [x] Escape characters (e.g. \* or \_ with \\\* or \\\_)
 - [x] \[Link\](url)
-    - [x] href attr
-    - [x] Escaping escaping bug: \\[Link\\](url)
+    - [x] `href` attr
 - [x] Raw URLs
     - [ ] www.example.com
     - [x] http://example.com
@@ -97,7 +97,7 @@ smd.parser_end(parser)
     - [ ] mailto:example@fake.com
     - [ ] With `<>`
 - [x] Images
-    - [x] src attr
+    - [x] `src` attr
 - [x] Horizontal rules
     - [x] With `---`
     - [x] With `***`
