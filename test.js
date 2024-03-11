@@ -1140,7 +1140,7 @@ for (const [c, token] of /** @type {const} */([
 	const list_name = token === smd.Token.List_Unordered
 		? "List Unordered"
 		: "List Ordered"
-	const suffix = "; prefix='"+c+"'"
+	const suffix = "; prefix: "+c
 
 	test_single_write(list_name + suffix,
 		c+" foo",
@@ -1290,43 +1290,85 @@ for (const [c, token] of /** @type {const} */([
 		}]
 	)
 
-	test_single_write(list_name + " nested ul" + suffix,
-		c+" a\n"+
-		"  * b",
-		[{
-			type    : token,
-			children: [{
-				type    : smd.Token.List_Item,
-				children: ["a", {
-					type    : smd.Token.List_Unordered,
-					children: [{
-						type    : smd.Token.List_Item,
-						children: ["b"]
+	{
+		const indent = " ".repeat(c.length + 1)
+		test_single_write(list_name + " nested list" + suffix,
+			c+" a\n"+
+			indent+c+" b",
+			[{
+				type    : token,
+				children: [{
+					type    : smd.Token.List_Item,
+					children: ["a", {
+						type    : token,
+						children: [{
+							type    : smd.Token.List_Item,
+							children: ["b"]
+						}]
 					}]
 				}]
 			}]
-		}]
-	)
+		)
+	}
 
-	test_single_write(list_name + " nested ul multiple items" + suffix,
-		c+" a\n"+
-		"  * b\n"+
-		"  * c\n",
-		[{
-			type    : token,
-			children: [{
-				type    : smd.Token.List_Item,
-				children: ["a", {
-					type    : smd.Token.List_Unordered,
-					children: [{
-						type    : smd.Token.List_Item,
-						children: ["b"]
-					}, {
-						type    : smd.Token.List_Item,
-						children: ["c"]
+	{
+		const indent = " ".repeat(c.length)
+		test_single_write(list_name + " failed nested list" + suffix,
+			c+" a\n"+
+			indent+c+" b",
+			[{
+				type    : token,
+				children: [{
+					type    : smd.Token.List_Item,
+					children: ["a"]
+				}, {
+					type    : smd.Token.List_Item,
+					children: ["b"]
+				}]
+			}]
+		)
+	}
+
+	{
+		const indent = " ".repeat(c.length + 1)
+		test_single_write(list_name + " nested ul multiple items" + suffix,
+			c+" a\n"+
+			indent+"* b\n"+
+			indent+"* c\n",
+			[{
+				type    : token,
+				children: [{
+					type    : smd.Token.List_Item,
+					children: ["a", {
+						type    : smd.Token.List_Unordered,
+						children: [{
+							type    : smd.Token.List_Item,
+							children: ["b"]
+						}, {
+							type    : smd.Token.List_Item,
+							children: ["c"]
+						}]
 					}]
 				}]
 			}]
-		}]
-	)
+		)
+	}
 }
+
+test_single_write("Failed nesting of ul in ol",
+	"1. a\n"+
+	"  * b",
+	[{
+		type    : smd.Token.List_Ordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: ["a"]
+		}]
+	}, {
+		type    : smd.Token.List_Unordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: ["b"]
+		}]
+	}]
+)

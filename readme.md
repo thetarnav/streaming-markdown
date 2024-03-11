@@ -106,7 +106,7 @@ smd.parser_end(parser)
 - [x] Ordered lists
     - [ ] `start` attr
 - [x] Task lists
-- [ ] Nested lists
+- [x] Nested lists
 - [x] Blockquotes
 - [ ] Tables
 - [ ] Html tags (e.g. `<div>`, `<span>`, `<a>`, `<img>`, etc.)

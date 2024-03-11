@@ -146,9 +146,11 @@ export function attr_to_html_attr(type) {
  * @property {Any_Renderer} renderer        - {@link Renderer} interface
  * @property {string      } text            - Text to be added to the last token in the next flush
  * @property {string      } pending         - Characters for identifying tokens
- * @property {Token[]     } tokens          - Current token and it's parents (a slice of a tree)
+ * @property {Uint32Array } tokens          - Current token and it's parents (a slice of a tree)
  * @property {number      } len             - Number of tokens in types without root
  * @property {Token       } token           - Last token in the tree
+ * @property {Uint8Array  } spaces
+ * @property {number      } spaces_pending
  * @property {0 | 1       } code_fence_body - For {@link Token.Code_Fence} parsing
  * @property {number      } backticks_count
  * @property {number      } blockquote_idx  - For Blockquote parsing
@@ -156,19 +158,22 @@ export function attr_to_html_attr(type) {
  * @property {number      } hr_chars        - For horizontal rule parsing
  * @property {boolean     } could_be_url    - For raw url parsing
  * @property {boolean     } could_be_task   - For checkbox parsing
- * @property {number      } spaces
  */
+
+const TOKEN_ARRAY_CAP = 32
 
 /**
  * Makes a new Parser object.
  * @param   {Any_Renderer} renderer
  * @returns {Parser      } */
 export function parser(renderer) {
+	const tokens = new Uint32Array(TOKEN_ARRAY_CAP)
+	tokens[0] = DOCUMENT
 	return {
 		renderer  : renderer,
 		text      : "",
 		pending   : "",
-		tokens    : /**@type {*}*/([DOCUMENT,,,,,]),
+		tokens    : tokens,
 		len       : 0,
 		token     : DOCUMENT,
 		code_fence_body: 0,
@@ -178,7 +183,8 @@ export function parser(renderer) {
 		backticks_count: 0,
 		could_be_url: false,
 		could_be_task: false,
-		spaces    : 0,
+		spaces    : new Uint8Array(TOKEN_ARRAY_CAP),
+		spaces_pending: 0,
 	}
 }
 
@@ -208,7 +214,7 @@ export function parser_add_text(p) {
 export function parser_end_token(p) {
 	console.assert(p.len > 0, "No nodes to end")
 	p.len -= 1
-	p.token = p.tokens[p.len]
+	p.token = /** @type {Token} */ (p.tokens[p.len])
 	p.renderer.end_token(p.renderer.data)
 }
 
@@ -254,39 +260,49 @@ function parser_end_tokens_to_len(p, len) {
  * or continue the last one
  * @param   {Parser } p
  * @param   {Token  } list_token
+ * @param   {number } prefix_length
  * @returns {void   } */
-function parser_add_list(p, list_token) {
-	let list_idx = parser_idx_of(p, ANY_LIST, p.blockquote_idx)
-	
-	if (list_idx === -1) {
-		parser_end_tokens_to_len(p, p.blockquote_idx)
-		parser_add_token(p, list_token)
-	} else {
-		while (true) {
-			if (p.spaces < 2) {
-				if (p.tokens[list_idx] === list_token) {
-					parser_end_tokens_to_len(p, list_idx)
-				} else {
-					parser_end_tokens_to_len(p, list_idx+1)
-					parser_add_token(p, list_token)
-				}
+function parser_add_list(p, list_token, prefix_length) {
+	/* will create a new list inside the last item
+	   if the amount of spaces is greater than the last one (with prefix)
+	   1. foo
+	      - bar      <- new nested ul
+	         - baz   <- new nested ul
+	      12. qux    <- cannot be nested in "baz" or "bar",
+	                    so it's a new list in "foo"
+	*/
+	let list_idx = -1
+	let item_idx = -1
+	for (let i = p.blockquote_idx+1; i <= p.len; i += 1) {
+		if (p.tokens[i] & LIST_ITEM) {
+			if (p.tokens[i-1] & list_token) {
+				list_idx = i-1
+			}
+			if (p.spaces_pending < p.spaces[i]) {
+				item_idx = -1
 				break
 			}
-			const next_idx = parser_idx_of(p, ANY_LIST, list_idx+1)
-			if (next_idx === -1) {
-				parser_end_tokens_to_len(p, list_idx+1)
-				parser_add_token(p, list_token)
-				break
-			}
-			list_idx = next_idx
-			p.spaces -= 2
+			item_idx = i
 		}
+	}
+
+	if (item_idx === -1) {
+		if (list_idx === -1) {
+			parser_end_tokens_to_len(p, p.blockquote_idx)
+			parser_add_token(p, list_token)
+		} else {
+			parser_end_tokens_to_len(p, list_idx)
+		}
+	} else {
+		parser_end_tokens_to_len(p, item_idx)
+		parser_add_token(p, list_token)
 	}
 	
 	parser_add_token(p, LIST_ITEM)
+	p.spaces[p.len] = p.spaces_pending + prefix_length
 	p.pending = ""
+	p.spaces_pending = 0
 	p.could_be_task = true
-	p.spaces = 0
 }
 
 /**
@@ -367,11 +383,11 @@ export function parser_write(p, chunk) {
 				continue
 			case ' ':
 				p.pending = char
-				p.spaces += 1
+				p.spaces_pending += 1
 				continue
 			case '\t':
 				p.pending = char
-				p.spaces += 3
+				p.spaces_pending += 3
 				continue
 			case '>': {
 				const next_blockquote_idx = parser_idx_of(p, BLOCKQUOTE, p.blockquote_idx+1)
@@ -397,7 +413,7 @@ export function parser_write(p, chunk) {
 			case '+':
 				if (' ' !== char) break // fail
 
-				parser_add_list(p, LIST_UNORDERED)
+				parser_add_list(p, LIST_UNORDERED, 2)
 				continue
 			case '0':
 			case '1':
@@ -415,7 +431,7 @@ export function parser_write(p, chunk) {
 				*/
 				if ('.' === p.pending[p.pending.length-1]) {
 					if (' ' === char) {
-						parser_add_list(p, LIST_ORDERED)
+						parser_add_list(p, LIST_ORDERED, p.pending.length+1)
 						continue
 					}
 				} else {
@@ -437,7 +453,7 @@ export function parser_write(p, chunk) {
 			}
 
 			/* Add a line break and continue in previous token */
-			p.token = p.tokens[p.len]
+			p.token = /** @type {Token} */(p.tokens[p.len])
 			p.renderer.add_token(p.renderer.data, LINE_BREAK)
 			p.renderer.end_token(p.renderer.data)
 			p.pending = "" // reprocess whole pending in previous token
@@ -543,7 +559,7 @@ export function parser_write(p, chunk) {
 				if ('_' !== p.pending[0] &&
 				    ' ' === p.pending[1]
 				) {
-					parser_add_list(p, LIST_UNORDERED)
+					parser_add_list(p, LIST_UNORDERED, 2)
 					parser_write(p, pending_with_char.slice(2))
 					continue
 				}
@@ -604,7 +620,7 @@ export function parser_write(p, chunk) {
 			case '+':
 				if (' ' !== char) break // fail
 
-				parser_add_list(p, LIST_UNORDERED)
+				parser_add_list(p, LIST_UNORDERED, 2)
 				continue
 			/* List Ordered */
 			case '0':
@@ -623,7 +639,7 @@ export function parser_write(p, chunk) {
 				*/
 				if ('.' === p.pending[p.pending.length-1]) {
 					if (' ' === char) {
-						parser_add_list(p, LIST_ORDERED)
+						parser_add_list(p, LIST_ORDERED, p.pending.length+1)
 						continue
 					}
 				} else {
