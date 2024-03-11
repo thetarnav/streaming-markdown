@@ -1142,21 +1142,27 @@ for (const [c, token] of /** @type {const} */([
 		: "List Ordered"
 	const suffix = "; prefix: "+c
 
+	const attrs = c === "420."
+		? {[smd.Attr.Start]: "420"}
+		: undefined
+
 	test_single_write(list_name + suffix,
 		c+" foo",
 		[{
 			type    : token,
+			attrs   : attrs,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: ["foo"]
 			}]
 		}]
 	)
-	
+
 	test_single_write(list_name + " with italic" + suffix,
 		c+" *foo*",
 		[{
 			type    : token,
+			attrs   : attrs,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: [{
@@ -1166,12 +1172,13 @@ for (const [c, token] of /** @type {const} */([
 			}]
 		}]
 	)
-	
+
 	test_single_write(list_name + " two items" + suffix,
 		c+" a\n"+
 		c+" b",
 		[{
 			type    : token,
+			attrs   : attrs,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: ["a"]
@@ -1181,24 +1188,26 @@ for (const [c, token] of /** @type {const} */([
 			}]
 		}]
 	)
-	
+
 	test_single_write(list_name + " with line break" + suffix,
 		c+" a\nb",
 		[{
 			type    : token,
+			attrs   : attrs,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: ["a", br, "b"]
 			}]
 		}]
 	)
-	
+
 	test_single_write(list_name + " end" + suffix,
 		c+" a\n"+
 		"\n"+
 		"b",
 		[{
 			type    : token,
+			attrs   : attrs,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: ["a"]
@@ -1208,7 +1217,7 @@ for (const [c, token] of /** @type {const} */([
 			children: ["b"]
 		}]
 	)
-	
+
 	test_single_write(list_name + " after line break" + suffix,
 		"a\n"+
 		c+" b",
@@ -1217,17 +1226,19 @@ for (const [c, token] of /** @type {const} */([
 			children: ["a"]
 		}, {
 			type    : token,
+			attrs   : attrs,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: ["b"]
 			}]
 		}]
 	)
-	
+
 	test_single_write(list_name + " with unchecked task" + suffix,
 		c+" [ ] foo",
 		[{
 			type    : token,
+			attrs   : attrs,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: [{
@@ -1237,11 +1248,12 @@ for (const [c, token] of /** @type {const} */([
 			}]
 		}]
 	)
-	
+
 	test_single_write(list_name + " with checked task" + suffix,
 		c+" [x] foo",
 		[{
 			type    : token,
+			attrs   : attrs,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: [{
@@ -1252,12 +1264,13 @@ for (const [c, token] of /** @type {const} */([
 			}]
 		}]
 	)
-	
+
 	test_single_write(list_name + " with two tasks" + suffix,
 		c+" [ ] foo\n"+
 		c+" [x] bar\n",
 		[{
 			type    : token,
+			attrs   : attrs,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: [{
@@ -1274,11 +1287,12 @@ for (const [c, token] of /** @type {const} */([
 			}]
 		}]
 	)
-	
+
 	test_single_write(list_name + " with link" + suffix,
 		c+" [x](url)",
 		[{
 			type    : token,
+			attrs   : attrs,
 			children: [{
 				type    : smd.Token.List_Item,
 				children: [{
@@ -1297,10 +1311,12 @@ for (const [c, token] of /** @type {const} */([
 			indent+c+" b",
 			[{
 				type    : token,
+				attrs   : attrs,
 				children: [{
 					type    : smd.Token.List_Item,
 					children: ["a", {
 						type    : token,
+						attrs   : attrs,
 						children: [{
 							type    : smd.Token.List_Item,
 							children: ["b"]
@@ -1318,6 +1334,7 @@ for (const [c, token] of /** @type {const} */([
 			indent+c+" b",
 			[{
 				type    : token,
+				attrs   : attrs,
 				children: [{
 					type    : smd.Token.List_Item,
 					children: ["a"]
@@ -1337,6 +1354,7 @@ for (const [c, token] of /** @type {const} */([
 			indent+"* c\n",
 			[{
 				type    : token,
+				attrs   : attrs,
 				children: [{
 					type    : smd.Token.List_Item,
 					children: ["a", {
