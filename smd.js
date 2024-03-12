@@ -315,6 +315,19 @@ function _add_list_item(p, prefix_length) {
 }
 
 /**
+ * @param {number} charcode
+ * @returns {boolean} */
+function _is_digit(charcode) {
+	switch (charcode) {
+	case 48: case 49: case 50: case 51: case 52:
+	case 53: case 54: case 55: case 56: case 57:
+		return true
+	default:
+		return false
+	}
+}
+
+/**
  * Parse and render another chunk of markdown.
  * @param   {Parser} p
  * @param   {string} chunk
@@ -450,8 +463,8 @@ export function parser_write(p, chunk) {
 					continue
 				} else {
 					const char_code = char.charCodeAt(0)
-					if (46 === char_code ||                  // '.'
-						(char_code >= 48 && char_code <= 57) // 0-9
+					if (46 === char_code ||  // '.'
+						_is_digit(char_code) // 0-9
 					) {
 						p.pending = pending_with_char
 						continue
@@ -667,8 +680,8 @@ export function parser_write(p, chunk) {
 					continue
 				} else {
 					const char_code = char.charCodeAt(0)
-					if (46 === char_code ||                  // '.'
-						(char_code >= 48 && char_code <= 57) // 0-9
+					if (46 === char_code ||  // '.'
+					    _is_digit(char_code) // 0-9
 					) {
 						p.pending = pending_with_char
 						continue
@@ -920,7 +933,7 @@ export function parser_write(p, chunk) {
 			} else {
 				const char_code = char.charCodeAt(0)
 				p.pending = ""
-				p.text += (char_code >= 48 && char_code <= 57) || // 0-9
+				p.text += _is_digit(char_code)                 || // 0-9
 				          (char_code >= 65 && char_code <= 90) || // A-Z
 				          (char_code >= 97 && char_code <= 122)   // a-z
 				          ? pending_with_char
