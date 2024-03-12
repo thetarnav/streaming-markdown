@@ -89,13 +89,19 @@ smd.parser_end(parser)
 - [x] Escape characters (e.g. \* or \_ with \\\* or \\\_)
 - [x] \[Link\](url)
     - [x] `href` attr
-- [x] Raw URLs
+- [ ] Raw URLs
+    - [ ] http://example.com
+    - [ ] https://example.com
+    - [ ] www.example.com
+    - [ ] example@fake.com
+    - [ ] mailto:example@fake.com
+- [x] Autolinks
     - [ ] www.example.com
     - [x] http://example.com
     - [x] https://example.com
     - [ ] example@fake.com
     - [ ] mailto:example@fake.com
-    - [ ] With `<>`
+- [ ] Reference-style Links
 - [x] Images
     - [x] `src` attr
 - [x] Horizontal rules
@@ -107,6 +113,11 @@ smd.parser_end(parser)
     - [x] `start` attr
 - [x] Task lists
 - [x] Nested lists
+- [ ] One-line nested lists
+- [ ] Adding Elements in Lists
 - [x] Blockquotes
 - [ ] Tables
+- [ ] Subscript
+- [ ] Superscript
+- [ ] Emoji Shortcodes
 - [ ] Html tags (e.g. `<div>`, `<span>`, `<a>`, `<img>`, etc.)
