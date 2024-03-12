@@ -1366,7 +1366,7 @@ for (const [c, token] of /** @type {const} */([
 		}]
 	)
 
-	test_single_write(list_name + " nested and continued" + suffix,
+	test_single_write(list_name + " nested and un-nested" + suffix,
 		c+" a\n"+
 		indent+"* b\n"+
 		c+" c\n",
@@ -1388,6 +1388,46 @@ for (const [c, token] of /** @type {const} */([
 			}]
 		}]
 	)
+
+	// test_single_write(list_name + " single line nesting" + suffix,
+	// 	c+" * a",
+	// 	[{
+	// 		type    : token,
+	// 		attrs   : attrs,
+	// 		children: [{
+	// 			type    : smd.Token.List_Item,
+	// 			children: [{
+	// 				type    : smd.Token.List_Unordered,
+	// 				children: [{
+	// 					type    : smd.Token.List_Item,
+	// 					children: ["a"]
+	// 				}]
+	// 			}]
+	// 		}]
+	// 	}]
+	// )
+
+	// test_single_write(list_name + " single line nesting continued" + suffix,
+	// 	c+" * a\n"+
+	// 	indent+"* b",
+	// 	[{
+	// 		type    : token,
+	// 		attrs   : attrs,
+	// 		children: [{
+	// 			type    : smd.Token.List_Item,
+	// 			children: [{
+	// 				type    : smd.Token.List_Unordered,
+	// 				children: [{
+	// 					type    : smd.Token.List_Item,
+	// 					children: ["a"]
+	// 				}, {
+	// 					type    : smd.Token.List_Item,
+	// 					children: ["b"]
+	// 				}]
+	// 			}]
+	// 		}]
+	// 	}]
+	// )
 }
 
 test_single_write("Failed nesting of ul in ol",
@@ -1407,3 +1447,17 @@ test_single_write("Failed nesting of ul in ol",
 		}]
 	}]
 )
+
+// test_single_write("Heading in a list item",
+// 	"- # foo",
+// 	[{
+// 		type    : smd.Token.List_Unordered,
+// 		children: [{
+// 			type    : smd.Token.List_Item,
+// 			children: [{
+// 				type    : smd.Token.Heading_1,
+// 				children: ["foo"]
+// 			}]
+// 		}]
+// 	}]
+// )

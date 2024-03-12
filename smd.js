@@ -184,7 +184,7 @@ export function parser(renderer) {
 		hr_char   : '',
 		hr_chars  : 0,
 		backticks_count: 0,
-		could_be_url: false,
+		could_be_url : false,
 		could_be_task: false,
 		spaces    : new Uint8Array(TOKEN_ARRAY_CAP),
 		spaces_pending: 0,
