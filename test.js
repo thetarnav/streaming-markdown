@@ -281,13 +281,13 @@ for (let level = 1; level <= 6; level += 1) {
 	/** @type {smd.Token} */
 	let heading_type
 	switch (level) {
-		case 1: heading_type = smd.Token.Heading_1; break
-		case 2: heading_type = smd.Token.Heading_2; break
-		case 3: heading_type = smd.Token.Heading_3; break
-		case 4: heading_type = smd.Token.Heading_4; break
-		case 5: heading_type = smd.Token.Heading_5; break
-		case 6: heading_type = smd.Token.Heading_6; break
-		default: throw new Error("Invalid heading level")
+	case 1: heading_type = smd.Token.Heading_1; break
+	case 2: heading_type = smd.Token.Heading_2; break
+	case 3: heading_type = smd.Token.Heading_3; break
+	case 4: heading_type = smd.Token.Heading_4; break
+	case 5: heading_type = smd.Token.Heading_5; break
+	case 6: heading_type = smd.Token.Heading_6; break
+	default: throw new Error("Invalid heading level")
 	}
 
 	test_single_write(`Heading_${level}`,
@@ -1146,6 +1146,9 @@ for (const [c, token] of /** @type {const} */([
 		? {[smd.Attr.Start]: "420"}
 		: undefined
 
+	const indent       = " ".repeat(c.length + 1)
+	const indent_small = " ".repeat(c.length)
+
 	test_single_write(list_name + suffix,
 		c+" foo",
 		[{
@@ -1304,73 +1307,87 @@ for (const [c, token] of /** @type {const} */([
 		}]
 	)
 
-	{
-		const indent = " ".repeat(c.length + 1)
-		test_single_write(list_name + " nested list" + suffix,
-			c+" a\n"+
-			indent+c+" b",
-			[{
-				type    : token,
-				attrs   : attrs,
-				children: [{
-					type    : smd.Token.List_Item,
-					children: ["a", {
-						type    : token,
-						attrs   : attrs,
-						children: [{
-							type    : smd.Token.List_Item,
-							children: ["b"]
-						}]
+	test_single_write(list_name + " nested list" + suffix,
+		c+" a\n"+
+		indent+c+" b",
+		[{
+			type    : token,
+			attrs   : attrs,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: ["a", {
+					type    : token,
+					attrs   : attrs,
+					children: [{
+						type    : smd.Token.List_Item,
+						children: ["b"]
 					}]
 				}]
 			}]
-		)
-	}
+		}]
+	)
 
-	{
-		const indent = " ".repeat(c.length)
-		test_single_write(list_name + " failed nested list" + suffix,
-			c+" a\n"+
-			indent+c+" b",
-			[{
-				type    : token,
-				attrs   : attrs,
-				children: [{
-					type    : smd.Token.List_Item,
-					children: ["a"]
-				}, {
-					type    : smd.Token.List_Item,
-					children: ["b"]
-				}]
+	test_single_write(list_name + " failed nested list" + suffix,
+		c+" a\n"+
+		indent_small+c+" b",
+		[{
+			type    : token,
+			attrs   : attrs,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: ["a"]
+			}, {
+				type    : smd.Token.List_Item,
+				children: ["b"]
 			}]
-		)
-	}
+		}]
+	)
 
-	{
-		const indent = " ".repeat(c.length + 1)
-		test_single_write(list_name + " nested ul multiple items" + suffix,
-			c+" a\n"+
-			indent+"* b\n"+
-			indent+"* c\n",
-			[{
-				type    : token,
-				attrs   : attrs,
-				children: [{
-					type    : smd.Token.List_Item,
-					children: ["a", {
-						type    : smd.Token.List_Unordered,
-						children: [{
-							type    : smd.Token.List_Item,
-							children: ["b"]
-						}, {
-							type    : smd.Token.List_Item,
-							children: ["c"]
-						}]
+	test_single_write(list_name + " nested ul multiple items" + suffix,
+		c+" a\n"+
+		indent+"* b\n"+
+		indent+"* c\n",
+		[{
+			type    : token,
+			attrs   : attrs,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: ["a", {
+					type    : smd.Token.List_Unordered,
+					children: [{
+						type    : smd.Token.List_Item,
+						children: ["b"]
+					}, {
+						type    : smd.Token.List_Item,
+						children: ["c"]
 					}]
 				}]
 			}]
-		)
-	}
+		}]
+	)
+
+	test_single_write(list_name + " nested and continued" + suffix,
+		c+" a\n"+
+		indent+"* b\n"+
+		c+" c\n",
+		[{
+			type    : token,
+			attrs   : attrs,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: ["a", {
+					type    : smd.Token.List_Unordered,
+					children: [{
+						type    : smd.Token.List_Item,
+						children: ["b"]
+					}]
+				}]
+			}, {
+				type    : smd.Token.List_Item,
+				children: ["c"]
+			}]
+		}]
+	)
 }
 
 test_single_write("Failed nesting of ul in ol",
