@@ -15,8 +15,10 @@
 	"files": [
 		"./smd.js",
 		"./smd.d.ts",
-		"./smd.d.ts.map"
+		"./smd.d.ts.map",
+		"./smd.min.js"
 	],
+	"browser": "./smd.min.js",
 	"module": "./smd.js",
 	"types": "./smd.d.ts",
 	"exports": {
@@ -30,11 +32,13 @@
 		"test": "node --test",
 		"typecheck": "tsc --noEmit",
 		"build": "node ./build.js",
-		"prepublishOnly": "node ./build.js"
+		"prepublishOnly": "node ./build.js",
+		"postpublish": "rm smd.d.* smd.min.js"
 	},
 	"devDependencies": {
 		"@types/node": "^20.11.19",
 		"@types/ws": "^8.5.10",
+		"esbuild": "^0.20.1",
 		"typescript": "^5.3.3",
 		"ws": "^8.16.0"
 	},
