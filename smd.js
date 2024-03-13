@@ -311,10 +311,8 @@ function continue_or_add_list(p, list_token) {
 function add_list_item(p, prefix_length) {
 	add_token(p, LIST_ITEM)
 	p.spaces[p.len] = p.indent_len + prefix_length
-	p.pending = ""
-	p.indent = ""
-	p.indent_len = 0
 	p.could_be_task = true
+	clear_root_pending(p)
 }
 
 /**
@@ -575,8 +573,11 @@ export function parser_write(p, chunk) {
 					p.pending = pending_with_char
 					continue
 				}
-			/* List Unordered */
-			case '+':
+			/*
+			List Unordered for '+'
+			The other list types are handled with HORIZONTAL_RULE
+			*/
+			case '+': 
 				if (' ' !== char) break // fail
 
 				continue_or_add_list(p, LIST_UNORDERED)
@@ -600,7 +601,7 @@ export function parser_write(p, chunk) {
 					continue
 				} else {
 					const char_code = char.charCodeAt(0)
-					if (46 === char_code ||  // '.'
+					if (46 === char_code || // '.'
 					    is_digit(char_code) // 0-9
 					) {
 						p.pending = pending_with_char
