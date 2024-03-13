@@ -752,7 +752,7 @@ export function parser_write(p, chunk) {
 			switch (char) {
 			case '`':
 				if (pending_with_char.length ===
-					p.backticks_count + Number(p.pending[0] === ' ') // 0 or 1 for space
+				    p.backticks_count + Number(p.pending[0] === ' ') // 0 or 1 for space
 				) {
 					_add_text(p)
 					_end_token(p)
@@ -887,8 +887,9 @@ export function parser_write(p, chunk) {
 				}
 				continue
 			}
-			if (p.pending[0] === ']' &&
-				p.pending[1] === '(') {
+			if (']' === p.pending[0] &&
+			    '(' === p.pending[1]
+			) {
 				/*
 				[Link](url)
 						  ^
@@ -909,7 +910,10 @@ export function parser_write(p, chunk) {
 			/* http://example.com?
 			                     ^
 			*/
-			if (' ' === char || '\n' === char || '\\' === char) {
+			if (' ' === char ||
+			    '\n'=== char ||
+			    '\\'=== char
+			) {
 				p.renderer.set_attr(p.renderer.data, HREF, p.pending)
 				_add_text(p)
 				_end_token(p)
@@ -1042,7 +1046,7 @@ export function parser_write(p, chunk) {
 		/* [Image](url) */
 		case '[':
 			if (!(p.token & (NO_NESTING | LINK)) &&
-				']' !== char
+			    ']' !== char
 			) {
 				_add_text(p)
 				_add_token(p, LINK)
@@ -1053,7 +1057,7 @@ export function parser_write(p, chunk) {
 		/* ![Image](url) */
 		case '!':
 			if (!(p.token & NO_NESTING) &&
-				'[' === char
+			    '[' === char
 			) {
 				_add_text(p)
 				_add_token(p, IMAGE)
