@@ -553,7 +553,9 @@ for (const indent of [
 	" \t",
 	"\t",
 ]) {
-	test_single_write("Code_Block",
+	const escaped_indent = indent.replace(/\t/g, "\\t")
+
+	test_single_write("Code_Block; indent: '"+escaped_indent+"'",
 		indent + "  foo",
 		[{
 			type    : smd.Token.Code_Block,
@@ -561,7 +563,7 @@ for (const indent of [
 		}]
 	)
 
-	test_single_write("Code_Block multiple lines",
+	test_single_write("Code_Block multiple lines; indent: '"+escaped_indent+"'",
 		indent + "foo\n" +
 		indent + "bar",
 		[{
@@ -570,7 +572,7 @@ for (const indent of [
 		}]
 	)
 
-	test_single_write("Code_Block end",
+	test_single_write("Code_Block end; indent: '"+escaped_indent+"'",
 		indent+"foo\n" +
 		"bar",
 		[{

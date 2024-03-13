@@ -153,7 +153,8 @@ export function attr_to_html_attr(type) {
  * @property {number      } len             - Number of tokens in types without root
  * @property {Token       } token           - Last token in the tree
  * @property {Uint8Array  } spaces
- * @property {number      } spaces_pending
+ * @property {string      } indent
+ * @property {number      } indent_len
  * @property {0 | 1       } code_fence_body - For {@link Token.Code_Fence} parsing
  * @property {number      } backticks_count
  * @property {number      } blockquote_idx  - For Blockquote parsing
@@ -187,7 +188,8 @@ export function parser(renderer) {
 		could_be_url : false,
 		could_be_task: false,
 		spaces    : new Uint8Array(TOKEN_ARRAY_CAP),
-		spaces_pending: 0,
+		indent    : "",
+		indent_len: 0,
 	}
 }
 
@@ -204,7 +206,7 @@ export function parser_end(p) {
 /**
  * @param   {Parser} p
  * @returns {void  } */
-function _add_text(p) {
+function add_text(p) {
 	if (p.text.length === 0) return
 	console.assert(p.len > 0, "Never adding text to root")
 	p.renderer.add_text(p.renderer.data, p.text)
@@ -214,7 +216,7 @@ function _add_text(p) {
 /**
  * @param   {Parser} p
  * @returns {void  } */
-function _end_token(p) {
+function end_token(p) {
 	console.assert(p.len > 0, "No nodes to end")
 	p.len -= 1
 	p.token = /** @type {Token} */ (p.tokens[p.len])
@@ -225,7 +227,7 @@ function _end_token(p) {
  * @param   {Parser} p
  * @param   {Token } token
  * @returns {void  } */
-function _add_token(p, token) {
+function add_token(p, token) {
 	p.len += 1
 	p.tokens[p.len] = token
 	p.token = token
@@ -237,7 +239,7 @@ function _add_token(p, token) {
  * @param   {number} token
  * @param   {number} start_idx
  * @returns {number} */
-function _idx_of_token(p, token, start_idx) {
+function idx_of_token(p, token, start_idx) {
 	while (start_idx <= p.len) {
 		if (p.tokens[start_idx] & token) {
 			return start_idx
@@ -252,9 +254,9 @@ function _idx_of_token(p, token, start_idx) {
  * @param   {Parser} p
  * @param   {number} len
  * @returns {void  } */
-function _end_tokens_to_len(p, len) {
+function end_tokens_to_len(p, len) {
 	while (p.len > len) {
-		_end_token(p)
+		end_token(p)
 	}
 }
 
@@ -262,7 +264,7 @@ function _end_tokens_to_len(p, len) {
  * @param   {Parser } p
  * @param   {Token  } list_token
  * @returns {void   } */
-function _continue_or_add_list(p, list_token) {
+function continue_or_add_list(p, list_token) {
 	/* will create a new list inside the last item
 	   if the amount of spaces is greater than the last one (with prefix)
 	   1. foo
@@ -279,7 +281,7 @@ function _continue_or_add_list(p, list_token) {
 			if (p.tokens[i-1] & list_token) {
 				list_idx = i-1
 			}
-			if (p.spaces_pending < p.spaces[i]) {
+			if (p.indent_len < p.spaces[i]) {
 				item_idx = -1
 				break
 			}
@@ -289,14 +291,14 @@ function _continue_or_add_list(p, list_token) {
 
 	if (item_idx === -1) {
 		if (list_idx === -1) {
-			_end_tokens_to_len(p, p.blockquote_idx)
-			_add_token(p, list_token)
+			end_tokens_to_len(p, p.blockquote_idx)
+			add_token(p, list_token)
 		} else {
-			_end_tokens_to_len(p, list_idx)
+			end_tokens_to_len(p, list_idx)
 		}
 	} else {
-		_end_tokens_to_len(p, item_idx)
-		_add_token(p, list_token)
+		end_tokens_to_len(p, item_idx)
+		add_token(p, list_token)
 	}
 }
 
@@ -306,18 +308,28 @@ function _continue_or_add_list(p, list_token) {
  * @param   {Parser } p
  * @param   {number } prefix_length
  * @returns {void   } */
-function _add_list_item(p, prefix_length) {
-	_add_token(p, LIST_ITEM)
-	p.spaces[p.len] = p.spaces_pending + prefix_length
+function add_list_item(p, prefix_length) {
+	add_token(p, LIST_ITEM)
+	p.spaces[p.len] = p.indent_len + prefix_length
 	p.pending = ""
-	p.spaces_pending = 0
+	p.indent = ""
+	p.indent_len = 0
 	p.could_be_task = true
+}
+
+/**
+ * @param {Parser} p
+ * @returns {void  } */
+function clear_root_pending(p) {
+	p.indent = ""
+	p.indent_len = 0
+	p.pending = ""
 }
 
 /**
  * @param {number} charcode
  * @returns {boolean} */
-function _is_digit(charcode) {
+function is_digit(charcode) {
 	switch (charcode) {
 	case 48: case 49: case 50: case 51: case 52:
 	case 53: case 54: case 55: case 56: case 57:
@@ -341,8 +353,8 @@ export function parser_write(p, chunk) {
 			if ("http://"  === pending_with_char ||
 			    "https://" === pending_with_char
 			) {
-				_add_text(p)
-				_add_token(p, RAW_URL)
+				add_text(p)
+				add_token(p, RAW_URL)
 				p.pending = pending_with_char
 				p.text    = pending_with_char
 				p.could_be_url = false
@@ -397,118 +409,30 @@ export function parser_write(p, chunk) {
 		*/
 		switch (p.token) {
 		case LINE_BREAK:
-			console.assert(p.text.length === 0, "Text when in line break")
-
-			switch (p.pending[0]) {
-			case undefined:
-				p.pending = char
-				continue
-			case ' ':
-				p.pending = char
-				p.spaces_pending += 1
-				continue
-			case '\t':
-				p.pending = char
-				p.spaces_pending += 3
-				continue
-			case '>': {
-				const next_blockquote_idx = _idx_of_token(p, BLOCKQUOTE, p.blockquote_idx+1)
-
-				/*
-				Only when there is no blockquote to the right of blockquote_idx
-				a new blockquote can be created
-				*/
-				if (next_blockquote_idx === -1) {
-					_end_tokens_to_len(p, p.blockquote_idx)
-					p.blockquote_idx += 1
-					p.backticks_count = 0
-					_add_token(p, BLOCKQUOTE)
-				} else {
-					p.blockquote_idx = next_blockquote_idx
-				}
-
-				p.pending = char
-				continue
-			}
-			case '*':
-			case '-':
-			case '+':
-				if (' ' !== char) break // fail
-
-				_continue_or_add_list(p, LIST_UNORDERED)
-				_add_list_item(p, 2)
-				continue
-			case '0':
-			case '1':
-			case '2':
-			case '3':
-			case '4':
-			case '5':
-			case '6':
-			case '7':
-			case '8':
-			case '9':
-				/*
-				12. foo
-				   ^
-				*/
-				if ('.' === p.pending[p.pending.length-1]) {
-					if (' ' !== char) break // fail
-
-					_continue_or_add_list(p, LIST_ORDERED)
-					if (p.pending !== "1.") {
-						p.renderer.set_attr(p.renderer.data, START, p.pending.slice(0, -1))
-					}
-					_add_list_item(p, p.pending.length+1)
-					continue
-				} else {
-					const char_code = char.charCodeAt(0)
-					if (46 === char_code ||  // '.'
-						_is_digit(char_code) // 0-9
-					) {
-						p.pending = pending_with_char
-						continue
-					}
-				}
-				break // fail
-			case '\n':
-				_end_tokens_to_len(p, p.blockquote_idx)
-				p.blockquote_idx = 0
-				p.backticks_count = 0
-				p.pending = char
-				continue
-			}
-
-			/* Add a line break and continue in previous token */
-			p.token = /** @type {Token} */(p.tokens[p.len])
-			p.renderer.add_token(p.renderer.data, LINE_BREAK)
-			p.renderer.end_token(p.renderer.data)
-			p.pending = "" // reprocess whole pending in previous token
-			parser_write(p, pending_with_char)
-			continue
 		case DOCUMENT:
 		case BLOCKQUOTE:
 			console.assert(p.text.length === 0, "Root should not have any text")
 
 			switch (p.pending[0]) {
-			/* Trim leading spaces */
 			case undefined:
+				p.pending = char
+				continue
 			case ' ':
-				p.pending = ' ' === char
-					? p.pending.length < 3
-						? pending_with_char
-						: "\t"
-					: char
+				p.pending = char
+				p.indent += ' '
+				p.indent_len += 1
+				continue
+			case '\t':
+				p.pending = char
+				p.indent += '\t'
+				p.indent_len += 4
 				continue
 			/* Ignore newlines in root */
 			case '\n':
+				end_tokens_to_len(p, p.blockquote_idx)
+				p.blockquote_idx = 0
+				p.backticks_count = 0
 				p.pending = char
-				continue
-			/* Code Block */
-			case '\t':
-				_add_token(p, CODE_BLOCK)
-				p.pending = ""
-				parser_write(p, char)
 				continue
 			/* Heading */
 			case '#':
@@ -521,27 +445,34 @@ export function parser_write(p, chunk) {
 					break // fail
 				case ' ':
 					switch (p.pending.length) {
-					case 1: _add_token(p, HEADING_1); p.pending=""; continue
-					case 2: _add_token(p, HEADING_2); p.pending=""; continue
-					case 3: _add_token(p, HEADING_3); p.pending=""; continue
-					case 4: _add_token(p, HEADING_4); p.pending=""; continue
-					case 5: _add_token(p, HEADING_5); p.pending=""; continue
-					case 6: _add_token(p, HEADING_6); p.pending=""; continue
+					case 1: add_token(p, HEADING_1); clear_root_pending(p); continue
+					case 2: add_token(p, HEADING_2); clear_root_pending(p); continue
+					case 3: add_token(p, HEADING_3); clear_root_pending(p); continue
+					case 4: add_token(p, HEADING_4); clear_root_pending(p); continue
+					case 5: add_token(p, HEADING_5); clear_root_pending(p); continue
+					case 6: add_token(p, HEADING_6); clear_root_pending(p); continue
 					}
 					console.assert(false, "Should not reach here")
 				}
 				break // fail
 			/* Blockquote */
 			case '>': {
-				const next_blockquote_idx = _idx_of_token(p, BLOCKQUOTE, p.blockquote_idx+1)
+				const next_blockquote_idx = idx_of_token(p, BLOCKQUOTE, p.blockquote_idx+1)
 				
+				/*
+				Only when there is no blockquote to the right of blockquote_idx
+				a new blockquote can be created
+				*/
 				if (next_blockquote_idx === -1) {
+					end_tokens_to_len(p, p.blockquote_idx)
 					p.blockquote_idx += 1
-					_add_token(p, BLOCKQUOTE)
+					p.backticks_count = 0
+					add_token(p, BLOCKQUOTE)
 				} else {
 					p.blockquote_idx = next_blockquote_idx
 				}
 				
+				clear_root_pending(p)
 				p.pending = char
 				continue
 			}
@@ -586,9 +517,8 @@ export function parser_write(p, chunk) {
 				if ('_' !== p.pending[0] &&
 				    ' ' === p.pending[1]
 				) {
-					_end_tokens_to_len(p, p.blockquote_idx)
-					_add_token(p, LIST_UNORDERED)
-					_add_list_item(p, 2)
+					continue_or_add_list(p, LIST_UNORDERED)
+					add_list_item(p, 2)
 					parser_write(p, pending_with_char.slice(2))
 					continue
 				}
@@ -622,8 +552,8 @@ export function parser_write(p, chunk) {
 							   ^
 					*/
 					else {
-						_add_token(p, PARAGRAPH)
-						p.pending = ""
+						add_token(p, PARAGRAPH)
+						clear_root_pending(p)
 						p.backticks_count = 0
 						parser_write(p, pending_with_char)
 					}
@@ -632,11 +562,11 @@ export function parser_write(p, chunk) {
 					/*  ```lang\n
 								^
 					*/
-					_add_token(p, CODE_FENCE)
+					add_token(p, CODE_FENCE)
 					if (p.pending.length > p.backticks_count) {
 						p.renderer.set_attr(p.renderer.data, LANG, p.pending.slice(p.backticks_count))
 					}
-					p.pending = ""
+					clear_root_pending(p)
 					continue
 				default:
 					/*  ```lang\n
@@ -649,21 +579,12 @@ export function parser_write(p, chunk) {
 			case '+':
 				if (' ' !== char) break // fail
 
-				_end_tokens_to_len(p, p.blockquote_idx)
-				_add_token(p, LIST_UNORDERED)
-				_add_list_item(p, 2)
+				continue_or_add_list(p, LIST_UNORDERED)
+				add_list_item(p, 2)
 				continue
 			/* List Ordered */
-			case '0':
-			case '1':
-			case '2':
-			case '3':
-			case '4':
-			case '5':
-			case '6':
-			case '7':
-			case '8':
-			case '9':
+			case '0': case '1': case '2': case '3': case '4':
+			case '5': case '6': case '7': case '8': case '9':
 				/*
 				12. foo
 				   ^
@@ -671,17 +592,16 @@ export function parser_write(p, chunk) {
 				if ('.' === p.pending[p.pending.length-1]) {
 					if (' ' !== char) break // fail
 
-					_end_tokens_to_len(p, p.blockquote_idx)
-					_add_token(p, LIST_ORDERED)
+					continue_or_add_list(p, LIST_ORDERED)
 					if (p.pending !== "1.") {
 						p.renderer.set_attr(p.renderer.data, START, p.pending.slice(0, -1))
 					}
-					_add_list_item(p, p.pending.length+1)
+					add_list_item(p, p.pending.length+1)
 					continue
 				} else {
 					const char_code = char.charCodeAt(0)
 					if (46 === char_code ||  // '.'
-					    _is_digit(char_code) // 0-9
+					    is_digit(char_code) // 0-9
 					) {
 						p.pending = pending_with_char
 						continue
@@ -690,11 +610,46 @@ export function parser_write(p, chunk) {
 				break // fail
 			}
 
+			let to_write = pending_with_char
+
+			/* Add line break */
+			if (p.token & LINE_BREAK) {
+				/* Add a line break and continue in previous token */
+				p.token = /** @type {Token} */(p.tokens[p.len])
+				p.renderer.add_token(p.renderer.data, LINE_BREAK)
+				p.renderer.end_token(p.renderer.data)
+			}
+			/* Code Block */
+			else if (p.indent_len >= 4) {
+				/*
+				Case where there are additional spaces
+				after the indent that makes the code block
+				_________________________
+				       code
+				^^^^----indent
+				    ^^^-part of code
+				_________________________
+				 \t   code
+				^^-----indent
+				   ^^^-part of code
+				*/
+				let code_start = 0
+				for (; code_start < 4; code_start += 1) {
+					if (p.indent[code_start] === '\t') {
+						code_start = code_start+1
+						break
+					}
+				}
+				to_write = p.indent.slice(code_start) + pending_with_char
+				add_token(p, CODE_BLOCK)
+			}
 			/* Paragraph */
-			p.pending = ""
-			_add_token(p, PARAGRAPH)
-			/* The whole pending text needs to be reprocessed */
-			parser_write(p, pending_with_char)
+			else {
+				add_token(p, PARAGRAPH)
+			}
+			
+			clear_root_pending(p)
+			parser_write(p, to_write)
 			continue
 		case CODE_BLOCK:
 			switch (pending_with_char) {
@@ -714,8 +669,8 @@ export function parser_write(p, chunk) {
 				continue
 			default:
 				if (p.pending.length !== 0) {
-					_add_text(p)
-					_end_token(p)
+					add_text(p)
+					end_token(p)
 					p.pending = char
 				} else {
 					p.text += char
@@ -728,8 +683,8 @@ export function parser_write(p, chunk) {
 				if (pending_with_char.length ===
 					p.backticks_count + p.code_fence_body // 0 or 1 for \n
 				) {
-					_add_text(p)
-					_end_token(p)
+					add_text(p)
+					end_token(p)
 					p.pending = ""
 					p.backticks_count = 0
 					p.code_fence_body = 0
@@ -754,8 +709,8 @@ export function parser_write(p, chunk) {
 				if (pending_with_char.length ===
 				    p.backticks_count + Number(p.pending[0] === ' ') // 0 or 1 for space
 				) {
-					_add_text(p)
-					_end_token(p)
+					add_text(p)
+					end_token(p)
 					p.pending = ""
 					p.backticks_count = 0
 				} else {
@@ -767,7 +722,7 @@ export function parser_write(p, chunk) {
 				p.pending = ""
 				p.token = LINE_BREAK
 				p.blockquote_idx = 0
-				_add_text(p)
+				add_text(p)
 				continue
 			/* Trim space before ` */
 			case ' ':
@@ -789,19 +744,19 @@ export function parser_write(p, chunk) {
 			}
 
 			if (symbol === p.pending) {
-				_add_text(p)
+				add_text(p)
 				/* **Bold**
 						  ^
 				*/
 				if (symbol === char) {
-					_end_token(p)
+					end_token(p)
 					p.pending = ""
 					continue
 				}
 				/* **Bold*Bold->Em*
 						  ^
 				*/
-				_add_token(p, italic)
+				add_token(p, italic)
 				p.pending = char
 				continue
 			}
@@ -831,8 +786,8 @@ export function parser_write(p, chunk) {
 					       ^
 					*/
 					else {
-						_add_text(p)
-						_add_token(p, strong)
+						add_text(p)
+						add_token(p, strong)
 						p.pending = ""
 					}
 				}
@@ -840,21 +795,21 @@ export function parser_write(p, chunk) {
 					   ^
 				*/
 				else {
-					_add_text(p)
-					_end_token(p)
+					add_text(p)
+					end_token(p)
 					p.pending = char
 				}
 				continue
 			case symbol+symbol:
 				const italic = p.token
-				_add_text(p)
-				_end_token(p)
-				_end_token(p)
+				add_text(p)
+				end_token(p)
+				end_token(p)
 				/* ***bold>em**em* or **bold*bold>em***
 				               ^                      ^
 				*/
 				if (symbol !== char) {
-					_add_token(p, italic)
+					add_token(p, italic)
 					p.pending = char
 				} else {
 					p.pending = ""
@@ -865,8 +820,8 @@ export function parser_write(p, chunk) {
 		}
 		case STRIKE:
 			if ("~~" === pending_with_char) {
-				_add_text(p)
-				_end_token(p)
+				add_text(p)
+				end_token(p)
 				p.pending = ""
 				continue
 			}
@@ -878,11 +833,11 @@ export function parser_write(p, chunk) {
 				[Link](url)
 					 ^
 				*/
-				_add_text(p)
+				add_text(p)
 				if ('(' === char) {
 					p.pending = pending_with_char
 				} else {
-					_end_token(p)
+					end_token(p)
 					p.pending = char
 				}
 				continue
@@ -898,7 +853,7 @@ export function parser_write(p, chunk) {
 					const type = p.token === LINK ? HREF : SRC
 					const url = p.pending.slice(2)
 					p.renderer.set_attr(p.renderer.data, type, url)
-					_end_token(p)
+					end_token(p)
 					p.pending = ""
 				} else {
 					p.pending += char
@@ -915,8 +870,8 @@ export function parser_write(p, chunk) {
 			    '\\'=== char
 			) {
 				p.renderer.set_attr(p.renderer.data, HREF, p.pending)
-				_add_text(p)
-				_end_token(p)
+				add_text(p)
+				end_token(p)
 				p.pending = char
 			} else {
 				p.text   += char
@@ -937,7 +892,7 @@ export function parser_write(p, chunk) {
 			} else {
 				const char_code = char.charCodeAt(0)
 				p.pending = ""
-				p.text += _is_digit(char_code)                 || // 0-9
+				p.text += is_digit(char_code)                 || // 0-9
 				          (char_code >= 65 && char_code <= 90) || // A-Z
 				          (char_code >= 97 && char_code <= 122)   // a-z
 				          ? pending_with_char
@@ -946,7 +901,7 @@ export function parser_write(p, chunk) {
 			continue
 		/* Newline */
 		case '\n':
-			_add_text(p)
+			add_text(p)
 			p.token = LINE_BREAK
 			p.blockquote_idx = 0
 			p.pending = char
@@ -960,8 +915,8 @@ export function parser_write(p, chunk) {
 				p.pending = pending_with_char
 			} else {
 				p.backticks_count += 1 // started at 0, and first wasn't counted
-				_add_text(p)
-				_add_token(p, CODE_INLINE)
+				add_text(p)
+				add_token(p, CODE_INLINE)
 				p.text = ' ' === char || '\n' === char ? "" : char // trim leading space
 				p.pending = ""
 			}
@@ -990,8 +945,8 @@ export function parser_write(p, chunk) {
 					^
 				*/
 				if (' ' !== char && '\n' !== char) {
-					_add_text(p)
-					_add_token(p, italic)
+					add_text(p)
+					add_token(p, italic)
 					p.pending = char
 					continue
 				}
@@ -1000,9 +955,9 @@ export function parser_write(p, chunk) {
 					 ^
 				*/
 				if (symbol === char) {
-					_add_text(p)
-					_add_token(p, strong)
-					_add_token(p, italic)
+					add_text(p)
+					add_token(p, strong)
+					add_token(p, italic)
 					p.pending = ""
 					continue
 				}
@@ -1010,8 +965,8 @@ export function parser_write(p, chunk) {
 					 ^
 				*/
 				if (' ' !== char && '\n' !== char) {
-					_add_text(p)
-					_add_token(p, strong)
+					add_text(p)
+					add_token(p, strong)
 					p.pending = char
 					continue
 				}
@@ -1035,8 +990,8 @@ export function parser_write(p, chunk) {
 					 ^
 				*/
 				if (' ' !== char && '\n' !== char) {
-					_add_text(p)
-					_add_token(p, STRIKE)
+					add_text(p)
+					add_token(p, STRIKE)
 					p.pending = char
 					continue
 				}
@@ -1048,8 +1003,8 @@ export function parser_write(p, chunk) {
 			if (!(p.token & (NO_NESTING | LINK)) &&
 			    ']' !== char
 			) {
-				_add_text(p)
-				_add_token(p, LINK)
+				add_text(p)
+				add_token(p, LINK)
 				p.pending = char
 				continue
 			}
@@ -1059,8 +1014,8 @@ export function parser_write(p, chunk) {
 			if (!(p.token & NO_NESTING) &&
 			    '[' === char
 			) {
-				_add_text(p)
-				_add_token(p, IMAGE)
+				add_text(p)
+				add_token(p, IMAGE)
 				p.pending = ""
 				continue
 			}
@@ -1094,7 +1049,7 @@ export function parser_write(p, chunk) {
 		p.pending = char
 	}
 
-	_add_text(p)
+	add_text(p)
 }
 
 
