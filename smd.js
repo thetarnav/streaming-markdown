@@ -32,8 +32,8 @@ export const
 	LIST_ORDERED   = 16777216, // 24
 	LIST_ITEM      = 33554432, // 25
 	CHECKBOX       = 67108864, // 26
-	MAYBE_URL	  = 134217728, // 27
-	MAYBE_TASK	  = 268435456, // 28
+	MAYBE_URL	   =134217728, // 27
+	MAYBE_TASK	   =268435456, // 28
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
 	ANY_HEADING    =      252,
 	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
@@ -48,8 +48,6 @@ export const
 	ANY_UND        =    20480,
 	/** `LIST_UNORDERED | LIST_ORDERED` */
 	ANY_LIST       = 25165824,
-	/** `ANY_CODE | IMAGE | HORIZONTAL_RULE` */
-	NO_NESTING     =  4458240,
 	/** `DOCUMENT | BLOCKQUOTE` */
 	ANY_ROOT       =   262145
 
@@ -902,7 +900,7 @@ export function parser_write(p, chunk) {
 			continue
 		/* `Code Inline` */
 		case '`':
-			if (p.token & NO_NESTING) break
+			if (p.token & IMAGE) break
 
 			if ('`' === char) {
 				p.backticks_count += 1
@@ -917,6 +915,8 @@ export function parser_write(p, chunk) {
 			continue
 		case '_':
 		case '*': {
+			if (p.token & IMAGE) break
+
 			/** @type {Token} */ let italic = ITALIC_AST
 			/** @type {Token} */ let strong = STRONG_AST
 			const symbol = p.pending[0]
@@ -924,8 +924,6 @@ export function parser_write(p, chunk) {
 				italic = ITALIC_UND
 				strong = STRONG_UND
 			}
-
-			if (p.token & NO_NESTING) break
 
 			if (p.pending.length === 1) {
 				/* **Strong**
@@ -969,7 +967,7 @@ export function parser_write(p, chunk) {
 			break
 		}
 		case '~':
-			if (p.token & (NO_NESTING | STRIKE)) break
+			if (p.token & (IMAGE | STRIKE)) break
 
 			if ("~" === p.pending) {
 				/* ~~Strike~~
@@ -994,7 +992,7 @@ export function parser_write(p, chunk) {
 			break
 		/* [Image](url) */
 		case '[':
-			if (!(p.token & (NO_NESTING | LINK)) &&
+			if (!(p.token & (IMAGE | LINK)) &&
 			    ']' !== char
 			) {
 				add_text(p)
@@ -1005,7 +1003,7 @@ export function parser_write(p, chunk) {
 			break
 		/* ![Image](url) */
 		case '!':
-			if (!(p.token & NO_NESTING) &&
+			if (!(p.token & IMAGE) &&
 			    '[' === char
 			) {
 				add_text(p)
@@ -1025,7 +1023,7 @@ export function parser_write(p, chunk) {
 		/* foo http://...
 		       ^
 		*/
-		if (!(p.token & NO_NESTING) &&
+		if (!(p.token & (IMAGE | LINK)) &&
 		    'h' === char &&
 		   (" " === p.pending ||
 		    ""  === p.pending)
