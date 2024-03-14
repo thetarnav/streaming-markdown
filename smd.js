@@ -32,6 +32,8 @@ export const
 	LIST_ORDERED   = 16777216, // 24
 	LIST_ITEM      = 33554432, // 25
 	CHECKBOX       = 67108864, // 26
+	MAYBE_URL	  = 134217728, // 27
+	MAYBE_TASK	  = 268435456, // 28
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
 	ANY_HEADING    =      252,
 	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
@@ -151,7 +153,7 @@ export function attr_to_html_attr(type) {
  * @property {string      } pending         - Characters for identifying tokens
  * @property {Uint32Array } tokens          - Current token and it's parents (a slice of a tree)
  * @property {number      } len             - Number of tokens in types without root
- * @property {Token       } token           - Last token in the tree
+ * @property {number      } token           - Last token in the tree
  * @property {Uint8Array  } spaces
  * @property {string      } indent
  * @property {number      } indent_len
@@ -160,8 +162,6 @@ export function attr_to_html_attr(type) {
  * @property {number      } blockquote_idx  - For Blockquote parsing
  * @property {string      } hr_char         - For horizontal rule parsing
  * @property {number      } hr_chars        - For horizontal rule parsing
- * @property {boolean     } could_be_url    - For raw url parsing
- * @property {boolean     } could_be_task   - For checkbox parsing
  */
 
 const TOKEN_ARRAY_CAP = 24
@@ -185,8 +185,6 @@ export function parser(renderer) {
 		hr_char   : '',
 		hr_chars  : 0,
 		backticks_count: 0,
-		could_be_url : false,
-		could_be_task: false,
 		spaces    : new Uint8Array(TOKEN_ARRAY_CAP),
 		indent    : "",
 		indent_len: 0,
@@ -311,8 +309,8 @@ function continue_or_add_list(p, list_token) {
 function add_list_item(p, prefix_length) {
 	add_token(p, LIST_ITEM)
 	p.spaces[p.len] = p.indent_len + prefix_length
-	p.could_be_task = true
 	clear_root_pending(p)
+	p.token = MAYBE_TASK
 }
 
 /**
@@ -345,62 +343,6 @@ function is_digit(charcode) {
 export function parser_write(p, chunk) {
 	for (const char of chunk) {
 		const pending_with_char = p.pending + char
-
-		/* Raw URLs */
-		if (p.could_be_url) {
-			if ("http://"  === pending_with_char ||
-			    "https://" === pending_with_char
-			) {
-				add_text(p)
-				add_token(p, RAW_URL)
-				p.pending = pending_with_char
-				p.text    = pending_with_char
-				p.could_be_url = false
-				continue
-			}
-
-			if ("http:/" [p.pending.length] === char ||
-			    "https:/"[p.pending.length] === char
-			) {
-				p.pending = pending_with_char
-				continue
-			}
-
-			p.could_be_url = false
-		}
-
-		/* Checkboxes */
-		if (p.could_be_task) {
-			switch (p.pending.length) {
-			case 0:
-				if ('[' !== char) break // fail
-				p.pending = pending_with_char
-				continue
-			case 1:
-				if (' ' !== char && 'x' !== char) break // fail
-				p.pending = pending_with_char
-				continue
-			case 2:
-				if (']' !== char) break // fail
-				p.pending = pending_with_char
-				continue
-			case 3:
-				if (' ' !== char) break // fail
-				p.renderer.add_token(p.renderer.data, CHECKBOX)
-				if ('x' === p.pending[1]) {
-					p.renderer.set_attr(p.renderer.data, CHECKED, "")
-				}
-				p.renderer.end_token(p.renderer.data)
-				p.pending = " "
-				p.could_be_task = false
-				continue
-			}
-
-			p.could_be_task = false
-			p.pending = ""
-			parser_write(p, pending_with_char)
-			continue
-		}
 		
 		/*
 		Token specific checks
@@ -616,7 +558,7 @@ export function parser_write(p, chunk) {
 			/* Add line break */
 			if (p.token & LINE_BREAK) {
 				/* Add a line break and continue in previous token */
-				p.token = /** @type {Token} */(p.tokens[p.len])
+				p.token = p.tokens[p.len]
 				p.renderer.add_token(p.renderer.data, LINE_BREAK)
 				p.renderer.end_token(p.renderer.data)
 			}
@@ -735,6 +677,36 @@ export function parser_write(p, chunk) {
 				p.pending = ""
 				continue
 			}
+		/* Checkboxes */
+		case MAYBE_TASK:
+			switch (p.pending.length) {
+			case 0:
+				if ('[' !== char) break // fail
+				p.pending = pending_with_char
+				continue
+			case 1:
+				if (' ' !== char && 'x' !== char) break // fail
+				p.pending = pending_with_char
+				continue
+			case 2:
+				if (']' !== char) break // fail
+				p.pending = pending_with_char
+				continue
+			case 3:
+				if (' ' !== char) break // fail
+				p.renderer.add_token(p.renderer.data, CHECKBOX)
+				if ('x' === p.pending[1]) {
+					p.renderer.set_attr(p.renderer.data, CHECKED, "")
+				}
+				p.renderer.end_token(p.renderer.data)
+				p.pending = " "
+				continue
+			}
+
+			p.token = p.tokens[p.len]
+			p.pending = ""
+			parser_write(p, pending_with_char)
+			continue
 		case STRONG_AST:
 		case STRONG_UND: {
 			/** @type {string} */ let symbol = '*'
@@ -827,6 +799,27 @@ export function parser_write(p, chunk) {
 				continue
 			}
 			break
+		/* Raw URLs */
+		case MAYBE_URL:
+			if ("http://"  === pending_with_char ||
+				"https://" === pending_with_char
+			) {
+				add_text(p)
+				add_token(p, RAW_URL)
+				p.pending = pending_with_char
+				p.text    = pending_with_char
+			}
+			else
+			if ("http:/" [p.pending.length] === char ||
+				"https:/"[p.pending.length] === char
+			) {
+				p.pending = pending_with_char
+			}
+			else {
+				p.token = p.tokens[p.len]
+				parser_write(p, char)
+			}
+			continue
 		case LINK:
 		case IMAGE:
 			if ("]" === p.pending) {
@@ -1039,7 +1032,7 @@ export function parser_write(p, chunk) {
 		) {
 			p.text   += p.pending
 			p.pending = char
-			p.could_be_url = true
+			p.token = MAYBE_URL
 			continue
 		}
 
