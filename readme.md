@@ -1,6 +1,6 @@
 # Streaming *Markdown*
 
-[![version](https://img.shields.io/npm/v/streaming-markdown?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/streaming-markdown) [![github](https://img.shields.io/badge/GitHub-streaming--markdown-orange?style=for-the-badge&logo=github)](https://github.com/thetarnav/streaming-markdown)
+[![version](https://img.shields.io/npm/v/streaming-markdown?logo=npm)](https://www.npmjs.com/package/streaming-markdown) [![github](https://img.shields.io/badge/GitHub-streaming--markdown-orange?logo=github)](https://github.com/thetarnav/streaming-markdown)
 
 **Experiment making a streaming makdown parser *à la ChatGPT.***
 
@@ -15,6 +15,18 @@ npm install streaming-markdown
 ```
 
 *Or just copy [**`smd.js`**](https://github.com/thetarnav/streaming-markdown/blob/main/smd.js) file to your project.*
+
+Or use the [CDN link](https://www.jsdelivr.com/package/npm/streaming-markdown).\
+It's a minified *(3kB Gzip)* version of the package, with only the necessary functions exported.\
+See the exports in [`smd_min_entry.js`](https://github.com/thetarnav/streaming-markdown/blob/main/smd_min_entry.js).\
+The package uses ES module exports, so you need to use `type="module"` in your script tag.
+
+```html
+<script type="module">
+    import * as smd from "https://cdn.jsdelivr.net/npm/streaming-markdown/smd.min.js"
+    // ...
+</script>
+```
 
 ## Usage
 

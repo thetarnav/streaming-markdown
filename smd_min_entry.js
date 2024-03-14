@@ -1,6 +1,5 @@
 export {
 	// Token enum
-	DOCUMENT,
 	PARAGRAPH,
 	HEADING_1,
 	HEADING_2,
