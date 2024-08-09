@@ -1,4 +1,4 @@
-import * as t      from "node:test"
+import * as t      from "bun:test"
 import * as assert from "node:assert/strict"
 
 import * as smd    from "./smd.js"
