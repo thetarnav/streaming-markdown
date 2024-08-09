@@ -1,91 +1,62 @@
-import * as t      from "bun:test"
-import * as assert from "node:assert/strict"
+import * as t from "bun:test";
+import * as assert from "node:assert/strict";
+import * as smd from "./smd.js";
+import type { Children, Test_Add_Text, Test_Add_Token, Test_End_Token, Test_Renderer, Test_Renderer_Node, Test_Set_Attr, Token } from "./types.js";
 
-import * as smd    from "./smd.js"
-
-/**
- * @typedef {(string | Test_Renderer_Node)[]} Children
- * @typedef {Map<Test_Renderer_Node, Test_Renderer_Node>} Parent_Map
- * @typedef {{[key in smd.Attr]?: string}} Node_Attrs
- *
- * @typedef  {object} Test_Renderer_Data
- * @property {Test_Renderer_Node} root
- * @property {Test_Renderer_Node} node
- * @property {Parent_Map        } parent_map
- *
- * @typedef  {object} Test_Renderer_Node
- * @property {smd.Token  } type
- * @property {Children   } children
- * @property {Node_Attrs=} attrs
- *
- * @typedef {smd.Renderer          <Test_Renderer_Data>} Test_Renderer
- * @typedef {smd.Renderer_Add_Token<Test_Renderer_Data>} Test_Add_Token
- * @typedef {smd.Renderer_End_Token<Test_Renderer_Data>} Test_End_Token
- * @typedef {smd.Renderer_Add_Text <Test_Renderer_Data>} Test_Add_Text
- * @typedef {smd.Renderer_Set_Attr <Test_Renderer_Data>} Test_Set_Attr
- */
-
-/** @returns {Test_Renderer} */
-function test_renderer() {
-	/** @type {Test_Renderer_Node} */
-	const root = {
-		type    : smd.Token.Document,
-		children: []
-	}
-	return {
-		add_token: test_renderer_add_token,
-		end_token: test_renderer_end_token,
-		set_attr : test_renderer_set_attr,
-		add_text : test_renderer_add_text,
-		data     : {
-			parent_map: new Map(),
-			root      : root,
-			node      : root,
-		},
-	}
-}
-/** @type {Test_Add_Token} */
-function test_renderer_add_token(data, type) {
-	/** @type {Test_Renderer_Node} */
-    const node = {type, children: []}
-	data.node.children.push(node)
-	data.parent_map.set(node, data.node)
-	data.node = node
-}
-/** @type {Test_Add_Text} */
-function test_renderer_add_text(data, text) {
-	if (typeof data.node.children[data.node.children.length - 1] === "string") {
-		data.node.children[data.node.children.length - 1] += text
-	} else {
-		data.node.children.push(text)
-	}
-}
-/** @type {Test_End_Token} */
-function test_renderer_end_token(data) {
-	const parent = data.parent_map.get(data.node)
-	assert.notEqual(parent, undefined, "Parent not found")
-	data.node = /** @type {Test_Renderer_Node} */(parent)
-}
-/** @type {Test_Set_Attr} */
-function test_renderer_set_attr(data, type, value) {
-	if (data.node.attrs === undefined) {
-		data.node.attrs = {[type]: value}
-	} else {
-		data.node.attrs[type] = value
-	}
+function test_renderer(): Test_Renderer {
+    const root: Test_Renderer_Node = {
+        type: smd.Token.Document,
+        children: []
+    };
+    return {
+        add_token: test_renderer_add_token,
+        end_token: test_renderer_end_token,
+        set_attr: test_renderer_set_attr,
+        add_text: test_renderer_add_text,
+        data: {
+            parent_map: new Map(),
+            root: root,
+            node: root,
+        },
+    };
 }
 
-/** @type {Test_Renderer_Node} */
-const br = {
-	type    : smd.Token.Line_Break,
-	children: []
-}
+const test_renderer_add_token: Test_Add_Token = (data, type) => {
+    const node: Test_Renderer_Node = { type, children: [] };
+    data.node.children.push(node);
+    data.parent_map.set(node, data.node);
+    data.node = node;
+};
 
-/**
- * @param {number} len
- * @param {number} h
- * @returns {string} */
-function compare_pad(len, h) {
+const test_renderer_add_text: Test_Add_Text = (data, text) => {
+    const lastChild = data.node.children[data.node.children.length - 1];
+    if (typeof lastChild === "string") {
+        data.node.children[data.node.children.length - 1] = lastChild + text;
+    } else {
+        data.node.children.push(text);
+    }
+};
+
+const test_renderer_end_token: Test_End_Token = (data) => {
+    const parent = data.parent_map.get(data.node);
+    assert.notEqual(parent, undefined, "Parent not found");
+    data.node = parent as Test_Renderer_Node;
+};
+
+const test_renderer_set_attr: Test_Set_Attr = (data, type, value) => {
+    if (data.node.attrs === undefined) {
+        data.node.attrs = { [type]: value };
+    } else {
+        data.node.attrs[type] = value;
+    }
+};
+
+const br: Test_Renderer_Node = {
+    type: smd.Token.Line_Break,
+    children: []
+};
+
+function compare_pad(len: number, h: number) {
 	let txt = ""
 	if (h < 0) {
 		txt += "\u001b[31m"
@@ -101,23 +72,11 @@ function compare_pad(len, h) {
 	return txt
 }
 
-/**
- * @param {string  } text
- * @param {string[]} lines
- * @param {number  } len
- * @param {number} h
- * @returns {void  } */
-function compare_push_text(text, lines, len, h) {
+function compare_push_text(text: string, lines: string[], len: number, h: number) {
 	lines.push(compare_pad(len, h) + JSON.stringify(text))
 }
 
-/**
- * @param {Test_Renderer_Node} node
- * @param {string[]} lines
- * @param {number} len
- * @param {number} h
- * @returns {void} */
-function compare_push_node(node, lines, len, h) {
+function compare_push_node(node: Test_Renderer_Node, lines: string[], len: number, h: number) {
 	compare_push_type(node.type, lines, len, h)
 	for (const child of node.children) {
 		if (typeof child === "string") {
@@ -128,23 +87,16 @@ function compare_push_node(node, lines, len, h) {
 	}
 }
 
-/**
- * @param {smd.Token} type
- * @param {string[]} lines
- * @param {number} len
- * @param {number} h
- * @returns {void} */
-function compare_push_type(type, lines, len, h) {
+function compare_push_type(type: Token, lines: string[], len: number, h: number) {
 	lines.push(compare_pad(len, h) + "\u001b[36m" + smd.token_to_string(type) + "\u001b[0m")
 }
 
-/**
- * @param {string | Test_Renderer_Node | undefined} actual
- * @param {string | Test_Renderer_Node | undefined} expected
- * @param {string[]} lines
- * @param {number} len
- * @returns {boolean} */
-function compare_child(actual, expected, lines, len) {
+function compare_child(
+  actual: string | Test_Renderer_Node | undefined, 
+  expected: string | Test_Renderer_Node | undefined, 
+  lines: string[], 
+  len: number
+): boolean {
 	if (actual === undefined) {
 		if (expected === undefined) return true
 
@@ -207,13 +159,7 @@ function compare_child(actual, expected, lines, len) {
 	return compare_children(actual.children, expected.children, lines, len + 1)
 }
 
-/**
- * @param {Children} children
- * @param {Children} expected_children
- * @param {string[]} lines
- * @param {number} len
- * @returns {boolean} */
-function compare_children(children, expected_children, lines, len) {
+function compare_children(children: Children, expected_children: Children, lines: string[], len: number): boolean {
 	let result = true
 
 	let i = 0
@@ -229,13 +175,8 @@ function compare_children(children, expected_children, lines, len) {
 	return result
 }
 
-/**
- * @param {Children} children
- * @param {Children} expected_children
- * @returns {void} */
-function assert_children(children, expected_children) {
-	/** @type {string[]} */
-	const lines = []
+function assert_children(children: Children, expected_children: Children) {
+	const lines: string[] = []
 	const result = compare_children(children, expected_children, lines, 0)
 	if (!result) {
 		const stl = Error.stackTraceLimit
@@ -252,7 +193,7 @@ function assert_children(children, expected_children) {
  * @param {Children} expected_children
  * @returns {void}
  */
-function test_single_write(title, markdown, expected_children) {
+function test_single_write(title: string, markdown: string, expected_children: Children) {
 	t.test(title + ";", () => {
 		const renderer = test_renderer()
 		const parser = smd.parser(renderer)
@@ -1132,13 +1073,15 @@ test_single_write("Blockquote with code and line break",
 	}]
 )
 
-for (const [c, token] of /** @type {const} */([
+const optimisticTests = [
 	["*",    smd.Token.List_Unordered],
 	["-",    smd.Token.List_Unordered],
 	["+",    smd.Token.List_Unordered],
 	["1.",   smd.Token.List_Ordered],
 	["420.", smd.Token.List_Ordered],
-])) {
+] as const
+
+for (const [c, token] of optimisticTests) {
 	const list_name = token === smd.Token.List_Unordered
 		? "List Unordered"
 		: "List Ordered"
