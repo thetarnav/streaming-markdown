@@ -8,7 +8,7 @@ import { Token, Attr } from "./tokens.js";
 
 function test_renderer(): TestRenderer {
     const root: TestRendererNode = {
-        type: Token.Document,
+        type: Token.DOCUMENT,
         children: []
     };
     return {
@@ -55,7 +55,7 @@ const test_renderer_set_attr: TestSetAttr = (data, type, value) => {
 };
 
 const br: TestRendererNode = {
-    type: Token.Line_Break,
+    type: Token.LINE_BREAK,
     children: []
 };
 
@@ -219,12 +219,12 @@ for (let level = 1; level <= 6; level += 1) {
 	/** @type {Token} */
 	let heading_type
 	switch (level) {
-	case 1: heading_type = Token.Heading_1; break
-	case 2: heading_type = Token.Heading_2; break
-	case 3: heading_type = Token.Heading_3; break
-	case 4: heading_type = Token.Heading_4; break
-	case 5: heading_type = Token.Heading_5; break
-	case 6: heading_type = Token.Heading_6; break
+	case 1: heading_type = Token.HEADING_1; break
+	case 2: heading_type = Token.HEADING_2; break
+	case 3: heading_type = Token.HEADING_3; break
+	case 4: heading_type = Token.HEADING_4; break
+	case 5: heading_type = Token.HEADING_5; break
+	case 6: heading_type = Token.HEADING_6; break
 	default: throw new Error("Invalid heading level")
 	}
 
@@ -241,7 +241,7 @@ for (let level = 1; level <= 6; level += 1) {
 		[{
 			type    : heading_type,
 			children: ["foo ", {
-				type    : Token.Italic_Ast,
+				type    : Token.ITALIC_AST,
 				children: ["bar"]
 			}]
 		}]
@@ -259,7 +259,7 @@ for (let level = 1; level <= 6; level += 1) {
 test_single_write("Line Breaks",
 	"foo\nbar",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["foo", br, "bar"],
 	}]
 )
@@ -267,9 +267,9 @@ test_single_write("Line Breaks",
 test_single_write("Line Breaks with Italic",
 	"*a\nb*",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: [{
-			type    : Token.Italic_Ast,
+			type    : Token.ITALIC_AST,
 			children: ["a", br, "b"]
 		}],
 	}]
@@ -278,7 +278,7 @@ test_single_write("Line Breaks with Italic",
 test_single_write("Escaped Line Breaks",
 	"a\\\nb",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["a", br, "b"],
 	}]
 )
@@ -286,10 +286,10 @@ test_single_write("Escaped Line Breaks",
 test_single_write("Paragraphs",
 	"foo\n\nbar",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["foo"],
 	}, {
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["bar"],
 	}]
 )
@@ -297,7 +297,7 @@ test_single_write("Paragraphs",
 test_single_write("Paragraph trim leading spaces",
 	"  foo",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["foo"],
 	}]
 )
@@ -305,7 +305,7 @@ test_single_write("Paragraph trim leading spaces",
 test_single_write("Trim too many spaces",
 	"foo       bar",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["foo bar"],
 	}]
 )
@@ -313,9 +313,9 @@ test_single_write("Trim too many spaces",
 test_single_write("Trim too many spaces in italic",
 	"*foo       bar*",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: [{
-			type    : Token.Italic_Ast,
+			type    : Token.ITALIC_AST,
 			children: ["foo bar"]
 		}],
 	}]
@@ -334,7 +334,7 @@ for (const c of ["*", "-", "_"]) {
 		test_single_write('Horizontal Rule "' + txt + '"',
 			txt,
 			[{
-				type    : Token.Rule,
+				type    : Token.RULE,
 				children: []
 			}]
 		)
@@ -344,10 +344,10 @@ for (const c of ["*", "-", "_"]) {
 test_single_write("Text after Horizontal Rule",
 	"---\nfoo",
 	[{
-		type    : Token.Rule,
+		type    : Token.RULE,
 		children: []
 	}, {
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["foo"],
 	}]
 )
@@ -358,9 +358,9 @@ for (let l = 1; l <= 4; l += 1) {
 	test_single_write("Code Inline" + " - "+l+" backticks",
 		c + "a" + c,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
-				type    : Token.Code_Inline,
+				type    : Token.CODE_INLINE,
 				children: ["a"]
 			}],
 		}]
@@ -369,9 +369,9 @@ for (let l = 1; l <= 4; l += 1) {
 	test_single_write("Code Inline trims spaces" + " - "+l+" backticks",
 		c + " a " + c,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
-				type    : Token.Code_Inline,
+				type    : Token.CODE_INLINE,
 				children: ["a"]
 			}],
 		}]
@@ -380,12 +380,12 @@ for (let l = 1; l <= 4; l += 1) {
 	test_single_write("Code Inline x2" + " - "+l+" backticks",
 		c+"a"+c+" "+c+"b"+c,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
-				type    : Token.Code_Inline,
+				type    : Token.CODE_INLINE,
 				children: ["a"]
 			}, " ", {
-				type    : Token.Code_Inline,
+				type    : Token.CODE_INLINE,
 				children: ["b"]
 			}],
 		}]
@@ -397,9 +397,9 @@ for (let l = 1; l <= 4; l += 1) {
 		test_single_write("Code ` Inline" + " - "+l+" backticks",
 		c + "a"+m+"b" + c,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
-				type    : Token.Code_Inline,
+				type    : Token.CODE_INLINE,
 				children: ["a"+m+"b"]
 			}],
 		}]
@@ -413,9 +413,9 @@ for (let l = 1; l <= 2; l += 1) {
 	test_single_write("Code with line break" + " - "+l+" backticks",
 		c + "a\nb" + c,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
-				type    : Token.Code_Inline,
+				type    : Token.CODE_INLINE,
 				children: ["a", br, "b"]
 			}],
 		}]
@@ -424,13 +424,13 @@ for (let l = 1; l <= 2; l += 1) {
 	test_single_write("Code with two line breaks" + " - "+l+" backticks",
 		c + "a\n\nb",
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
-				type    : Token.Code_Inline,
+				type    : Token.CODE_INLINE,
 				children: ["a"]
 			}],
 		}, {
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["b"],
 		}]
 	)
@@ -442,7 +442,7 @@ for (let l = 3; l <= 5; l += 1) {
 	test_single_write("Empty Code_Fence - " + l + " backticks",
 		c+"\n"+c,
 		[{
-			type    : Token.Code_Fence,
+			type    : Token.CODE_FENCE,
 			children: []
 		}]
 	)
@@ -450,7 +450,7 @@ for (let l = 3; l <= 5; l += 1) {
 	test_single_write("Code_Fence - " + l + " backticks",
 		c+"\nfoo\n"+c,
 		[{
-			type    : Token.Code_Fence,
+			type    : Token.CODE_FENCE,
 			children: ["foo"]
 		}]
 	)
@@ -458,9 +458,9 @@ for (let l = 3; l <= 5; l += 1) {
 	test_single_write("Code_Fence with language - " + l + " backticks",
 		c+"js\nfoo\n"+c,
 		[{
-			type    : Token.Code_Fence,
+			type    : Token.CODE_FENCE,
 			children: ["foo"],
-			attrs   : {[Attr.Lang]: "js"}
+			attrs   : {[Attr.LANG]: "js"}
 		}]
 	)
 
@@ -469,7 +469,7 @@ for (let l = 3; l <= 5; l += 1) {
 	test_single_write("Code_Fence escaped backticks - " + l + " backticks",
 		c+"\n"+m+"\n"+c,
 		[{
-			type    : Token.Code_Fence,
+			type    : Token.CODE_FENCE,
 			children: [m]
 		}]
 	)
@@ -477,7 +477,7 @@ for (let l = 3; l <= 5; l += 1) {
 	test_single_write("Code_Fence with unfinished end backticks - " + l + " backticks",
 		c+"\na\n"+m+"\n"+c,
 		[{
-			type    : Token.Code_Fence,
+			type    : Token.CODE_FENCE,
 			children: ["a\n"+m+""]
 		}]
 	)
@@ -496,7 +496,7 @@ for (const indent of [
 	test_single_write("Code_Block; indent: '"+escaped_indent+"'",
 		indent + "  foo",
 		[{
-			type    : Token.Code_Block,
+			type    : Token.CODE_BLOCK,
 			children: ["  foo"]
 		}]
 	)
@@ -505,7 +505,7 @@ for (const indent of [
 		indent + "foo\n" +
 		indent + "bar",
 		[{
-			type    : Token.Code_Block,
+			type    : Token.CODE_BLOCK,
 			children: ["foo\nbar"]
 		}]
 	)
@@ -514,10 +514,10 @@ for (const indent of [
 		indent+"foo\n" +
 		"bar",
 		[{
-			type    : Token.Code_Block,
+			type    : Token.CODE_BLOCK,
 			children: ["foo"]
 		}, {
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["bar"]
 		}]
 	)
@@ -526,12 +526,12 @@ for (const indent of [
 
 for (const {c, italic, strong} of [{
 	c: "*",
-	italic: Token.Italic_Ast,
-	strong: Token.Strong_Ast,
+	italic: Token.ITALIC_AST,
+	strong: Token.STRONG_AST,
 }, {
 	c: "_",
-	italic: Token.Italic_Und,
-	strong: Token.Strong_Und,
+	italic: Token.ITALIC_UND,
+	strong: Token.STRONG_UND,
 }]) {
 	const case_1 = ""+c+c+"bold"+c+"bold>em"+c+c+c+""
 	const case_2 = ""+c+c+c+"bold>em"+c+"bold"+c+c+""
@@ -541,7 +541,7 @@ for (const {c, italic, strong} of [{
 	test_single_write("Italic & Bold \""+case_1+"\'",
 		case_1,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
 				type    : strong,
 				children: ["bold", {
@@ -555,7 +555,7 @@ for (const {c, italic, strong} of [{
 	test_single_write("Italic & Bold \""+case_2+"\'",
 		case_2,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
 				type    : strong,
 				children: [{
@@ -570,7 +570,7 @@ for (const {c, italic, strong} of [{
 	test_single_write("Italic & Bold \""+case_3+"\'",
 		case_3,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
 				type    : italic,
 				children: ["em", {
@@ -584,7 +584,7 @@ for (const {c, italic, strong} of [{
 	test_single_write("Italic & Bold \""+case_4+"\'",
 		case_4,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
 				type    : strong,
 				children: [{
@@ -600,11 +600,11 @@ for (const {c, italic, strong} of [{
 }
 
 for (const {type, c} of [
-	{type: Token.Italic_Ast, c: "*" },
-	{type: Token.Italic_Und, c: "_" },
-	{type: Token.Strong_Ast, c: "**"},
-	{type: Token.Strong_Und, c: "__"},
-	{type: Token.Strike    , c: "~~"},
+	{type: Token.ITALIC_AST, c: "*" },
+	{type: Token.ITALIC_UND, c: "_" },
+	{type: Token.STRONG_AST, c: "**"},
+	{type: Token.STRONG_UND, c: "__"},
+	{type: Token.STRIKE    , c: "~~"},
 ]) {
 	let e = ""
 	for (const char of c) {
@@ -615,7 +615,7 @@ for (const {type, c} of [
     token_to_string(type),
 		c + "foo" + c,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
 				type    : type,
 				children: ["foo"]
@@ -626,7 +626,7 @@ for (const {type, c} of [
 	test_single_write(token_to_string(type) + " space after begin",
 		"a " + c + " b" + c,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["a " + c + " b" + c]
 		}]
 	)
@@ -634,11 +634,11 @@ for (const {type, c} of [
 	test_single_write(token_to_string(type) + " with Code",
 		c + "`foo`" + c,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
 				type    : type,
 				children: [{
-					type    : Token.Code_Inline,
+					type    : Token.CODE_INLINE,
 					children: ["foo"]
 				}]
 			}]
@@ -649,10 +649,10 @@ for (const {type, c} of [
 		"foo\n\n"+
 		c + "bar" + c,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["foo"],
 		}, {
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
 				type    : type,
 				children: ["bar"]
@@ -663,7 +663,7 @@ for (const {type, c} of [
 	test_single_write(`Escape ${token_to_string(type)} Begin`,
 		e + "foo",
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [c + "foo"]
 		}]
 	)
@@ -671,7 +671,7 @@ for (const {type, c} of [
 	test_single_write(`Escape ${token_to_string(type)} End`,
 		c + "foo" + e,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
 				type    : type,
 				children: ["foo" + c]
@@ -683,7 +683,7 @@ for (const {type, c} of [
 test_single_write("Escape Backtick",
 	"\\`" + "foo",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["`" + "foo"]
 	}]
 )
@@ -691,7 +691,7 @@ test_single_write("Escape Backtick",
 test_single_write("Escape Backslash",
 	"\\\\" + "foo",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["\\" + "foo"]
 	}]
 )
@@ -699,7 +699,7 @@ test_single_write("Escape Backslash",
 test_single_write("Escape normal char",
 	"\\a",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["\\a"]
 	}]
 )
@@ -711,10 +711,10 @@ for (const url of [
 	test_single_write("Raw URL " + url,
 		url,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: [{
-				type    : Token.Raw_URL,
-				attrs   : {[Attr.Href]: url},
+				type    : Token.RAW_URL,
+				attrs   : {[Attr.HREF]: url},
 				children: [url],
 			}]
 		}]
@@ -722,11 +722,11 @@ for (const url of [
 
 	test_single_write("Raw URL in text " + url,
 		"foo "+url+" bar",
-		[{	type    : Token.Paragraph,
+		[{	type    : Token.PARAGRAPH,
 			children: [
 				"foo ",
-				{	type    : Token.Raw_URL,
-					attrs   : {[Attr.Href]: url},
+				{	type    : Token.RAW_URL,
+					attrs   : {[Attr.HREF]: url},
 					children: [url],
 				},
 				" bar",
@@ -737,7 +737,7 @@ for (const url of [
 	test_single_write("Doesn't match urls in text",
 		"foo"+url,
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["foo"+url]
 		}],
 	)
@@ -746,7 +746,7 @@ for (const url of [
 test_single_write("Doesn't match not_urls as urls",
 	"http:/wrong.com",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["http:/wrong.com"]
 	}]
 )
@@ -754,10 +754,10 @@ test_single_write("Doesn't match not_urls as urls",
 test_single_write("Link",
 	"[title](url)",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: [{
-			type    : Token.Link,
-			attrs   : {[Attr.Href]: "url"},
+			type    : Token.LINK,
+			attrs   : {[Attr.HREF]: "url"},
 			children: ["title"],
 		}]
 	}]
@@ -766,12 +766,12 @@ test_single_write("Link",
 test_single_write("Link with code",
 	"[`title`](url)",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: [{
-			type    : Token.Link,
-			attrs   : {[Attr.Href]: "url"},
+			type    : Token.LINK,
+			attrs   : {[Attr.HREF]: "url"},
 			children: [{
-				type    : Token.Code_Inline,
+				type    : Token.CODE_INLINE,
 				children: ["title"],
 			}],
 		}]
@@ -782,13 +782,13 @@ test_single_write("Link new paragraph",
 	"foo\n\n"+
 	"[title](url)",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["foo"]
 	},{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: [{
-			type    : Token.Link,
-			attrs   : {[Attr.Href]: "url"},
+			type    : Token.LINK,
+			attrs   : {[Attr.HREF]: "url"},
 			children: ["title"],
 		}]
 	}]
@@ -797,10 +797,10 @@ test_single_write("Link new paragraph",
 test_single_write("Image",
 	"![title](url)",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: [{
-			type    : Token.Image,
-			attrs   : {[Attr.Src]: "url"},
+			type    : Token.IMAGE,
+			attrs   : {[Attr.SRC]: "url"},
 			children: ["title"],
 		}]
 	}]
@@ -809,10 +809,10 @@ test_single_write("Image",
 test_single_write("Image with code",
 	"![`title`](url)",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: [{
-			type    : Token.Image,
-			attrs   : {[Attr.Src]: "url"},
+			type    : Token.IMAGE,
+			attrs   : {[Attr.SRC]: "url"},
 			children: ["`title`"],
 		}]
 	}]
@@ -821,13 +821,13 @@ test_single_write("Image with code",
 test_single_write("Link with Image",
 	"[![title](src)](href)",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: [{
-			type    : Token.Link,
-			attrs   : {[Attr.Href]: "href"},
+			type    : Token.LINK,
+			attrs   : {[Attr.HREF]: "href"},
 			children: [{
-				type    : Token.Image,
-				attrs   : {[Attr.Src]: "src"},
+				type    : Token.IMAGE,
+				attrs   : {[Attr.SRC]: "src"},
 				children: ["title"],
 			}],
 		}]
@@ -837,7 +837,7 @@ test_single_write("Link with Image",
 test_single_write("Escaped link Begin",
 	"\\[foo](url)",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["[foo](url)"]
 	}]
 )
@@ -845,9 +845,9 @@ test_single_write("Escaped link Begin",
 test_single_write("Escaped link End",
 	"[foo\\](url)",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: [{
-			type    : Token.Link,
+			type    : Token.LINK,
 			children: ["foo](url)"],
 		}]
 	}]
@@ -856,10 +856,10 @@ test_single_write("Escaped link End",
 test_single_write("Un-Escaped link Both",
 	"\\\\[foo\\\\](url)",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["\\", {
-			type    : Token.Link,
-			attrs   : {[Attr.Href]: "url"},
+			type    : Token.LINK,
+			attrs   : {[Attr.HREF]: "url"},
 			children: ["foo\\"],
 		}]
 	}]
@@ -868,9 +868,9 @@ test_single_write("Un-Escaped link Both",
 test_single_write("Blockquote",
 	"> foo",
 	[{
-		type    : Token.Blockquote,
+		type    : Token.BLOCKQUOTE,
 		children: [{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["foo"],
 		}]
 	}]
@@ -879,9 +879,9 @@ test_single_write("Blockquote",
 test_single_write("Blockquote no-space",
 	">foo",
 	[{
-		type    : Token.Blockquote,
+		type    : Token.BLOCKQUOTE,
 		children: [{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["foo"],
 		}]
 	}]
@@ -890,7 +890,7 @@ test_single_write("Blockquote no-space",
 test_single_write("Blockquote Escape",
 	"\\> foo",
 	[{
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["> foo"],
 	}]
 )
@@ -898,9 +898,9 @@ test_single_write("Blockquote Escape",
 test_single_write("Blockquote line break",
 	"> foo\nbar",
 	[{
-		type    : Token.Blockquote,
+		type    : Token.BLOCKQUOTE,
 		children: [{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["foo", br, "bar"],
 		}]
 	}]
@@ -909,9 +909,9 @@ test_single_write("Blockquote line break",
 test_single_write("Blockquote continued",
 	"> foo\n> bar",
 	[{
-		type    : Token.Blockquote,
+		type    : Token.BLOCKQUOTE,
 		children: [{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["foo", br, "bar"],
 		}]
 	}]
@@ -920,13 +920,13 @@ test_single_write("Blockquote continued",
 test_single_write("Blockquote end",
 	"> foo\n\nbar",
 	[{
-		type    : Token.Blockquote,
+		type    : Token.BLOCKQUOTE,
 		children: [{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["foo"],
 		}]
 	}, {
-		type    : Token.Paragraph,
+		type    : Token.PARAGRAPH,
 		children: ["bar"],
 	}]
 )
@@ -934,9 +934,9 @@ test_single_write("Blockquote end",
 test_single_write("Blockquote heading",
 	"> # foo",
 	[{
-		type    : Token.Blockquote,
+		type    : Token.BLOCKQUOTE,
 		children: [{
-			type    : Token.Heading_1,
+			type    : Token.HEADING_1,
 			children: ["foo"],
 		}]
 	}]
@@ -945,9 +945,9 @@ test_single_write("Blockquote heading",
 test_single_write("Blockquote codeblock",
 	"> ```\nfoo\n```",
 	[{
-		type    : Token.Blockquote,
+		type    : Token.BLOCKQUOTE,
 		children: [{
-			type    : Token.Code_Fence,
+			type    : Token.CODE_FENCE,
 			children: ["foo"],
 		}]
 	}]
@@ -956,11 +956,11 @@ test_single_write("Blockquote codeblock",
 test_single_write("Blockquote blockquote",
 	"> > foo",
 	[{
-		type    : Token.Blockquote,
+		type    : Token.BLOCKQUOTE,
 		children: [{
-			type    : Token.Blockquote,
+			type    : Token.BLOCKQUOTE,
 			children: [{
-				type    : Token.Paragraph,
+				type    : Token.PARAGRAPH,
 				children: ["foo"],
 			}]
 		}]
@@ -971,14 +971,14 @@ test_single_write("Blockquote up blockquote",
 	"> foo\n"+
 	"> > bar",
 	[{
-		type    : Token.Blockquote,
+		type    : Token.BLOCKQUOTE,
 		children: [{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["foo"],
 		}, {
-			type    : Token.Blockquote,
+			type    : Token.BLOCKQUOTE,
 			children: [{
-				type    : Token.Paragraph,
+				type    : Token.PARAGRAPH,
 				children: ["bar"],
 			}]
 		}]
@@ -990,15 +990,15 @@ test_single_write("Blockquote blockquote down",
 	"> \n"+
 	"> bar",
 	[{
-		type    : Token.Blockquote,
+		type    : Token.BLOCKQUOTE,
 		children: [{
-			type    : Token.Blockquote,
+			type    : Token.BLOCKQUOTE,
 			children: [{
-				type    : Token.Paragraph,
+				type    : Token.PARAGRAPH,
 				children: ["foo"],
 			}]
 		}, {
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["bar"],
 		}]
 	}]
@@ -1009,14 +1009,14 @@ test_single_write("Blockquote blockquote continued",
 	"> >\n"+
 	"> > bar",
 	[{
-		type    : Token.Blockquote,
+		type    : Token.BLOCKQUOTE,
 		children: [{
-			type    : Token.Blockquote,
+			type    : Token.BLOCKQUOTE,
 			children: [{
-				type    : Token.Paragraph,
+				type    : Token.PARAGRAPH,
 				children: ["foo"],
 			}, {
-				type    : Token.Paragraph,
+				type    : Token.PARAGRAPH,
 				children: ["bar"],
 			}]
 		}]
@@ -1028,17 +1028,17 @@ test_single_write("Blockquote up down",
 	">\n"+
 	"> > bar",
 	[{
-		type    : Token.Blockquote,
+		type    : Token.BLOCKQUOTE,
 		children: [{
-			type    : Token.Blockquote,
+			type    : Token.BLOCKQUOTE,
 			children: [{
-				type    : Token.Paragraph,
+				type    : Token.PARAGRAPH,
 				children: ["foo"],
 			}]
 		}, {
-			type    : Token.Blockquote,
+			type    : Token.BLOCKQUOTE,
 			children: [{
-				type    : Token.Paragraph,
+				type    : Token.PARAGRAPH,
 				children: ["bar"],
 			}]
 		}]
@@ -1051,20 +1051,20 @@ test_single_write("Blockquote with code and line break",
 	">\n"+
 	"> > c",
 	[{
-		type    : Token.Blockquote,
+		type    : Token.BLOCKQUOTE,
 		children: [{
-			type    : Token.Blockquote,
+			type    : Token.BLOCKQUOTE,
 			children: [{
-				type    : Token.Paragraph,
+				type    : Token.PARAGRAPH,
 				children: [{
-					type    : Token.Code_Inline,
+					type    : Token.CODE_INLINE,
 					children: ["a", br, "b"],
 				}]
 			}]
 		}, {
-			type    : Token.Blockquote,
+			type    : Token.BLOCKQUOTE,
 			children: [{
-				type    : Token.Paragraph,
+				type    : Token.PARAGRAPH,
 				children: ["c"],
 			}],
 		}]
@@ -1072,21 +1072,21 @@ test_single_write("Blockquote with code and line break",
 )
 
 const optimisticTests = [
-	["*",    Token.List_Unordered],
-	["-",    Token.List_Unordered],
-	["+",    Token.List_Unordered],
-	["1.",   Token.List_Ordered],
-	["420.", Token.List_Ordered],
+	["*",    Token.LIST_UNORDERED],
+	["-",    Token.LIST_UNORDERED],
+	["+",    Token.LIST_UNORDERED],
+	["1.",   Token.LIST_ORDERED],
+	["420.", Token.LIST_ORDERED],
 ] as const
 
 for (const [c, token] of optimisticTests) {
-	const list_name = token === Token.List_Unordered
+	const list_name = token === Token.LIST_UNORDERED
 		? "List Unordered"
 		: "List Ordered"
 	const suffix = "; prefix: "+c
 
 	const attrs = c === "420."
-		? {[Attr.Start]: "420"}
+		? {[Attr.START]: "420"}
 		: undefined
 
 	const indent       = " ".repeat(c.length + 1)
@@ -1098,7 +1098,7 @@ for (const [c, token] of optimisticTests) {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: ["foo"]
 			}]
 		}]
@@ -1110,9 +1110,9 @@ for (const [c, token] of optimisticTests) {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: [{
-					type    : Token.Italic_Ast,
+					type    : Token.ITALIC_AST,
 					children: ["foo"]
 				}]
 			}]
@@ -1126,10 +1126,10 @@ for (const [c, token] of optimisticTests) {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: ["a"]
 			}, {
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: ["b"]
 			}]
 		}]
@@ -1141,7 +1141,7 @@ for (const [c, token] of optimisticTests) {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: ["a", br, "b"]
 			}]
 		}]
@@ -1155,11 +1155,11 @@ for (const [c, token] of optimisticTests) {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: ["a"]
 			}]
 		}, {
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["b"]
 		}]
 	)
@@ -1168,13 +1168,13 @@ for (const [c, token] of optimisticTests) {
 		"a\n"+
 		c+" b",
 		[{
-			type    : Token.Paragraph,
+			type    : Token.PARAGRAPH,
 			children: ["a"]
 		}, {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: ["b"]
 			}]
 		}]
@@ -1186,9 +1186,9 @@ for (const [c, token] of optimisticTests) {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: [{
-					type    : Token.Checkbox,
+					type    : Token.CHECKBOX,
 					children: [],
 				}, " foo"]
 			}]
@@ -1201,10 +1201,10 @@ for (const [c, token] of optimisticTests) {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: [{
-					type    : Token.Checkbox,
-					attrs   : {[Attr.Checked]: ""},
+					type    : Token.CHECKBOX,
+					attrs   : {[Attr.CHECKED]: ""},
 					children: [],
 				}, " foo"]
 			}]
@@ -1218,16 +1218,16 @@ for (const [c, token] of optimisticTests) {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: [{
-					type    : Token.Checkbox,
+					type    : Token.CHECKBOX,
 					children: [],
 				}, " foo"]
 			}, {
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: [{
-					type    : Token.Checkbox,
-					attrs   : {[Attr.Checked]: ""},
+					type    : Token.CHECKBOX,
+					attrs   : {[Attr.CHECKED]: ""},
 					children: [],
 				}, " bar"]
 			}]
@@ -1240,10 +1240,10 @@ for (const [c, token] of optimisticTests) {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: [{
-					type    : Token.Link,
-					attrs   : {[Attr.Href]: "url"},
+					type    : Token.LINK,
+					attrs   : {[Attr.HREF]: "url"},
 					children: ["x"],
 				}]
 			}]
@@ -1257,12 +1257,12 @@ for (const [c, token] of optimisticTests) {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: ["a", {
 					type    : token,
 					attrs   : attrs,
 					children: [{
-						type    : Token.List_Item,
+						type    : Token.LIST_ITEM,
 						children: ["b"]
 					}]
 				}]
@@ -1277,10 +1277,10 @@ for (const [c, token] of optimisticTests) {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: ["a"]
 			}, {
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: ["b"]
 			}]
 		}]
@@ -1294,14 +1294,14 @@ for (const [c, token] of optimisticTests) {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: ["a", {
-					type    : Token.List_Unordered,
+					type    : Token.LIST_UNORDERED,
 					children: [{
-						type    : Token.List_Item,
+						type    : Token.LIST_ITEM,
 						children: ["b"]
 					}, {
-						type    : Token.List_Item,
+						type    : Token.LIST_ITEM,
 						children: ["c"]
 					}]
 				}]
@@ -1317,16 +1317,16 @@ for (const [c, token] of optimisticTests) {
 			type    : token,
 			attrs   : attrs,
 			children: [{
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: ["a", {
-					type    : Token.List_Unordered,
+					type    : Token.LIST_UNORDERED,
 					children: [{
-						type    : Token.List_Item,
+						type    : Token.LIST_ITEM,
 						children: ["b"]
 					}]
 				}]
 			}, {
-				type    : Token.List_Item,
+				type    : Token.LIST_ITEM,
 				children: ["c"]
 			}]
 		}]
@@ -1377,15 +1377,15 @@ test_single_write("Failed nesting of ul in ol",
 	"1. a\n"+
 	"  * b",
 	[{
-		type    : Token.List_Ordered,
+		type    : Token.LIST_ORDERED,
 		children: [{
-			type    : Token.List_Item,
+			type    : Token.LIST_ITEM,
 			children: ["a"]
 		}]
 	}, {
-		type    : Token.List_Unordered,
+		type    : Token.LIST_UNORDERED,
 		children: [{
-			type    : Token.List_Item,
+			type    : Token.LIST_ITEM,
 			children: ["b"]
 		}]
 	}]

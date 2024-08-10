@@ -10,32 +10,32 @@ import type { DefaultRenderer, DefaultAddText, DefaultAddToken, DefaultEndToken,
 
 export function token_to_string(type: Token) {
   switch (type) {
-      case Token.Document:       return "Document"
-      case Token.Blockquote:     return "Blockquote"
-      case Token.Paragraph:      return "Paragraph"
-      case Token.Heading_1:       return "Heading1"
-      case Token.Heading_2:       return "Heading2"
-      case Token.Heading_3:       return "Heading3"
-      case Token.Heading_4:       return "Heading4"
-      case Token.Heading_5:       return "Heading5"
-      case Token.Heading_6:       return "Heading6"
-      case Token.Code_Block:      return "CodeBlock"
-      case Token.Code_Fence:      return "CodeFence"
-      case Token.Code_Inline:     return "CodeInline"
-      case Token.Italic_Ast:      return "ItalicAst"
-      case Token.Italic_Und:      return "ItalicUnd"
-      case Token.Strong_Ast:      return "StrongAst"
-      case Token.Strong_Und:      return "StrongUnd"
-      case Token.Strike:         return "Strike"
-      case Token.Link:           return "Link"
-      case Token.Raw_URL:         return "RawUrl"
-      case Token.Image:          return "Image"
-      case Token.Line_Break:      return "LineBreak"
-      case Token.Rule:           return "Rule"
-      case Token.List_Unordered:  return "ListUnordered"
-      case Token.List_Ordered:    return "ListOrdered"
-      case Token.List_Item:       return "ListItem"
-      case Token.Checkbox:       return "Checkbox"
+      case Token.DOCUMENT:       return "Document"
+      case Token.BLOCKQUOTE:     return "Blockquote"
+      case Token.PARAGRAPH:      return "Paragraph"
+      case Token.HEADING_1:       return "Heading1"
+      case Token.HEADING_2:       return "Heading2"
+      case Token.HEADING_3:       return "Heading3"
+      case Token.HEADING_4:       return "Heading4"
+      case Token.HEADING_5:       return "Heading5"
+      case Token.HEADING_6:       return "Heading6"
+      case Token.CODE_BLOCK:      return "CodeBlock"
+      case Token.CODE_FENCE:      return "CodeFence"
+      case Token.CODE_INLINE:     return "CodeInline"
+      case Token.ITALIC_AST:      return "ItalicAst"
+      case Token.ITALIC_UND:      return "ItalicUnd"
+      case Token.STRONG_AST:      return "StrongAst"
+      case Token.STRONG_UND:      return "StrongUnd"
+      case Token.STRIKE:         return "Strike"
+      case Token.LINK:           return "Link"
+      case Token.RAW_URL:         return "RawUrl"
+      case Token.IMAGE:          return "Image"
+      case Token.LINE_BREAK:      return "LineBreak"
+      case Token.RULE:           return "Rule"
+      case Token.LIST_UNORDERED:  return "ListUnordered"
+      case Token.LIST_ORDERED:    return "ListOrdered"
+      case Token.LIST_ITEM:       return "ListItem"
+      case Token.CHECKBOX:       return "Checkbox"
 
       default:
         throw new Error("Unknown token")
@@ -44,11 +44,11 @@ export function token_to_string(type: Token) {
 
 export function attr_to_html_attr(type: Attr) {
 	switch (type) {
-	case Attr.Href:    return "href"
-	case Attr.Src :    return "src"
-	case Attr.Lang:    return "lang"
-	case Attr.Checked: return "checked"
-	case Attr.Start:   return "start"
+	case Attr.HREF:    return "href"
+	case Attr.SRC :    return "src"
+	case Attr.LANG:    return "lang"
+	case Attr.CHECKED: return "checked"
+	case Attr.START:   return "start"
 	}
 }
 
@@ -56,14 +56,14 @@ const TOKEN_ARRAY_CAP = 24
 
 export function createParser<T>(renderer: Renderer<T>): Parser<T> {
 	const tokens = new Uint32Array(TOKEN_ARRAY_CAP)
-	tokens[0] = Token.Document
+	tokens[0] = Token.DOCUMENT
 	return {
 		renderer  : renderer,
 		text      : "",
 		pending   : "",
 		tokens    : tokens,
 		len       : 0,
-		token     : Token.Document,
+		token     : Token.DOCUMENT,
 		code_fence_body: 0,
 		blockquote_idx: 0,
 		hr_char   : '',
@@ -136,7 +136,7 @@ function continue_or_add_list<T>(p: Parser<T>, list_token: Token) {
 	let item_idx = -1
 
 	for (let i = p.blockquote_idx+1; i <= p.len; i += 1) {
-		if (p.tokens[i] & Token.List_Item) {
+		if (p.tokens[i] & Token.LIST_ITEM) {
 			if (p.tokens[i-1] & list_token) {
 				list_idx = i-1
 			}
@@ -166,10 +166,10 @@ function continue_or_add_list<T>(p: Parser<T>, list_token: Token) {
  * or continue the last one
  */
 function add_list_item<T>(p: Parser<T>, prefix_length: number) {
-	add_token(p, Token.List_Item)
+	add_token(p, Token.LIST_ITEM)
 	p.spaces[p.len] = p.indent_len + prefix_length
 	clear_root_pending(p)
-	p.token = Token.Maybe_Task
+	p.token = Token.MAYBE_TASK
 }
 
 function clear_root_pending<T>(p: Parser<T>) {
@@ -199,9 +199,9 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 		Token specific checks
 		*/
 		switch (p.token) {
-		case Token.Line_Break:
-		case Token.Document:
-		case Token.Blockquote:
+		case Token.LINE_BREAK:
+		case Token.DOCUMENT:
+		case Token.BLOCKQUOTE:
 			console.assert(p.text.length === 0, "Root should not have any text")
 
 			switch (p.pending[0]) {
@@ -236,19 +236,19 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 					break // fail
 				case ' ':
 					switch (p.pending.length) {
-					case 1: add_token(p, Token.Heading_1); clear_root_pending(p); continue
-					case 2: add_token(p, Token.Heading_2); clear_root_pending(p); continue
-					case 3: add_token(p, Token.Heading_3); clear_root_pending(p); continue
-					case 4: add_token(p, Token.Heading_4); clear_root_pending(p); continue
-					case 5: add_token(p, Token.Heading_5); clear_root_pending(p); continue
-					case 6: add_token(p, Token.Heading_6); clear_root_pending(p); continue
+					case 1: add_token(p, Token.HEADING_1); clear_root_pending(p); continue
+					case 2: add_token(p, Token.HEADING_2); clear_root_pending(p); continue
+					case 3: add_token(p, Token.HEADING_3); clear_root_pending(p); continue
+					case 4: add_token(p, Token.HEADING_4); clear_root_pending(p); continue
+					case 5: add_token(p, Token.HEADING_5); clear_root_pending(p); continue
+					case 6: add_token(p, Token.HEADING_6); clear_root_pending(p); continue
 					}
 					console.assert(false, "Should not reach here")
 				}
 				break // fail
 			/* Blockquote */
 			case '>': {
-				const next_blockquote_idx = idx_of_token(p, Token.Blockquote, p.blockquote_idx+1)
+				const next_blockquote_idx = idx_of_token(p, Token.BLOCKQUOTE, p.blockquote_idx+1)
 				
 				/*
 				Only when there is no blockquote to the right of blockquote_idx
@@ -258,7 +258,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 					end_tokens_to_len(p, p.blockquote_idx)
 					p.blockquote_idx += 1
 					p.backticks_count = 0
-					add_token(p, Token.Blockquote)
+					add_token(p, Token.BLOCKQUOTE)
 				} else {
 					p.blockquote_idx = next_blockquote_idx
 				}
@@ -290,7 +290,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 						continue
 					case '\n':
 						if (p.hr_chars < 3) break
-						p.renderer.add_token(p.renderer.data, Token.Rule)
+						p.renderer.add_token(p.renderer.data, Token.RULE)
 						p.renderer.end_token(p.renderer.data)
 						p.pending = ""
 						p.hr_chars = 0
@@ -308,7 +308,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 				if ('_' !== p.pending[0] &&
 				    ' ' === p.pending[1]
 				) {
-					continue_or_add_list(p, Token.List_Unordered)
+					continue_or_add_list(p, Token.LIST_UNORDERED)
 					add_list_item(p, 2)
 					parser_write(p, pending_with_char.slice(2))
 					continue
@@ -343,7 +343,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 							   ^
 					*/
 					else {
-						add_token(p, Token.Paragraph)
+						add_token(p, Token.PARAGRAPH)
 						clear_root_pending(p)
 						p.backticks_count = 0
 						parser_write(p, pending_with_char)
@@ -353,9 +353,9 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 					/*  ```lang\n
 								^
 					*/
-					add_token(p, Token.Code_Fence)
+					add_token(p, Token.CODE_FENCE)
 					if (p.pending.length > p.backticks_count) {
-						p.renderer.set_attr(p.renderer.data, Attr.Lang, p.pending.slice(p.backticks_count))
+						p.renderer.set_attr(p.renderer.data, Attr.LANG, p.pending.slice(p.backticks_count))
 					}
 					clear_root_pending(p)
 					continue
@@ -373,7 +373,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 			case '+': 
 				if (' ' !== char) break // fail
 
-				continue_or_add_list(p, Token.List_Unordered)
+				continue_or_add_list(p, Token.LIST_UNORDERED)
 				add_list_item(p, 2)
 				continue
 			/* List Ordered */
@@ -386,9 +386,9 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 				if ('.' === p.pending[p.pending.length-1]) {
 					if (' ' !== char) break // fail
 
-					continue_or_add_list(p, Token.List_Ordered)
+					continue_or_add_list(p, Token.LIST_ORDERED)
 					if (p.pending !== "1.") {
-						p.renderer.set_attr(p.renderer.data, Attr.Start, p.pending.slice(0, -1))
+						p.renderer.set_attr(p.renderer.data, Attr.START, p.pending.slice(0, -1))
 					}
 					add_list_item(p, p.pending.length+1)
 					continue
@@ -407,10 +407,10 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 			let to_write = pending_with_char
 
 			/* Add line break */
-			if (p.token & Token.Line_Break) {
+			if (p.token & Token.LINE_BREAK) {
 				/* Add a line break and continue in previous token */
 				p.token = p.tokens[p.len]
-				p.renderer.add_token(p.renderer.data, Token.Line_Break)
+				p.renderer.add_token(p.renderer.data, Token.LINE_BREAK)
 				p.renderer.end_token(p.renderer.data)
 			}
 			/* Code Block */
@@ -435,17 +435,17 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 					}
 				}
 				to_write = p.indent.slice(code_start) + pending_with_char
-				add_token(p, Token.Code_Block)
+				add_token(p, Token.CODE_BLOCK)
 			}
 			/* Paragraph */
 			else {
-				add_token(p, Token.Paragraph)
+				add_token(p, Token.PARAGRAPH)
 			}
 			
 			clear_root_pending(p)
 			parser_write(p, to_write)
 			continue
-		case Token.Code_Block:
+		case Token.CODE_BLOCK:
 			switch (pending_with_char) {
 			case "\n    ":
 			case "\n   \t":
@@ -471,7 +471,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 				}
 				continue
 			}
-		case Token.Code_Fence:
+		case Token.CODE_FENCE:
 			switch (char) {
 			case '`':
 				if (pending_with_char.length ===
@@ -497,7 +497,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 				p.code_fence_body = 1
 				continue
 			}
-		case Token.Code_Inline:
+		case Token.CODE_INLINE:
 			switch (char) {
 			case '`':
 				if (pending_with_char.length ===
@@ -514,7 +514,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 			case '\n':
 				p.text += p.pending
 				p.pending = ""
-				p.token = Token.Line_Break
+				p.token = Token.LINE_BREAK
 				p.blockquote_idx = 0
 				add_text(p)
 				continue
@@ -529,7 +529,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 				continue
 			}
 		/* Checkboxes */
-		case Token.Maybe_Task:
+		case Token.MAYBE_TASK:
 			switch (p.pending.length) {
 			case 0:
 				if ('[' !== char) break // fail
@@ -545,9 +545,9 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 				continue
 			case 3:
 				if (' ' !== char) break // fail
-				p.renderer.add_token(p.renderer.data, Token.Checkbox)
+				p.renderer.add_token(p.renderer.data, Token.CHECKBOX)
 				if ('x' === p.pending[1]) {
-					p.renderer.set_attr(p.renderer.data, Attr.Checked, "")
+					p.renderer.set_attr(p.renderer.data, Attr.CHECKED, "")
 				}
 				p.renderer.end_token(p.renderer.data)
 				p.pending = " "
@@ -558,13 +558,13 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 			p.pending = ""
 			parser_write(p, pending_with_char)
 			continue
-		case Token.Strong_Ast:
-		case Token.Strong_Und: {
+		case Token.STRONG_AST:
+		case Token.STRONG_UND: {
 			/** @type {string} */ let symbol = '*'
-			/** @type {Token } */ let italic = Token.Italic_Ast
-			if (p.token === Token.Strong_Und) {
+			/** @type {Token } */ let italic = Token.ITALIC_AST
+			if (p.token === Token.STRONG_UND) {
 				symbol = '_'
-				italic = Token.Italic_Und
+				italic = Token.ITALIC_UND
 			}
 
 			if (symbol === p.pending) {
@@ -587,13 +587,13 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 
 			break
 		}
-		case Token.Italic_Ast:
-		case Token.Italic_Und: {
+		case Token.ITALIC_AST:
+		case Token.ITALIC_UND: {
 			/** @type {string} */ let symbol = '*'
-			/** @type {Token } */ let strong = Token.Strong_Ast
-			if (p.token === Token.Italic_Und) {
+			/** @type {Token } */ let strong = Token.STRONG_AST
+			if (p.token === Token.ITALIC_UND) {
 				symbol = '_'
-				strong = Token.Strong_Und
+				strong = Token.STRONG_UND
 			}
 
 			switch (p.pending) {
@@ -642,7 +642,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 			}
 			break
 		}
-		case Token.Strike:
+		case Token.STRIKE:
 			if ("~~" === pending_with_char) {
 				add_text(p)
 				end_token(p)
@@ -651,12 +651,12 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 			}
 			break
 		/* Raw URLs */
-		case Token.Maybe_URL:
+		case Token.MAYBE_URL:
 			if ("http://"  === pending_with_char ||
 				"https://" === pending_with_char
 			) {
 				add_text(p)
-				add_token(p, Token.Raw_URL)
+				add_token(p, Token.RAW_URL)
 				p.pending = pending_with_char
 				p.text    = pending_with_char
 			}
@@ -671,8 +671,8 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 				parser_write(p, char)
 			}
 			continue
-		case Token.Link:
-		case Token.Image:
+		case Token.LINK:
+		case Token.IMAGE:
 			if ("]" === p.pending) {
 				/*
 				[Link](url)
@@ -695,7 +695,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 						  ^
 				*/
 				if (')' === char) {
-					const type = p.token === Token.Link ? Attr.Href : Attr.Src
+					const type = p.token === Token.LINK ? Attr.HREF : Attr.SRC
 					const url = p.pending.slice(2)
 					p.renderer.set_attr(p.renderer.data, type, url)
 					end_token(p)
@@ -706,7 +706,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 				continue
 			}
 			break
-		case Token.Raw_URL:
+		case Token.RAW_URL:
 			/* http://example.com?
 			                     ^
 			*/
@@ -714,7 +714,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 			    '\n'=== char ||
 			    '\\'=== char
 			) {
-				p.renderer.set_attr(p.renderer.data, Attr.Href, p.pending)
+				p.renderer.set_attr(p.renderer.data, Attr.HREF, p.pending)
 				add_text(p)
 				end_token(p)
 				p.pending = char
@@ -747,13 +747,13 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 		/* Newline */
 		case '\n':
 			add_text(p)
-			p.token = Token.Line_Break
+			p.token = Token.LINE_BREAK
 			p.blockquote_idx = 0
 			p.pending = char
 			continue
 		/* `Code Inline` */
 		case '`':
-			if (p.token & Token.Image) break
+			if (p.token & Token.IMAGE) break
 
 			if ('`' === char) {
 				p.backticks_count += 1
@@ -761,21 +761,21 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 			} else {
 				p.backticks_count += 1 // started at 0, and first wasn't counted
 				add_text(p)
-				add_token(p, Token.Code_Inline)
+				add_token(p, Token.CODE_INLINE)
 				p.text = ' ' === char || '\n' === char ? "" : char // trim leading space
 				p.pending = ""
 			}
 			continue
 		case '_':
 		case '*': {
-			if (p.token & Token.Image) break
+			if (p.token & Token.IMAGE) break
 
-			/** @type {Token} */ let italic = Token.Italic_Ast
-			/** @type {Token} */ let strong = Token.Strong_Ast
+			/** @type {Token} */ let italic = Token.ITALIC_AST
+			/** @type {Token} */ let strong = Token.STRONG_AST
 			const symbol = p.pending[0]
 			if ('_' === symbol) {
-				italic = Token.Italic_Und 
-				strong = Token.Strong_Und
+				italic = Token.ITALIC_UND 
+				strong = Token.STRONG_UND
 			}
 
 			if (p.pending.length === 1) {
@@ -820,7 +820,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 			break
 		}
 		case '~':
-			if (p.token & (Token.Image | Token.Strike)) break
+			if (p.token & (Token.IMAGE | Token.STRIKE)) break
 
 			if ("~" === p.pending) {
 				/* ~~Strike~~
@@ -836,7 +836,7 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 				*/
 				if (' ' !== char && '\n' !== char) {
 					add_text(p)
-					add_token(p, Token.Strike)
+					add_token(p, Token.STRIKE)
 					p.pending = char
 					continue
 				}
@@ -845,22 +845,22 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 			break
 		/* [Image](url) */
 		case '[':
-			if (!(p.token & (Token.Image | Token.Link)) &&
+			if (!(p.token & (Token.IMAGE | Token.LINK)) &&
 			    ']' !== char
 			) {
 				add_text(p)
-				add_token(p, Token.Link)
+				add_token(p, Token.LINK)
 				p.pending = char
 				continue
 			}
 			break
 		/* ![Image](url) */
 		case '!':
-			if (!(p.token & Token.Image) &&
+			if (!(p.token & Token.IMAGE) &&
 			    '[' === char
 			) {
 				add_text(p)
-				add_token(p, Token.Image)
+				add_token(p, Token.IMAGE)
 				p.pending = ""
 				continue
 			}
@@ -876,14 +876,14 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 		/* foo http://...
 		       ^
 		*/
-		if (!(p.token & (Token.Image | Token.Link)) &&
+		if (!(p.token & (Token.IMAGE | Token.LINK)) &&
 		    'h' === char &&
 		   (" " === p.pending ||
 		    ""  === p.pending)
 		) {
 			p.text   += p.pending
 			p.pending = char
-			p.token = Token.Maybe_URL
+			p.token = Token.MAYBE_URL
 			continue
 		}
 
@@ -918,37 +918,37 @@ export const default_add_token: DefaultAddToken = (data, type) => {
   let slot: HTMLElement;
 
   switch (type) {
-      case Token.Document: return; // document is provided
-      case Token.Blockquote:    mount = slot = document.createElement("blockquote"); break;
-      case Token.Paragraph:     mount = slot = document.createElement("p");          break;
-      case Token.Line_Break:     mount = slot = document.createElement("br");         break;
-      case Token.Rule:          mount = slot = document.createElement("hr");         break;
-      case Token.Heading_1:      mount = slot = document.createElement("h1");         break;
-      case Token.Heading_2:      mount = slot = document.createElement("h2");         break;
-      case Token.Heading_3:      mount = slot = document.createElement("h3");         break;
-      case Token.Heading_4:      mount = slot = document.createElement("h4");         break;
-      case Token.Heading_5:      mount = slot = document.createElement("h5");         break;
-      case Token.Heading_6:      mount = slot = document.createElement("h6");         break;
-      case Token.Italic_Ast:
-      case Token.Italic_Und:     mount = slot = document.createElement("em");         break;
-      case Token.Strong_Ast:
-      case Token.Strong_Und:     mount = slot = document.createElement("strong");     break;
-      case Token.Strike:        mount = slot = document.createElement("s");          break;
-      case Token.Code_Inline:    mount = slot = document.createElement("code");       break;
-      case Token.Raw_URL:
-      case Token.Link:          mount = slot = document.createElement("a");          break;
-      case Token.Image:         mount = slot = document.createElement("img");        break;
-      case Token.List_Unordered: mount = slot = document.createElement("ul");         break;
-      case Token.List_Ordered:   mount = slot = document.createElement("ol");         break;
-      case Token.List_Item:      mount = slot = document.createElement("li");         break;
-      case Token.Checkbox:
+      case Token.DOCUMENT: return; // document is provided
+      case Token.BLOCKQUOTE:    mount = slot = document.createElement("blockquote"); break;
+      case Token.PARAGRAPH:     mount = slot = document.createElement("p");          break;
+      case Token.LINE_BREAK:     mount = slot = document.createElement("br");         break;
+      case Token.RULE:          mount = slot = document.createElement("hr");         break;
+      case Token.HEADING_1:      mount = slot = document.createElement("h1");         break;
+      case Token.HEADING_2:      mount = slot = document.createElement("h2");         break;
+      case Token.HEADING_3:      mount = slot = document.createElement("h3");         break;
+      case Token.HEADING_4:      mount = slot = document.createElement("h4");         break;
+      case Token.HEADING_5:      mount = slot = document.createElement("h5");         break;
+      case Token.HEADING_6:      mount = slot = document.createElement("h6");         break;
+      case Token.ITALIC_AST:
+      case Token.ITALIC_UND:     mount = slot = document.createElement("em");         break;
+      case Token.STRONG_AST:
+      case Token.STRONG_UND:     mount = slot = document.createElement("strong");     break;
+      case Token.STRIKE:        mount = slot = document.createElement("s");          break;
+      case Token.CODE_INLINE:    mount = slot = document.createElement("code");       break;
+      case Token.RAW_URL:
+      case Token.LINK:          mount = slot = document.createElement("a");          break;
+      case Token.IMAGE:         mount = slot = document.createElement("img");        break;
+      case Token.LIST_UNORDERED: mount = slot = document.createElement("ul");         break;
+      case Token.LIST_ORDERED:   mount = slot = document.createElement("ol");         break;
+      case Token.LIST_ITEM:      mount = slot = document.createElement("li");         break;
+      case Token.CHECKBOX:
           const checkbox = document.createElement("input");
           checkbox.type = "checkbox";
           checkbox.disabled = true;
           mount = slot = checkbox;
           break;
-      case Token.Code_Block:
-      case Token.Code_Fence:
+      case Token.CODE_BLOCK:
+      case Token.CODE_FENCE:
           mount = document.createElement("pre");
           slot  = document.createElement("code");
           mount.appendChild(slot);
