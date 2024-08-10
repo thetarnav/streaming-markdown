@@ -1,7 +1,7 @@
 import * as t from "bun:test";
 import * as assert from "node:assert/strict";
 import * as smd from "./smd.js";
-import type { Children, Test_Add_Text, Test_Add_Token, Test_End_Token, Test_Renderer, Test_Renderer_Node, Test_Set_Attr, Token } from "./types.js";
+import type { Children, Test_Add_Text, Test_Add_Token, Test_End_Token, Test_Renderer, Test_Renderer_Node, Test_Set_Attr, Tokens } from "./types.js";
 
 function test_renderer(): Test_Renderer {
     const root: Test_Renderer_Node = {
