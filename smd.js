@@ -32,8 +32,8 @@ export const
 	LIST_ORDERED   = 16777216, // 24
 	LIST_ITEM      = 33554432, // 25
 	CHECKBOX       = 67108864, // 26
-	MAYBE_URL	   =134217728, // 27
-	MAYBE_TASK	   =268435456, // 28
+	MAYBE_URL      =134217728, // 27
+	MAYBE_TASK     =268435456, // 28
 	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
 	ANY_HEADING    =      252,
 	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
@@ -480,14 +480,14 @@ export function parser_write(p, chunk) {
 				switch (char) {
 				case '`':
 					/*  ````?
-						   ^
+					       ^
 					*/
 					if (p.pending.length === p.backticks_count) {
 						p.pending = pending_with_char
 						p.backticks_count = pending_with_char.length
 					}
 					/*  ```code`
-							   ^
+					           ^
 					*/
 					else {
 						add_token(p, PARAGRAPH)
@@ -498,7 +498,7 @@ export function parser_write(p, chunk) {
 					continue
 				case '\n':
 					/*  ```lang\n
-								^
+					            ^
 					*/
 					add_token(p, CODE_FENCE)
 					if (p.pending.length > p.backticks_count) {
@@ -508,7 +508,7 @@ export function parser_write(p, chunk) {
 					continue
 				default:
 					/*  ```lang\n
-							^
+					        ^
 					*/
 					p.pending = pending_with_char
 					continue
@@ -717,7 +717,7 @@ export function parser_write(p, chunk) {
 			if (symbol === p.pending) {
 				add_text(p)
 				/* **Bold**
-						  ^
+				          ^
 				*/
 				if (symbol === char) {
 					end_token(p)
@@ -725,7 +725,7 @@ export function parser_write(p, chunk) {
 					continue
 				}
 				/* **Bold*Bold->Em*
-						  ^
+				          ^
 				*/
 				add_token(p, italic)
 				p.pending = char
@@ -763,7 +763,7 @@ export function parser_write(p, chunk) {
 					}
 				}
 				/* *em*foo
-					   ^
+				       ^
 				*/
 				else {
 					add_text(p)
@@ -823,7 +823,7 @@ export function parser_write(p, chunk) {
 			if ("]" === p.pending) {
 				/*
 				[Link](url)
-					 ^
+				     ^
 				*/
 				add_text(p)
 				if ('(' === char) {
@@ -839,7 +839,7 @@ export function parser_write(p, chunk) {
 			) {
 				/*
 				[Link](url)
-						  ^
+				          ^
 				*/
 				if (')' === char) {
 					const type = p.token === LINK ? HREF : SRC
@@ -927,14 +927,14 @@ export function parser_write(p, chunk) {
 
 			if (p.pending.length === 1) {
 				/* **Strong**
-					^
+				    ^
 				*/
 				if (symbol === char) {
 					p.pending = pending_with_char
 					continue
 				}
 				/* *Em*
-					^
+				    ^
 				*/
 				if (' ' !== char && '\n' !== char) {
 					add_text(p)
@@ -944,7 +944,7 @@ export function parser_write(p, chunk) {
 				}
 			} else {
 				/* ***Strong->Em***
-					 ^
+				     ^
 				*/
 				if (symbol === char) {
 					add_text(p)
@@ -954,7 +954,7 @@ export function parser_write(p, chunk) {
 					continue
 				}
 				/* **Strong**
-					 ^
+				     ^
 				*/
 				if (' ' !== char && '\n' !== char) {
 					add_text(p)
@@ -971,7 +971,7 @@ export function parser_write(p, chunk) {
 
 			if ("~" === p.pending) {
 				/* ~~Strike~~
-					^
+				    ^
 				*/
 				if ('~' === char) {
 					p.pending = pending_with_char
@@ -979,7 +979,7 @@ export function parser_write(p, chunk) {
 				}
 			} else {
 				/* ~~Strike~~
-					 ^
+				     ^
 				*/
 				if (' ' !== char && '\n' !== char) {
 					add_text(p)
