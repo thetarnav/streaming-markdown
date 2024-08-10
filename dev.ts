@@ -10,7 +10,7 @@ const index_html_path = path.join(dirname, "index.html")
 
 const HTTP_PORT       = 3000
 const WEB_SOCKET_PORT = 8080
-const HTTP_URL        = "http://localhost:" + HTTP_PORT
+// const HTTP_URL        = "http://localhost:" + HTTP_PORT
 const WEB_SOCKET_URL  = "ws://localhost:" + WEB_SOCKET_PORT
 const MESSAGE_RELOAD  = "reload"
 
@@ -24,7 +24,7 @@ function main() {
 	const server = makeHttpServer(requestListener)
 	const wss = new ws.WebSocketServer({port: WEB_SOCKET_PORT})
 	
-	const watched_paths = /** @type {Set<string>} */(new Set())
+	const watched_paths = new Set<string>()
 	
 	function exit() {
 		void server.close()
@@ -36,10 +36,7 @@ function main() {
 	void process.on("SIGINT", exit)
 	void process.on("SIGTERM", exit)
 	
-	/**
-	 * @param   {fs.Stats} stat
-	 * @returns {void} */
-	function onFileChange(stat) {
+	function onFileChange(stat: fs.Stats) {
 		if (stat.isDirectory()) return
 		// eslint-disable-next-line no-console
 		console.log("Reloading page...")
@@ -54,10 +51,7 @@ function main() {
 	
 	const WATCH_FILE_OPTIONS = /** @type {const} */({interval: 200})
 	
-	/**
-	 * @param   {string} filepath
-	 * @returns {void} */
-	function watchFile(filepath) {
+	function watchFile(filepath: string) {
 		if (watched_paths.has(filepath)) return
 	
 		watched_paths.add(filepath)
@@ -66,8 +60,8 @@ function main() {
 	
 	/** @returns {Promise<void>} */
 	async function requestListener(
-		/** @type {http.IncomingMessage} */ req,
-		/** @type {http.ServerResponse} */ res,
+		req: http.IncomingMessage,
+		res: http.ServerResponse,
 	) {
 		if (!req.url || req.method !== "GET") return end404(req, res)
 
@@ -90,15 +84,11 @@ function main() {
 }
 
 /** @returns {string} */
-function toWebFilepath(/** @type {string} */ path) {
+function toWebFilepath(path: string) {
 	return path.endsWith("/") ? path + "index.html" : path
 }
 
-/**
- * @param   {http.RequestListener} requestListener
- * @returns {http.Server}
- */
-function makeHttpServer(requestListener) {
+function makeHttpServer(requestListener: http.RequestListener): http.Server {
 	const server = http.createServer(requestListener).listen(HTTP_PORT)
 
 	// eslint-disable-next-line no-console
@@ -111,34 +101,26 @@ function makeHttpServer(requestListener) {
 	return server
 }
 
-/** @typedef {Parameters<ws.WebSocket["send"]>[0]} BufferLike */
+type BufferLike = Parameters<ws.WebSocket["send"]>[0]
 
-/** @returns {void} */
-function sendToAllClients(/** @type {ws.WebSocketServer} */ wss, /** @type {BufferLike} */ data) {
+function sendToAllClients(wss: ws.WebSocketServer, data: BufferLike) {
 	for (const client of wss.clients) {
 		client.send(data)
 	}
 }
 
-/**
- * @param   {http.IncomingMessage} req
- * @param   {http.ServerResponse}  res
- * @returns {void}
- */
-function end404(req, res) {
+function end404(req: http.IncomingMessage, res: http.ServerResponse) {
 	void res.writeHead(404)
 	void res.end()
 	// eslint-disable-next-line no-console
 	console.log(`${req.method} ${req.url} 404`)
 }
 
-/** @returns {string} */
-function toExt(/** @type {string} */ filepath) {
+function toExt(filepath: string) {
 	return path.extname(filepath).substring(1).toLowerCase()
 }
 
-/** @returns {string} */
-function mimeType(/** @type {string} */ ext) {
+function mimeType(ext: string) {
 	switch (ext) {
 	case "html": return "text/html; charset=UTF-8"
 	case "js":
@@ -157,12 +139,8 @@ function mimeType(/** @type {string} */ ext) {
 
 /**
  * Checks if the accept header string matches the given mime type.
- *
- * @param {string | undefined} accept - The accept header.
- * @param {string} mime_type - The mime type to check.
- * @returns {boolean}
  */
-function matchesAcceptsHeader(accept, mime_type) {
+function matchesAcceptsHeader(accept: string | undefined, mime_type: string) {
 	if (accept === undefined) return true
 
 	const l = mime_type.length
@@ -189,13 +167,7 @@ function matchesAcceptsHeader(accept, mime_type) {
 	}
 }
 
-/**
- * @param   {http.IncomingMessage} req
- * @param   {http.ServerResponse}  res
- * @param   {string}               filepath
- * @returns {void}
- */
-function streamStatic(req, res, filepath) {
+function streamStatic(req: http.IncomingMessage, res: http.ServerResponse, filepath: string) {
 	const ext = toExt(filepath)
 	const mime_type = mimeType(ext)
 

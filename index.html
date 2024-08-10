@@ -2,34 +2,45 @@
 <html>
 
 <head>
-	<title>Streaming Markdown</title>
-    <meta name="darkreader-lock">
-	
-	<link
-		rel="preload"
-		href="readme.md"
-		as="fetch"
-		type="text/plain"
-		crossorigin="anonymous"
-	/>
-	<link 
-		rel="preload"
-		href="smd.js"
-		as="script"
-		crossorigin="anonymous"
-	/>
+  <title>Streaming Markdown</title>
+  <meta name="darkreader-lock">
 
-	<link rel="preconnect" href="https://fonts.googleapis.com">
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
-	
-	<link rel="stylesheet" href="index.css" />
+  <link rel="preload" href="readme.md" as="fetch" type="text/plain" crossorigin="anonymous" />
+  <link rel="preload" href="dist/index.js" as="script" crossorigin="anonymous" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400..700;1,400..700&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="index.css" />
 </head>
 
 <body>
-    <main id="markdown" class="prose"></main>
+  <main id="markdown" class="prose"></main>
 </body>
 
-<script src="./index.js" type="module"></script>
+<script type="module">
+  import * as smd from "./dist/index.js"
+
+  const source_res = await fetch("readme.md")
+  const source_txt = await source_res.text()
+
+  const container = /** @type {HTMLElement} */(document.getElementById("markdown"))
+  const renderer = smd.default_renderer(container)
+  // const renderer = mds.logger_renderer
+  const parser = smd.createParser(renderer)
+
+  let i = 0
+  while (i < source_txt.length) {
+    const length = Math.floor(Math.random() * 20) + 1
+    const delay = Math.floor(Math.random() * 80) + 10
+    const chunk = source_txt.slice(i, i += length)
+    await new Promise(resolve => setTimeout(resolve, delay))
+    smd.parser_write(parser, chunk)
+  }
+
+  smd.parser_end(parser)
+</script>
 
 </html>

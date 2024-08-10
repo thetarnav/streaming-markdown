@@ -1,223 +1,44 @@
 import * as t from "bun:test";
-import * as assert from "node:assert/strict";
 
-import type { Children, TestAddText, TestAddToken, TestEndToken, TestRenderer, TestRendererNode, TestSetAttr } from "./src/types.js";
-import { createParser, parser_end, parser_write, token_to_string } from "./src/smd.js";
-import { Token, Attr } from "./src/tokens.js";
+import type { Children } from "@/types";
+import { Token, Attr } from "@/tokens";
+import { token_to_string } from "@/utils";
+import { createParser, parser_end, parser_write } from "@/parser";
 
-
-function test_renderer(): TestRenderer {
-    const root: TestRendererNode = {
-        type: Token.DOCUMENT,
-        children: []
-    };
-    return {
-        add_token: test_renderer_add_token,
-        end_token: test_renderer_end_token,
-        set_attr: test_renderer_set_attr,
-        add_text: test_renderer_add_text,
-        data: {
-            parent_map: new Map(),
-            root: root,
-            node: root,
-        },
-    };
-}
-
-const test_renderer_add_token: TestAddToken = (data, type) => {
-    const node: TestRendererNode = { type, children: [] };
-    data.node.children.push(node);
-    data.parent_map.set(node, data.node);
-    data.node = node;
-};
-
-const test_renderer_add_text: TestAddText = (data, text) => {
-    const lastChild = data.node.children[data.node.children.length - 1];
-    if (typeof lastChild === "string") {
-        data.node.children[data.node.children.length - 1] = lastChild + text;
-    } else {
-        data.node.children.push(text);
-    }
-};
-
-const test_renderer_end_token: TestEndToken = (data) => {
-    const parent = data.parent_map.get(data.node);
-    assert.notEqual(parent, undefined, "Parent not found");
-    data.node = parent as TestRendererNode;
-};
-
-const test_renderer_set_attr: TestSetAttr = (data, type, value) => {
-    if (data.node.attrs === undefined) {
-        data.node.attrs = { [type]: value };
-    } else {
-        data.node.attrs[type] = value;
-    }
-};
+import type { TestRendererNode  } from "./types";
+import { assert_children, test_renderer } from "./utils";
 
 const br: TestRendererNode = {
-    type: Token.LINE_BREAK,
-    children: []
+  type: Token.LINE_BREAK,
+  children: []
 };
 
-function compare_pad(len: number, h: number) {
-	let txt = ""
-	if (h < 0) {
-		txt += "\u001b[31m"
-	} else if (h > 0) {
-		txt += "\u001b[32m"
-	} else {
-		txt += "\u001b[30m"
-	}
-	for (let i = 0; i <= len; i += 1) {
-		txt += ": "
-	}
-	txt += "\u001b[0m"
-	return txt
-}
-
-function compare_push_text(text: string, lines: string[], len: number, h: number) {
-	lines.push(compare_pad(len, h) + JSON.stringify(text))
-}
-
-function compare_push_node(node: TestRendererNode, lines: string[], len: number, h: number) {
-	compare_push_type(node.type, lines, len, h)
-	for (const child of node.children) {
-		if (typeof child === "string") {
-			compare_push_text(child, lines, len + 1, h)
-		} else {
-			compare_push_node(child, lines, len + 1, h)
-		}
-	}
-}
-
-function compare_push_type(type: Token, lines: string[], len: number, h: number) {
-	lines.push(compare_pad(len, h) + "\u001b[36m" + token_to_string(type) + "\u001b[0m")
-}
-
-function compare_child(
-  actual: string | TestRendererNode | undefined, 
-  expected: string | TestRendererNode | undefined, 
-  lines: string[], 
-  len: number
-): boolean {
-	if (actual === undefined) {
-		if (expected === undefined) return true
-
-		if (typeof expected === "string") {
-			compare_push_text(expected, lines, len, -1)
-		} else {
-			compare_push_node(expected, lines, len, -1)
-		}
-
-		return false
-	}
-
-	if (expected === undefined) {
-		if (typeof actual === "string") {
-			compare_push_text(actual, lines, len, +1)
-		} else {
-			compare_push_node(actual, lines, len, +1)
-		}
-
-		return false
-	}
-
-	if (typeof actual === "string") {
-		if (typeof expected === "string") {
-			if (actual === expected) {
-				compare_push_text(expected, lines, len, 0)
-				return true
-			}
-
-			compare_push_text(actual,   lines, len, +1)
-			compare_push_text(expected, lines, len, -1)
-			return false
-		}
-
-		compare_push_text(actual, lines, len, +1)
-		compare_push_node(expected, lines, len, -1)
-		return false
-	}
-
-	if (typeof expected === "string") {
-		compare_push_text(expected, lines, len, -1)
-		compare_push_node(actual, lines, len, +1)
-		return false
-	}
-
-	if (actual.type === expected.type) {
-		compare_push_type(actual.type, lines, len, 0)
-	} else {
-		compare_push_type(actual.type, lines, len, +1)
-		compare_push_type(expected.type, lines, len, -1)
-		return false
-	}
-
-	if (JSON.stringify(actual.attrs) !== JSON.stringify(expected.attrs)) {
-		compare_push_text(JSON.stringify(actual.attrs),   lines, len + 1, +1)
-		compare_push_text(JSON.stringify(expected.attrs), lines, len + 1, -1)
-		return false
-	}
-
-	return compare_children(actual.children, expected.children, lines, len + 1)
-}
-
-function compare_children(children: Children, expected_children: Children, lines: string[], len: number): boolean {
-	let result = true
-
-	let i = 0
-	for (; i < children.length; i += 1) {
-		result = compare_child(children[i], expected_children[i], lines, len) && result
-	}
-
-	for (; i < expected_children.length; i += 1) {
-		compare_child(undefined, expected_children[i], lines, len)
-		result = false
-	}
-
-	return result
-}
-
-function assert_children(children: Children, expected_children: Children) {
-	const lines: string[] = []
-	const result = compare_children(children, expected_children, lines, 0)
-	if (!result) {
-		const stl = Error.stackTraceLimit
-		Error.stackTraceLimit = 0
-		const e = new Error("Children not equal:\n" + lines.join("\n") + "\n")
-		Error.stackTraceLimit = stl
-		throw e
-	}
-}
-
-function test_single_write(title: string, markdown: string, expected_children: Children) {
-	t.test(title + ";", () => {
-		const renderer = test_renderer()
-		const parser = createParser(renderer)
-
-		parser_write(parser, markdown)
-		parser_end(parser)
-
-		assert_children(renderer.data.root.children, expected_children)
-	})
-
-	t.test(title + "; by_char;", () => {
-		const renderer = test_renderer()
-		const parser = createParser(renderer)
-
-		for (const char of markdown) {
-			parser_write(parser, char)
-		}
-		parser_end(parser)
-
-		assert_children(renderer.data.root.children, expected_children)
-	})
-}
+function test_single_write<T extends string | TestRendererNode>(title: string, markdown: string, expected_children: Children<T>) {
+  t.test(title + ";", () => {
+    const renderer = test_renderer()
+    const parser = createParser(renderer)
+  
+    parser_write(parser, markdown)
+    parser_end(parser)
+  
+    assert_children(renderer.data.root.children, expected_children)
+  })
+  
+  t.test(title + "; by_char;", () => {
+    const renderer = test_renderer()
+    const parser = createParser(renderer)
+  
+    for (const char of markdown) {
+      parser_write(parser, char)
+    }
+    parser_end(parser)
+  
+    assert_children(renderer.data.root.children, expected_children)
+  })
+  }
 
 for (let level = 1; level <= 6; level += 1) {
-
-	/** @type {Token} */
-	let heading_type
+	let heading_type: Token
 	switch (level) {
 	case 1: heading_type = Token.HEADING_1; break
 	case 2: heading_type = Token.HEADING_2; break

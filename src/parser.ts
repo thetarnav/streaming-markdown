@@ -1,60 +1,24 @@
-/*
-Streaming Markdown Parser and Renderer
-MIT License
-Copyright 2024 Damian Tarnawski
-https://github.com/thetarnav/streaming-markdown
-*/
-
-import { Attr, Token } from "./tokens.js"
-import type { DefaultRenderer, DefaultAddText, DefaultAddToken, DefaultEndToken, DefaultSetAttr, LoggerRenderer, Parser, Renderer } from "./types.js"
-
-export function token_to_string(type: Token) {
-  switch (type) {
-      case Token.DOCUMENT:       return "Document"
-      case Token.BLOCKQUOTE:     return "Blockquote"
-      case Token.PARAGRAPH:      return "Paragraph"
-      case Token.HEADING_1:       return "Heading1"
-      case Token.HEADING_2:       return "Heading2"
-      case Token.HEADING_3:       return "Heading3"
-      case Token.HEADING_4:       return "Heading4"
-      case Token.HEADING_5:       return "Heading5"
-      case Token.HEADING_6:       return "Heading6"
-      case Token.CODE_BLOCK:      return "CodeBlock"
-      case Token.CODE_FENCE:      return "CodeFence"
-      case Token.CODE_INLINE:     return "CodeInline"
-      case Token.ITALIC_AST:      return "ItalicAst"
-      case Token.ITALIC_UND:      return "ItalicUnd"
-      case Token.STRONG_AST:      return "StrongAst"
-      case Token.STRONG_UND:      return "StrongUnd"
-      case Token.STRIKE:         return "Strike"
-      case Token.LINK:           return "Link"
-      case Token.RAW_URL:         return "RawUrl"
-      case Token.IMAGE:          return "Image"
-      case Token.LINE_BREAK:      return "LineBreak"
-      case Token.RULE:           return "Rule"
-      case Token.LIST_UNORDERED:  return "ListUnordered"
-      case Token.LIST_ORDERED:    return "ListOrdered"
-      case Token.LIST_ITEM:       return "ListItem"
-      case Token.CHECKBOX:       return "Checkbox"
-
-      default:
-        throw new Error("Unknown token")
-  }
-}
-
-export function attr_to_html_attr(type: Attr) {
-	switch (type) {
-	case Attr.HREF:    return "href"
-	case Attr.SRC :    return "src"
-	case Attr.LANG:    return "lang"
-	case Attr.CHECKED: return "checked"
-	case Attr.START:   return "start"
-  default:
-    throw new Error("Unknown attribute")
-	}
-}
+import type { Renderer } from "./renderer"
+import { Token, Attr } from "./tokens"
 
 const TOKEN_ARRAY_CAP = 24
+
+export interface Parser<T> {
+  renderer: Renderer<T>;
+  text: string;
+  pending: string;
+  tokens: Uint32Array;
+  len: number;
+  token: number;
+  spaces: Uint8Array;
+  indent: string;
+  indent_len: number;
+  code_fence_body: 0 | 1;
+  backticks_count: number;
+  blockquote_idx: number;
+  hr_char: string;
+  hr_chars: number;
+}
 
 export function createParser<T>(renderer: Renderer<T>): Parser<T> {
 	const tokens = new Uint32Array(TOKEN_ARRAY_CAP)
@@ -80,7 +44,7 @@ export function createParser<T>(renderer: Renderer<T>): Parser<T> {
 /**
  * Finish rendering the markdown - flushes any remaining text.
  */
-export function parser_end<T>(p: Parser<T>) {
+export function parser_end<T>(p: Parser<T>): void {
 	if (p.pending.length > 0) {
 		parser_write(p, "\n")
 	}
@@ -193,7 +157,7 @@ function is_digit(charcode: number) {
 /**
  * Parse and render another chunk of markdown.
  */
-export function parser_write<T>(p: Parser<T>, chunk: string) {
+export function parser_write<T>(p: Parser<T>, chunk: string): void {
 	for (const char of chunk) {
 		const pending_with_char = p.pending + char
 		
@@ -897,98 +861,4 @@ export function parser_write<T>(p: Parser<T>, chunk: string) {
 	}
 
 	add_text(p)
-}
-
-/**
- * @param   {HTMLElement     } root
- * @returns {DefaultRenderer} */
-export function default_renderer(root: HTMLElement): DefaultRenderer {
-	return {
-		add_token: default_add_token,
-		end_token: default_end_token,
-		add_text:  default_add_text,
-		set_attr:  default_set_attr,
-		data    : {
-			nodes: /**@type {*}*/([root,,,,,]),
-			index: 0,
-		},
-	}
-}
-
-export const default_add_token: DefaultAddToken = (data, type) => {
-  let mount: HTMLElement;
-  let slot: HTMLElement;
-
-  switch (type) {
-      case Token.DOCUMENT: return; // document is provided
-      case Token.BLOCKQUOTE:    mount = slot = document.createElement("blockquote"); break;
-      case Token.PARAGRAPH:     mount = slot = document.createElement("p");          break;
-      case Token.LINE_BREAK:     mount = slot = document.createElement("br");         break;
-      case Token.RULE:          mount = slot = document.createElement("hr");         break;
-      case Token.HEADING_1:      mount = slot = document.createElement("h1");         break;
-      case Token.HEADING_2:      mount = slot = document.createElement("h2");         break;
-      case Token.HEADING_3:      mount = slot = document.createElement("h3");         break;
-      case Token.HEADING_4:      mount = slot = document.createElement("h4");         break;
-      case Token.HEADING_5:      mount = slot = document.createElement("h5");         break;
-      case Token.HEADING_6:      mount = slot = document.createElement("h6");         break;
-      case Token.ITALIC_AST:
-      case Token.ITALIC_UND:     mount = slot = document.createElement("em");         break;
-      case Token.STRONG_AST:
-      case Token.STRONG_UND:     mount = slot = document.createElement("strong");     break;
-      case Token.STRIKE:        mount = slot = document.createElement("s");          break;
-      case Token.CODE_INLINE:    mount = slot = document.createElement("code");       break;
-      case Token.RAW_URL:
-      case Token.LINK:          mount = slot = document.createElement("a");          break;
-      case Token.IMAGE:         mount = slot = document.createElement("img");        break;
-      case Token.LIST_UNORDERED: mount = slot = document.createElement("ul");         break;
-      case Token.LIST_ORDERED:   mount = slot = document.createElement("ol");         break;
-      case Token.LIST_ITEM:      mount = slot = document.createElement("li");         break;
-      case Token.CHECKBOX:
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.disabled = true;
-          mount = slot = checkbox;
-          break;
-      case Token.CODE_BLOCK:
-      case Token.CODE_FENCE:
-          mount = document.createElement("pre");
-          slot  = document.createElement("code");
-          mount.appendChild(slot);
-          break;
-
-      default:
-          throw new Error("Unknown token: " + type);
-  }
-
-  data.nodes[data.index]?.appendChild(mount);
-  data.index += 1;
-  data.nodes[data.index] = slot;
-};
-
-export const default_end_token: DefaultEndToken = (data) => {
-	data.index -= 1
-}
-
-export const default_add_text: DefaultAddText = (data, text) => {
-	data.nodes[data.index]?.appendChild(document.createTextNode(text))
-}
-
-export const default_set_attr: DefaultSetAttr = (data, type, value) => {
-	data.nodes[data.index]?.setAttribute(attr_to_html_attr(type), value)
-}
-
-export const logger_renderer: LoggerRenderer = {
-  data:      undefined,
-  add_token: (data, type) => {
-    console.log("add_token:", token_to_string(type))
-  },
-  end_token: (data) => {
-    console.log("end_token")
-  },
-  add_text:  (data, text) => {
-    console.log('add_text: "%s"', text)
-  },
-  set_attr:  (data, type, value) => {
-    console.log('set_attr: %s="%s"', attr_to_html_attr(type), value)
-  },
 }

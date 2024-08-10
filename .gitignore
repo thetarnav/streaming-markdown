@@ -3,3 +3,5 @@ node_modules
 *.d.ts.map
 *.min.js
 !t.d.ts
+
+dist/

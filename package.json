@@ -13,10 +13,7 @@
   "sideEffects": false,
   "type": "module",
   "files": [
-    "./smd.js",
-    "./smd.d.ts",
-    "./smd.d.ts.map",
-    "./smd.min.js"
+    "./dist/**/*"
   ],
   "browser": "./smd.min.js",
   "module": "./smd.js",
@@ -28,19 +25,20 @@
     }
   },
   "scripts": {
-    "dev": "node ./dev.js",
+    "dev": "bun dev.ts",
     "test": "bun test",
-    "typecheck": "tsc --noEmit",
-    "build": "node ./build.js",
+    "build": "bun build src/index.ts --bundle --minify --outdir dist",
+    "postbuild": "bun types",
+    "types": "tsc -p tsconfig.types.json",
     "prepublishOnly": "node ./build.js",
     "postpublish": "rm smd.d.* smd.min.js"
   },
   "devDependencies": {
-    "@types/bun": "^1.1.6",
+    "@types/bun": "latest",
     "@types/node": "^20.11.19",
     "@types/ws": "^8.5.10",
     "esbuild": "^0.20.1",
-    "typescript": "^5.3.3",
+    "typescript": "^5.5.4",
     "ws": "^8.16.0"
   },
   "keywords": [
