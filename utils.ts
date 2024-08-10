@@ -1,5 +1,7 @@
-import type { Token, Attr } from "./types.js"
-import { Tokens, Attrs } from "./tokens.js"
+// import { Token, Attr } from "./types.js"
+
+import { Attrs, Tokens } from "./tokens.js"
+import type { Attr, Token } from "./types.js"
 
 export function token_to_string(type: Token): string {
   switch (type) {

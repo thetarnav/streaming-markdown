@@ -1,6 +1,6 @@
 // types.ts
 
-import type { Tokens, Attrs } from "./tokens.js"
+import { Tokens, Attrs } from "./tokens.js"
 
 export type Token = typeof Tokens[keyof typeof Tokens];
 export type Attr = typeof Attrs[keyof typeof Attrs];
