@@ -1,64 +1,59 @@
 // types.ts
 
-import { Tokens, Attrs } from "./tokens.js"
-
-export type Token = typeof Tokens[keyof typeof Tokens];
-export type Attr = typeof Attrs[keyof typeof Attrs];
+import type { Token, Attr } from "./tokens.js";
 
 // Renderer types
-export type Renderer_Add_Token<T> = (data: T, type: Token) => void;
-export type Renderer_End_Token<T> = (data: T) => void;
-export type Renderer_Add_Text<T> = (data: T, text: string) => void;
-export type Renderer_Set_Attr<T> = (data: T, type: Attr, value: string) => void;
+export type RendererAddToken<T> = (data: T, type: Token) => void;
+export type RendererEndToken<T> = (data: T) => void;
+export type RendererAddText<T> = (data: T, text: string) => void;
+export type RendererSetAttr<T> = (data: T, type: Attr, value: string) => void;
 
 export interface Renderer<T> {
     data: T;
-    add_token: Renderer_Add_Token<T>;
-    end_token: Renderer_End_Token<T>;
-    add_text: Renderer_Add_Text<T>;
-    set_attr: Renderer_Set_Attr<T>;
+    add_token: RendererAddToken<T>;
+    end_token: RendererEndToken<T>;
+    add_text: RendererAddText<T>;
+    set_attr: RendererSetAttr<T>;
 }
 
-export type Any_Renderer = Renderer<any>;
-
 // Default Renderer types
-export interface Default_Renderer_Data {
-    nodes: HTMLElement[];
+export interface DefaultRendererData {
+    nodes: Array<HTMLElement | undefined>;
     index: number;
 }
 
-export type Default_Renderer = Renderer<Default_Renderer_Data>;
-export type Default_Renderer_Add_Token = Renderer_Add_Token<Default_Renderer_Data>;
-export type Default_Renderer_End_Token = Renderer_End_Token<Default_Renderer_Data>;
-export type Default_Renderer_Add_Text = Renderer_Add_Text<Default_Renderer_Data>;
-export type Default_Renderer_Set_Attr = Renderer_Set_Attr<Default_Renderer_Data>;
+export type DefaultRenderer = Renderer<DefaultRendererData>;
+export type DefaultAddToken = RendererAddToken<DefaultRendererData>;
+export type DefaultEndToken = RendererEndToken<DefaultRendererData>;
+export type DefaultAddText = RendererAddText<DefaultRendererData>;
+export type DefaultSetAttr = RendererSetAttr<DefaultRendererData>;
 
 // Test Renderer types
-export type Children = (string | Test_Renderer_Node)[];
-export type Parent_Map = Map<Test_Renderer_Node, Test_Renderer_Node>;
-export type Node_Attrs = {[key in Attr]?: string};
+export type Children = Array<string | TestRendererNode>
+export type Parent_Map = Map<TestRendererNode, TestRendererNode>;
+export type NodeAttrs = {[key in Attr]?: string};
 
-export interface Test_Renderer_Data {
-    root: Test_Renderer_Node;
-    node: Test_Renderer_Node;
+export interface TestRendererData {
+    root: TestRendererNode;
+    node: TestRendererNode;
     parent_map: Parent_Map;
 }
 
-export interface Test_Renderer_Node {
+export interface TestRendererNode {
     type: Token;
     children: Children;
-    attrs?: Node_Attrs;
+    attrs?: NodeAttrs;
 }
 
-export type Test_Renderer = Renderer<Test_Renderer_Data>;
-export type Test_Add_Token = Renderer_Add_Token<Test_Renderer_Data>;
-export type Test_End_Token = Renderer_End_Token<Test_Renderer_Data>;
-export type Test_Add_Text = Renderer_Add_Text<Test_Renderer_Data>;
-export type Test_Set_Attr = Renderer_Set_Attr<Test_Renderer_Data>;
+export type TestRenderer = Renderer<TestRendererData>;
+export type TestAddToken = RendererAddToken<TestRendererData>;
+export type TestEndToken = RendererEndToken<TestRendererData>;
+export type TestAddText = RendererAddText<TestRendererData>;
+export type TestSetAttr = RendererSetAttr<TestRendererData>;
 
 // Parser type
-export interface Parser {
-    renderer: Any_Renderer;
+export interface Parser<T> {
+    renderer: Renderer<T>;
     text: string;
     pending: string;
     tokens: Uint32Array;
@@ -75,3 +70,11 @@ export interface Parser {
 }
 
 export const TOKEN_ARRAY_CAP = 24;
+
+export type LoggerRendererData = undefined;
+
+export type LoggerRenderer = Renderer<LoggerRendererData>;
+export type LoggerRendererAddToken = RendererAddToken<LoggerRendererData>;
+export type LoggerRendererEndToken = RendererEndToken<LoggerRendererData>;
+export type LoggerRendererAddText = RendererAddText<LoggerRendererData>;
+export type LoggerRendererSetAttr = RendererSetAttr<LoggerRendererData>;

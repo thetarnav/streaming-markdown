@@ -56,7 +56,7 @@ export const
     START   = 16;
 
 // Token enum
-export enum Tokens {
+export enum Token {
     Document       = DOCUMENT,
     Paragraph      = PARAGRAPH,
     Heading_1      = HEADING_1,
@@ -88,7 +88,7 @@ export enum Tokens {
 }
 
 // Attr enum
-export enum Attrs {
+export enum Attr {
     Href    = HREF,
     Src     = SRC,
     Lang    = LANG,

@@ -6,8 +6,8 @@ async function main() {
 
     const container = /** @type {HTMLElement} */(document.getElementById("markdown"))
     const renderer = smd.default_renderer(container)
-    // const renderer = mds.logger_renderer()
-    const parser = smd.parser(renderer)
+    // const renderer = mds.logger_renderer
+    const parser = smd.createParser(renderer)
 
     let i = 0
     while (i < source_txt.length) {

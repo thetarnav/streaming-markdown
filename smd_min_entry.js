@@ -32,7 +32,7 @@ export {
 	CHECKED,
 	START,
 	// Parser
-	parser,
+	createParser as parser,
 	parser_end,
 	parser_write,
 } from "./smd.js"
