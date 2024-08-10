@@ -29,7 +29,7 @@
   },
   "scripts": {
     "dev": "node ./dev.js",
-    "test": "node --test",
+    "test": "bun test",
     "typecheck": "tsc --noEmit",
     "build": "node ./build.js",
     "prepublishOnly": "node ./build.js",
