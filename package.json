@@ -26,7 +26,6 @@
   },
   "scripts": {
     "dev": "bun dev.ts",
-    "test": "bun test",
     "build": "bun build src/index.ts --bundle --minify --outdir dist",
     "postbuild": "bun types",
     "types": "tsc -p tsconfig.types.json",
