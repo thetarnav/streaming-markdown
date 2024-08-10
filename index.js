@@ -1,4 +1,4 @@
-import * as smd from "./smd.js"
+import * as smd from "./src/smd.js"
 
 async function main() {
     const source_res = await fetch("readme.md")

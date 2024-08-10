@@ -1,9 +1,9 @@
 import * as t from "bun:test";
 import * as assert from "node:assert/strict";
 
-import type { Children, TestAddText, TestAddToken, TestEndToken, TestRenderer, TestRendererNode, TestSetAttr } from "./types.js";
-import { createParser, parser_end, parser_write, token_to_string } from "./smd.js";
-import { Token, Attr } from "./tokens.js";
+import type { Children, TestAddText, TestAddToken, TestEndToken, TestRenderer, TestRendererNode, TestSetAttr } from "./src/types.js";
+import { createParser, parser_end, parser_write, token_to_string } from "./src/smd.js";
+import { Token, Attr } from "./src/tokens.js";
 
 
 function test_renderer(): TestRenderer {

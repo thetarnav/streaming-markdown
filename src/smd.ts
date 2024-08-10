@@ -6,7 +6,7 @@ https://github.com/thetarnav/streaming-markdown
 */
 
 import { Attr, Token } from "./tokens.js"
-import type { DefaultRenderer, DefaultAddText, DefaultAddToken, DefaultEndToken, DefaultSetAttr, LoggerRenderer, LoggerRendererAddText, LoggerRendererAddToken, LoggerRendererEndToken, LoggerRendererSetAttr, Parser, Renderer } from "./types.js"
+import type { DefaultRenderer, DefaultAddText, DefaultAddToken, DefaultEndToken, DefaultSetAttr, LoggerRenderer, Parser, Renderer } from "./types.js"
 
 export function token_to_string(type: Token) {
   switch (type) {
@@ -49,6 +49,8 @@ export function attr_to_html_attr(type: Attr) {
 	case Attr.LANG:    return "lang"
 	case Attr.CHECKED: return "checked"
 	case Attr.START:   return "start"
+  default:
+    throw new Error("Unknown attribute")
 	}
 }
 

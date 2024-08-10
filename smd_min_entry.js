@@ -35,4 +35,4 @@ export {
 	createParser as parser,
 	parser_end,
 	parser_write,
-} from "./smd.js"
+} from "./src/smd.js"

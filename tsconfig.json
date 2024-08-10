@@ -6,6 +6,10 @@
 		"lib": ["ESNext", "DOM", "DOM.Iterable"],
 		"newLine": "LF",
 		"types": ["node", "bun"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+    },
 
 		/* JS */
 		/*
