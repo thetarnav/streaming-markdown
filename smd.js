@@ -118,7 +118,7 @@ export function token_to_string(type) {
 export const
 	HREF    = 1,
 	SRC     = 2,
-	LANG    = 4,
+	CLASS    = 4,
 	CHECKED = 8,
 	START   = 16
 
@@ -126,7 +126,7 @@ export const
 export const Attr = /** @type {const} */({
 	Href   : HREF,
 	Src    : SRC,
-	Lang   : LANG,
+	Class   : CLASS,
 	Checked: CHECKED,
 	Start  : START,
 })
@@ -138,7 +138,7 @@ export function attr_to_html_attr(type) {
 	switch (type) {
 	case HREF:    return "href"
 	case SRC :    return "src"
-	case LANG:    return "lang"
+	case CLASS:    return "class"
 	case CHECKED: return "checked"
 	case START:   return "start"
 	}
@@ -341,7 +341,7 @@ function is_digit(charcode) {
 export function parser_write(p, chunk) {
 	for (const char of chunk) {
 		const pending_with_char = p.pending + char
-		
+
 		/*
 		Token specific checks
 		*/
@@ -396,7 +396,7 @@ export function parser_write(p, chunk) {
 			/* Blockquote */
 			case '>': {
 				const next_blockquote_idx = idx_of_token(p, BLOCKQUOTE, p.blockquote_idx+1)
-				
+
 				/*
 				Only when there is no blockquote to the right of blockquote_idx
 				a new blockquote can be created
@@ -409,7 +409,7 @@ export function parser_write(p, chunk) {
 				} else {
 					p.blockquote_idx = next_blockquote_idx
 				}
-				
+
 				clear_root_pending(p)
 				p.pending = char
 				continue
@@ -447,7 +447,7 @@ export function parser_write(p, chunk) {
 					p.hr_chars = 0
 				}
 
-				/* Unordered list 
+				/* Unordered list
 				/  * foo
 				/  * *bar*
 				/  * **baz**
@@ -502,7 +502,7 @@ export function parser_write(p, chunk) {
 					*/
 					add_token(p, CODE_FENCE)
 					if (p.pending.length > p.backticks_count) {
-						p.renderer.set_attr(p.renderer.data, LANG, p.pending.slice(p.backticks_count))
+						p.renderer.set_attr(p.renderer.data, CLASS, p.pending.slice(p.backticks_count))
 					}
 					clear_root_pending(p)
 					continue
@@ -517,7 +517,7 @@ export function parser_write(p, chunk) {
 			List Unordered for '+'
 			The other list types are handled with HORIZONTAL_RULE
 			*/
-			case '+': 
+			case '+':
 				if (' ' !== char) break // fail
 
 				continue_or_add_list(p, LIST_UNORDERED)
@@ -588,7 +588,7 @@ export function parser_write(p, chunk) {
 			else {
 				add_token(p, PARAGRAPH)
 			}
-			
+
 			clear_root_pending(p)
 			parser_write(p, to_write)
 			continue
