@@ -118,7 +118,7 @@ export function token_to_string(type) {
 export const
 	HREF    = 1,
 	SRC     = 2,
-	CLASS    = 4,
+	CLASS   = 4,
 	CHECKED = 8,
 	START   = 16
 
@@ -126,7 +126,7 @@ export const
 export const Attr = /** @type {const} */({
 	Href   : HREF,
 	Src    : SRC,
-	Class   : CLASS,
+	Class  : CLASS,
 	Checked: CHECKED,
 	Start  : START,
 })
@@ -138,7 +138,7 @@ export function attr_to_html_attr(type) {
 	switch (type) {
 	case HREF:    return "href"
 	case SRC :    return "src"
-	case CLASS:    return "class"
+	case CLASS:   return "class"
 	case CHECKED: return "checked"
 	case START:   return "start"
 	}
