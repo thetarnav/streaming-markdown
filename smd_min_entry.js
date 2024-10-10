@@ -33,7 +33,6 @@ export {
 	START,
 	// Renderer
 	default_renderer,
-	logger_renderer,
 	// Parser
 	parser,
 	parser_end,
