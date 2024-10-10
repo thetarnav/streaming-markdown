@@ -36,11 +36,11 @@
 		"postpublish": "rm smd.d.* smd.min.js"
 	},
 	"devDependencies": {
-		"@types/node": "^20.11.19",
-		"@types/ws": "^8.5.10",
-		"esbuild": "^0.20.1",
-		"typescript": "^5.3.3",
-		"ws": "^8.16.0"
+		"@types/node": "^22.7.5",
+		"@types/ws": "^8.5.12",
+		"esbuild": "^0.24.0",
+		"typescript": "^5.6.3",
+		"ws": "^8.18.0"
 	},
 	"keywords": [
 		"markdown",
@@ -48,7 +48,7 @@
 		"html",
 		"ai"
 	],
-	"packageManager": "npm@10.4.0+sha256.0e4e5986526a578a6cdc5647cf862efba03dfcb063672f90bc525433b893fba9",
+	"packageManager": "npm@10.9.0",
 	"engines": {
 		"node": ">=20"
 	}

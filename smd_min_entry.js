@@ -28,9 +28,11 @@ export {
 	// Attr enum
 	HREF,
 	SRC,
-	LANG,
+	CLASS,
 	CHECKED,
 	START,
+	// Renderer
+	default_renderer,
 	// Parser
 	parser,
 	parser_end,
