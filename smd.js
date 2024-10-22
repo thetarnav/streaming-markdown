@@ -118,7 +118,7 @@ export function token_to_string(type) {
 export const
 	HREF    = 1,
 	SRC     = 2,
-	CLASS   = 4,
+	LANG   = 4,
 	CHECKED = 8,
 	START   = 16
 
@@ -126,7 +126,7 @@ export const
 export const Attr = /** @type {const} */({
 	Href   : HREF,
 	Src    : SRC,
-	Class  : CLASS,
+	Lang  : LANG,
 	Checked: CHECKED,
 	Start  : START,
 })
@@ -138,7 +138,7 @@ export function attr_to_html_attr(type) {
 	switch (type) {
 	case HREF:    return "href"
 	case SRC :    return "src"
-	case CLASS:   return "class"
+	case LANG:    return "class"
 	case CHECKED: return "checked"
 	case START:   return "start"
 	}
@@ -502,7 +502,7 @@ export function parser_write(p, chunk) {
 					*/
 					add_token(p, CODE_FENCE)
 					if (p.pending.length > p.backticks_count) {
-						p.renderer.set_attr(p.renderer.data, CLASS, p.pending.slice(p.backticks_count))
+						p.renderer.set_attr(p.renderer.data, LANG, p.pending.slice(p.backticks_count))
 					}
 					clear_root_pending(p)
 					continue
