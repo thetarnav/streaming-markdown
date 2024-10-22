@@ -126,7 +126,7 @@ export const
 export const Attr = /** @type {const} */({
 	Href   : HREF,
 	Src    : SRC,
-	Lang  : LANG,
+	Lang   : LANG,
 	Checked: CHECKED,
 	Start  : START,
 })
