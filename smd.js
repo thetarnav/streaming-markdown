@@ -118,7 +118,7 @@ export function token_to_string(type) {
 export const
 	HREF    = 1,
 	SRC     = 2,
-	LANG   = 4,
+	LANG    = 4,
 	CHECKED = 8,
 	START   = 16
 
