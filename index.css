@@ -107,7 +107,7 @@ body {
 	display: block;
 }
 .prose pre > code::before {
-	content: "```" attr(lang);
+	content: "```" attr(class);
 	top: 0;
 }
 .prose pre > code::after {
