@@ -198,13 +198,36 @@ function compare_child(actual, expected, lines, len) {
 		return false
 	}
 
-	if (JSON.stringify(actual.attrs) !== JSON.stringify(expected.attrs)) {
-		compare_push_text(JSON.stringify(actual.attrs),   lines, len + 1, +1)
-		compare_push_text(JSON.stringify(expected.attrs), lines, len + 1, -1)
+	let attrs_str_actual   = attrs_to_string(actual.attrs)
+	let attrs_str_expected = attrs_to_string(expected.attrs)
+	if (attrs_str_actual !== attrs_str_expected) {
+		compare_push_text(attrs_str_actual,   lines, len + 1, +1)
+		compare_push_text(attrs_str_expected, lines, len + 1, -1)
 		return false
 	}
 
 	return compare_children(actual.children, expected.children, lines, len + 1)
+}
+
+/**
+@param   {Node_Attrs|undefined} attrs 
+@returns {string} */
+function attrs_to_string(attrs) {
+	let txt = '('
+	if (attrs) {
+		let entries = /** @type {[string, string][]} */(Object.entries(attrs))
+		for (let i = 0; i < entries.length; i++) {
+			let [key, value] = entries[i]
+			txt += smd.attr_to_html_attr(/** @type {*} */(+key))
+			txt += '='
+			txt += value
+			if (i < entries.length-1) {
+				txt += ', '
+			}
+		}
+	}
+	txt += ')'
+	return txt
 }
 
 /**
@@ -1129,6 +1152,25 @@ test_single_write("Blockquote with code and line break",
 				children: ["c"],
 			}],
 		}]
+	}]
+)
+
+test_single_write("Ordered list",
+	"1. hello\n"+
+	"2. world\n"+
+	"3. wave",
+	[{
+		type    : smd.Token.List_Ordered,
+		children: [{
+			type    : smd.Token.List_Item,
+			children: ["hello"],
+		}, {
+			type    : smd.Token.List_Item,
+			children: ["world"],
+		}, {
+			type    : smd.Token.List_Item,
+			children: ["wave"],
+		}],
 	}]
 )
 

@@ -259,7 +259,7 @@ function end_tokens_to_len(p, len) {
 /**
  * @param   {Parser } p
  * @param   {Token  } list_token
- * @returns {void   } */
+ * @returns {boolean} added a new list */
 function continue_or_add_list(p, list_token) {
 	/* will create a new list inside the last item
 	   if the amount of spaces is greater than the last one (with prefix)
@@ -289,13 +289,14 @@ function continue_or_add_list(p, list_token) {
 		if (list_idx === -1) {
 			end_tokens_to_len(p, p.blockquote_idx)
 			add_token(p, list_token)
-		} else {
-			end_tokens_to_len(p, list_idx)
+			return true
 		}
-	} else {
-		end_tokens_to_len(p, item_idx)
-		add_token(p, list_token)
+		end_tokens_to_len(p, list_idx)
+		return false
 	}
+	end_tokens_to_len(p, item_idx)
+	add_token(p, list_token)
+	return true
 }
 
 /**
@@ -533,8 +534,7 @@ export function parser_write(p, chunk) {
 				if ('.' === p.pending[p.pending.length-1]) {
 					if (' ' !== char) break // fail
 
-					continue_or_add_list(p, LIST_ORDERED)
-					if (p.pending !== "1.") {
+					if (continue_or_add_list(p, LIST_ORDERED) && p.pending !== "1.") {
 						p.renderer.set_attr(p.renderer.data, START, p.pending.slice(0, -1))
 					}
 					add_list_item(p, p.pending.length+1)
