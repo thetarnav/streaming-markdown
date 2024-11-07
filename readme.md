@@ -133,3 +133,5 @@ smd.parser_end(parser)
 - [ ] Superscript
 - [ ] Emoji Shortcodes
 - [ ] Html tags (e.g. `<div>`, `<span>`, `<a>`, `<img>`, etc.)
+
+If you think that something is missing or doesn't work, please [make an issue](https://github.com/thetarnav/streaming-markdown/issues).
