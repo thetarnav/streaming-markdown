@@ -1248,6 +1248,40 @@ for (const [c, token] of /** @type {const} */([
 		}]
 	)
 
+	test_single_write(list_name + " with two newlines" + suffix,
+		c+" a\n\n"+c+" b",
+		[{
+			type    : token,
+			attrs   : attrs,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: ["a"]
+			}, {
+				type    : smd.Token.List_Item,
+				children: ["b"]
+			}]
+		}]
+	)
+
+	test_single_write(list_name + " with three newlines" + suffix,
+		c+" a\n\n\n"+c+" b",
+		[{
+			type    : token,
+			attrs   : attrs,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: ["a"]
+			}]
+		}, {
+			type    : token,
+			attrs   : attrs,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: ["b"]
+			}]
+		}]
+	)
+
 	test_single_write(list_name + " end" + suffix,
 		c+" a\n"+
 		"\n"+

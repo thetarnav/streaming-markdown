@@ -224,6 +224,19 @@ function end_token(p) {
  * @param   {Token } token
  * @returns {void  } */
 function add_token(p, token) {
+	/*
+	 If a list doesn't start with a list item
+	 it means that there was a newline after the list:
+
+	 1. foo
+	 2. bar
+	 <empty line>
+	 <not_a_list_item> <- new token
+	*/
+	if (p.tokens[p.len] & ANY_LIST && !(token & LIST_ITEM)) {
+		end_token(p)
+	}
+
 	p.len += 1
 	p.tokens[p.len] = token
 	p.token = token
@@ -274,14 +287,13 @@ function continue_or_add_list(p, list_token) {
 
 	for (let i = p.blockquote_idx+1; i <= p.len; i += 1) {
 		if (p.tokens[i] & LIST_ITEM) {
-			if (p.tokens[i-1] & list_token) {
-				list_idx = i-1
-			}
 			if (p.indent_len < p.spaces[i]) {
 				item_idx = -1
 				break
 			}
 			item_idx = i
+		} else if (p.tokens[i] & list_token) {
+			list_idx = i
 		}
 	}
 
@@ -350,6 +362,8 @@ export function parser_write(p, chunk) {
 		case LINE_BREAK:
 		case DOCUMENT:
 		case BLOCKQUOTE:
+		case LIST_ORDERED:
+		case LIST_UNORDERED:
 			console.assert(p.text.length === 0, "Root should not have any text")
 
 			switch (p.pending[0]) {
@@ -357,17 +371,34 @@ export function parser_write(p, chunk) {
 				p.pending = char
 				continue
 			case ' ':
+				console.assert(p.pending.length === 1)
 				p.pending = char
 				p.indent += ' '
 				p.indent_len += 1
 				continue
 			case '\t':
+				console.assert(p.pending.length === 1)
 				p.pending = char
 				p.indent += '\t'
 				p.indent_len += 4
 				continue
-			/* Ignore newlines in root */
 			case '\n':
+				console.assert(p.pending.length === 1)
+				/*
+				 Lists can have an empty line in between items:
+				 1. foo
+				 <empty>
+				 2. bar
+				*/
+				if (p.tokens[p.len] & LIST_ITEM && p.token & LINE_BREAK) {
+					end_token(p)
+					p.pending = char
+					continue
+				}
+				/*
+				 Exit out of tokens
+				 And ignore newlines in root
+				*/
 				end_tokens_to_len(p, p.blockquote_idx)
 				p.blockquote_idx = 0
 				p.backticks_count = 0
