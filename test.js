@@ -255,15 +255,24 @@ function compare_children(children, expected_children, lines, len) {
 /**
  * @param {Children} children
  * @param {Children} expected_children
+ * @param {string  } markdown
  * @returns {void} */
-function assert_children(children, expected_children) {
+function assert_children(children, expected_children, markdown) {
 	/** @type {string[]} */
 	const lines = []
 	const result = compare_children(children, expected_children, lines, 0)
 	if (!result) {
 		const stl = Error.stackTraceLimit
 		Error.stackTraceLimit = 0
-		const e = new Error("Children not equal:\n" + lines.join("\n") + "\n")
+		const e = new Error(
+			"Children not equal\n"+
+			"Input:\n```\n"+
+			markdown+
+			"\n```\n"+
+			"Tokens:\n"+
+			lines.join("\n")+
+			"\n"
+		)
 		Error.stackTraceLimit = stl
 		throw e
 	}
@@ -283,7 +292,7 @@ function test_single_write(title, markdown, expected_children) {
 		smd.parser_write(parser, markdown)
 		smd.parser_end(parser)
 
-		assert_children(renderer.data.root.children, expected_children)
+		assert_children(renderer.data.root.children, expected_children, markdown)
 	})
 
 	t.test(title + "; by_char;", () => {
@@ -295,7 +304,7 @@ function test_single_write(title, markdown, expected_children) {
 		}
 		smd.parser_end(parser)
 
-		assert_children(renderer.data.root.children, expected_children)
+		assert_children(renderer.data.root.children, expected_children, markdown)
 	})
 }
 
