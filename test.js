@@ -76,7 +76,7 @@ function test_renderer_set_attr(data, type, value) {
 }
 
 /** @type {Test_Renderer_Node} */
-const br = {
+const BR = {
 	type    : smd.Token.Line_Break,
 	children: []
 }
@@ -345,7 +345,7 @@ test_single_write("Line Breaks",
 	"foo\nbar",
 	[{
 		type    : smd.Token.Paragraph,
-		children: ["foo", br, "bar"],
+		children: ["foo", BR, "bar"],
 	}]
 )
 
@@ -355,7 +355,7 @@ test_single_write("Line Breaks with Italic",
 		type    : smd.Token.Paragraph,
 		children: [{
 			type    : smd.Token.Italic_Ast,
-			children: ["a", br, "b"]
+			children: ["a", BR, "b"]
 		}],
 	}]
 )
@@ -364,7 +364,7 @@ test_single_write("Escaped Line Breaks",
 	"a\\\nb",
 	[{
 		type    : smd.Token.Paragraph,
-		children: ["a", br, "b"],
+		children: ["a", BR, "b"],
 	}]
 )
 
@@ -501,7 +501,7 @@ for (let l = 1; l <= 2; l += 1) {
 			type    : smd.Token.Paragraph,
 			children: [{
 				type    : smd.Token.Code_Inline,
-				children: ["a", br, "b"]
+				children: ["a", BR, "b"]
 			}],
 		}]
 	)
@@ -985,7 +985,7 @@ test_single_write("Blockquote line break",
 		type    : smd.Token.Blockquote,
 		children: [{
 			type    : smd.Token.Paragraph,
-			children: ["foo", br, "bar"],
+			children: ["foo", BR, "bar"],
 		}]
 	}]
 )
@@ -996,7 +996,7 @@ test_single_write("Blockquote continued",
 		type    : smd.Token.Blockquote,
 		children: [{
 			type    : smd.Token.Paragraph,
-			children: ["foo", br, "bar"],
+			children: ["foo", BR, "bar"],
 		}]
 	}]
 )
@@ -1142,7 +1142,7 @@ test_single_write("Blockquote with code and line break",
 				type    : smd.Token.Paragraph,
 				children: [{
 					type    : smd.Token.Code_Inline,
-					children: ["a", br, "b"],
+					children: ["a", BR, "b"],
 				}]
 			}]
 		}, {
@@ -1243,7 +1243,7 @@ for (const [c, token] of /** @type {const} */([
 			attrs   : attrs,
 			children: [{
 				type    : smd.Token.List_Item,
-				children: ["a", br, "b"]
+				children: ["a", BR, "b"]
 			}]
 		}]
 	)
@@ -1539,3 +1539,50 @@ test_single_write("Failed nesting of ul in ol",
 // 		}]
 // 	}]
 // )
+
+test_single_write("Simple Table",
+`| Syntax | Description |
+| --- | --- |
+| Header | Title |
+| Paragraph | Text |`,
+[{
+	type    : smd.Token.Table,
+	children: [
+		{
+			type: smd.Token.Table_Row,
+			children: [
+				{ type: smd.Token.Table_Cell, children: ["Syntax"] },
+				{ type: smd.Token.Table_Cell, children: ["Description"] },
+			]
+		},
+		{
+			type: smd.Token.Table_Row,
+			children: [
+				{ type: smd.Token.Table_Cell, children: ["Header"] },
+				{ type: smd.Token.Table_Cell, children: ["Title"] },
+			]
+		},
+		{
+			type: smd.Token.Table_Row,
+			children: [
+				{ type: smd.Token.Table_Cell, children: ["Paragraph"] },
+				{ type: smd.Token.Table_Cell, children: ["Text"] },
+			]
+		},
+	]
+}])
+
+test_single_write("Table Escaped Pipe",
+`| a \\| b | c |
+| --- | --- |
+| a | b | c |`,
+[{
+	type    : smd.Token.Paragraph,
+	children: [
+		"| a \| b | c |",
+		BR,
+		"| --- | --- |",
+		BR,
+		"| a | b | c |"
+	],
+}])

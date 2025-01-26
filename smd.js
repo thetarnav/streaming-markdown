@@ -32,8 +32,11 @@ export const
 	LIST_ORDERED   = 24,
 	LIST_ITEM      = 25,
 	CHECKBOX       = 26,
-	MAYBE_URL      = 27,
-	MAYBE_TASK     = 28
+	TABLE          = 27,
+	TABLE_ROW      = 28,
+	TABLE_CELL     = 29,
+	MAYBE_URL      = 30,
+	MAYBE_TASK     = 31
 
 /** @enum {(typeof Token)[keyof typeof Token]} */
 export const Token = /** @type {const} */({
@@ -63,6 +66,9 @@ export const Token = /** @type {const} */({
 	List_Ordered:   LIST_ORDERED,
 	List_Item:      LIST_ITEM,
 	Checkbox:       CHECKBOX,
+	Table:          TABLE,
+	Table_Row:      TABLE_ROW,
+	Table_Cell:     TABLE_CELL,
 })
 
 /**
@@ -96,6 +102,9 @@ export function token_to_string(type) {
 	case LIST_ORDERED:   return "List_Ordered"
 	case LIST_ITEM:      return "List_Item"
 	case CHECKBOX:       return "Checkbox"
+	case TABLE:          return "Table"
+	case TABLE_ROW:      return "Table_Row"
+	case TABLE_CELL:     return "Table_Cell"
 	}
 }
 
@@ -1136,50 +1145,67 @@ export function default_renderer(root) {
 
 /** @type {Default_Renderer_Add_Token} */
 export function default_add_token(data, type) {
-	/**@type {HTMLElement}*/ let mount
+
+	/**@type {Element}*/ let parent = data.nodes[data.index]
+
 	/**@type {HTMLElement}*/ let slot
 
 	switch (type) {
 	case DOCUMENT: return // document is provided
-	case BLOCKQUOTE:    mount = slot = document.createElement("blockquote");break
-	case PARAGRAPH:     mount = slot = document.createElement("p")         ;break
-	case LINE_BREAK:    mount = slot = document.createElement("br")        ;break
-	case RULE:          mount = slot = document.createElement("hr")        ;break
-	case HEADING_1:     mount = slot = document.createElement("h1")        ;break
-	case HEADING_2:     mount = slot = document.createElement("h2")        ;break
-	case HEADING_3:     mount = slot = document.createElement("h3")        ;break
-	case HEADING_4:     mount = slot = document.createElement("h4")        ;break
-	case HEADING_5:     mount = slot = document.createElement("h5")        ;break
-	case HEADING_6:     mount = slot = document.createElement("h6")        ;break
+	case BLOCKQUOTE:    slot = document.createElement("blockquote");break
+	case PARAGRAPH:     slot = document.createElement("p")         ;break
+	case LINE_BREAK:    slot = document.createElement("br")        ;break
+	case RULE:          slot = document.createElement("hr")        ;break
+	case HEADING_1:     slot = document.createElement("h1")        ;break
+	case HEADING_2:     slot = document.createElement("h2")        ;break
+	case HEADING_3:     slot = document.createElement("h3")        ;break
+	case HEADING_4:     slot = document.createElement("h4")        ;break
+	case HEADING_5:     slot = document.createElement("h5")        ;break
+	case HEADING_6:     slot = document.createElement("h6")        ;break
 	case ITALIC_AST:
-	case ITALIC_UND:    mount = slot = document.createElement("em")        ;break
+	case ITALIC_UND:    slot = document.createElement("em")        ;break
 	case STRONG_AST:
-	case STRONG_UND:    mount = slot = document.createElement("strong")    ;break
-	case STRIKE:        mount = slot = document.createElement("s")         ;break
-	case CODE_INLINE:   mount = slot = document.createElement("code")      ;break
+	case STRONG_UND:    slot = document.createElement("strong")    ;break
+	case STRIKE:        slot = document.createElement("s")         ;break
+	case CODE_INLINE:   slot = document.createElement("code")      ;break
 	case RAW_URL:
-	case LINK:          mount = slot = document.createElement("a")         ;break
-	case IMAGE:         mount = slot = document.createElement("img")       ;break
-	case LIST_UNORDERED:mount = slot = document.createElement("ul")        ;break
-	case LIST_ORDERED:  mount = slot = document.createElement("ol")        ;break
-	case LIST_ITEM:     mount = slot = document.createElement("li")        ;break
+	case LINK:          slot = document.createElement("a")         ;break
+	case IMAGE:         slot = document.createElement("img")       ;break
+	case LIST_UNORDERED:slot = document.createElement("ul")        ;break
+	case LIST_ORDERED:  slot = document.createElement("ol")        ;break
+	case LIST_ITEM:     slot = document.createElement("li")        ;break
 	case CHECKBOX:
-		const checkbox = document.createElement("input")
+		let checkbox = slot = document.createElement("input")
 		checkbox.type = "checkbox"
 		checkbox.disabled = true
-		mount = slot = checkbox
 		break
 	case CODE_BLOCK:
 	case CODE_FENCE:
-		mount = document.createElement("pre")
-		slot  = document.createElement("code")
-		mount.appendChild(slot)
+		parent = parent.appendChild(document.createElement("pre"))
+		slot   = document.createElement("code")
+		break
+	case TABLE:
+		slot = document.createElement("table")
+		break
+	case TABLE_ROW:
+		switch (parent.children.length) {
+		case 0:
+			parent = parent.appendChild(document.createElement("thead"))
+			break
+		case 1:
+			parent = parent.appendChild(document.createElement("tbody"))
+			break
+		default:
+			parent = parent.children[1]
+		}
+		slot = document.createElement("tr")
+		break
+	case TABLE_CELL:
+		slot = document.createElement("td")
 		break
 	}
 
-	data.nodes[data.index].appendChild(mount)
-	data.index += 1
-	data.nodes[data.index] = slot
+	data.nodes[++data.index] = parent.appendChild(slot)
 }
 
 /** @type {Default_Renderer_End_Token} */
