@@ -6,50 +6,34 @@ https://github.com/thetarnav/streaming-markdown
 */
 
 export const
-	DOCUMENT       =        1, //  1
-	PARAGRAPH      =        2, //  2
-	HEADING_1      =        4, //  3
-	HEADING_2      =        8, //  4
-	HEADING_3      =       16, //  5
-	HEADING_4      =       32, //  6
-	HEADING_5      =       64, //  7
-	HEADING_6      =      128, //  8
-	CODE_BLOCK     =      256, //  9
-	CODE_FENCE     =      512, // 10
-	CODE_INLINE    =     1024, // 11
-	ITALIC_AST     =     2048, // 12
-	ITALIC_UND     =     4096, // 13
-	STRONG_AST     =     8192, // 14
-	STRONG_UND     =    16384, // 15
-	STRIKE         =    32768, // 16
-	LINK           =    65536, // 17
-	RAW_URL        =   131072, // 18
-	IMAGE          =   262144, // 19
-	BLOCKQUOTE     =   524288, // 20
-	LINE_BREAK     =  1048576, // 21
-	RULE           =  4194304, // 22
-	LIST_UNORDERED =  8388608, // 23
-	LIST_ORDERED   = 16777216, // 24
-	LIST_ITEM      = 33554432, // 25
-	CHECKBOX       = 67108864, // 26
-	MAYBE_URL      =134217728, // 27
-	MAYBE_TASK     =268435456, // 28
-	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
-	ANY_HEADING    =      252,
-	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
-	ANY_CODE       =     1792,
-	/** `ITALIC_AST | ITALIC_UND` */
-	ANY_ITALIC     =     6144,
-	/** `STRONG_AST | STRONG_UND` */
-	ANY_STRONG     =    24576,
-	/** `STRONG_AST | ITALIC_AST` */
-	ANY_AST        =    10240,
-	/** `STRONG_UND | ITALIC_UND` */
-	ANY_UND        =    20480,
-	/** `LIST_UNORDERED | LIST_ORDERED` */
-	ANY_LIST       = 25165824,
-	/** `DOCUMENT | BLOCKQUOTE` */
-	ANY_ROOT       =   262145
+	DOCUMENT       =  1,
+	PARAGRAPH      =  2,
+	HEADING_1      =  3,
+	HEADING_2      =  4,
+	HEADING_3      =  5,
+	HEADING_4      =  6,
+	HEADING_5      =  7,
+	HEADING_6      =  8,
+	CODE_BLOCK     =  9,
+	CODE_FENCE     = 10,
+	CODE_INLINE    = 11,
+	ITALIC_AST     = 12,
+	ITALIC_UND     = 13,
+	STRONG_AST     = 14,
+	STRONG_UND     = 15,
+	STRIKE         = 16,
+	LINK           = 17,
+	RAW_URL        = 18,
+	IMAGE          = 19,
+	BLOCKQUOTE     = 20,
+	LINE_BREAK     = 21,
+	RULE           = 22,
+	LIST_UNORDERED = 23,
+	LIST_ORDERED   = 24,
+	LIST_ITEM      = 25,
+	CHECKBOX       = 26,
+	MAYBE_URL      = 27,
+	MAYBE_TASK     = 28
 
 /** @enum {(typeof Token)[keyof typeof Token]} */
 export const Token = /** @type {const} */({
@@ -233,7 +217,9 @@ function add_token(p, token) {
 	 <empty line>
 	 <not_a_list_item> <- new token
 	*/
-	if (p.tokens[p.len] & ANY_LIST && !(token & LIST_ITEM)) {
+	if ((p.tokens[p.len] === LIST_ORDERED || p.tokens[p.len] === LIST_UNORDERED) &&
+	    token !== LIST_ITEM
+	) {
 		end_token(p)
 	}
 
@@ -250,7 +236,7 @@ function add_token(p, token) {
  * @returns {number} */
 function idx_of_token(p, token, start_idx) {
 	while (start_idx <= p.len) {
-		if (p.tokens[start_idx] & token) {
+		if (p.tokens[start_idx] === token) {
 			return start_idx
 		}
 		start_idx += 1
@@ -286,13 +272,13 @@ function continue_or_add_list(p, list_token) {
 	let item_idx = -1
 
 	for (let i = p.blockquote_idx+1; i <= p.len; i += 1) {
-		if (p.tokens[i] & LIST_ITEM) {
+		if (p.tokens[i] === LIST_ITEM) {
 			if (p.indent_len < p.spaces[i]) {
 				item_idx = -1
 				break
 			}
 			item_idx = i
-		} else if (p.tokens[i] & list_token) {
+		} else if (p.tokens[i] === list_token) {
 			list_idx = i
 		}
 	}
@@ -390,7 +376,7 @@ export function parser_write(p, chunk) {
 				 <empty>
 				 2. bar
 				*/
-				if (p.tokens[p.len] & LIST_ITEM && p.token & LINE_BREAK) {
+				if (p.tokens[p.len] === LIST_ITEM && p.token === LINE_BREAK) {
 					end_token(p)
 					p.pending = char
 					continue
@@ -585,7 +571,7 @@ export function parser_write(p, chunk) {
 			let to_write = pending_with_char
 
 			/* Add line break */
-			if (p.token & LINE_BREAK) {
+			if (p.token === LINE_BREAK) {
 				/* Add a line break and continue in previous token */
 				p.token = p.tokens[p.len]
 				p.renderer.add_token(p.renderer.data, LINE_BREAK)
@@ -931,7 +917,7 @@ export function parser_write(p, chunk) {
 			continue
 		/* `Code Inline` */
 		case '`':
-			if (p.token & IMAGE) break
+			if (p.token === IMAGE) break
 
 			if ('`' === char) {
 				p.backticks_count += 1
@@ -946,7 +932,7 @@ export function parser_write(p, chunk) {
 			continue
 		case '_':
 		case '*': {
-			if (p.token & IMAGE) break
+			if (p.token === IMAGE) break
 
 			/** @type {Token} */ let italic = ITALIC_AST
 			/** @type {Token} */ let strong = STRONG_AST
@@ -998,7 +984,7 @@ export function parser_write(p, chunk) {
 			break
 		}
 		case '~':
-			if (p.token & (IMAGE | STRIKE)) break
+			if (p.token === IMAGE || p.token === STRIKE) break
 
 			if ("~" === p.pending) {
 				/* ~~Strike~~
@@ -1023,7 +1009,8 @@ export function parser_write(p, chunk) {
 			break
 		/* [Image](url) */
 		case '[':
-			if (!(p.token & (IMAGE | LINK)) &&
+			if (p.token !== IMAGE &&
+			    p.token !== LINK &&
 			    ']' !== char
 			) {
 				add_text(p)
@@ -1034,7 +1021,7 @@ export function parser_write(p, chunk) {
 			break
 		/* ![Image](url) */
 		case '!':
-			if (!(p.token & IMAGE) &&
+			if (!(p.token === IMAGE) &&
 			    '[' === char
 			) {
 				add_text(p)
@@ -1054,7 +1041,8 @@ export function parser_write(p, chunk) {
 		/* foo http://...
 		       ^
 		*/
-		if (!(p.token & (IMAGE | LINK)) &&
+		if (p.token !== IMAGE &&
+		    p.token !== LINK &&
 		    'h' === char &&
 		   (" " === p.pending ||
 		    ""  === p.pending)
