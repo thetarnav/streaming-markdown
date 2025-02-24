@@ -915,11 +915,11 @@ export function parser_write(p, chunk) {
 			} else {
 				const char_code = char.charCodeAt(0)
 				p.pending = ""
-				p.text += is_digit(char_code)                 || // 0-9
+				p.text += is_digit(char_code)                  || // 0-9
 				          (char_code >= 65 && char_code <= 90) || // A-Z
 				          (char_code >= 97 && char_code <= 122)   // a-z
-				          ? pending_with_char
-				          : char
+				          	? pending_with_char
+				          	: char
 			}
 			continue
 		/* Newline */
