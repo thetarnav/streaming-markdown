@@ -153,6 +153,7 @@ export function attr_to_html_attr(type) {
  * @property {number      } blockquote_idx  - For Blockquote parsing
  * @property {string      } hr_char         - For horizontal rule parsing
  * @property {number      } hr_chars        - For horizontal rule parsing
+ * @property {number      } table_state
  */
 
 const TOKEN_ARRAY_CAP = 24
@@ -165,20 +166,21 @@ export function parser(renderer) {
 	const tokens = new Uint32Array(TOKEN_ARRAY_CAP)
 	tokens[0] = DOCUMENT
 	return {
-		renderer  : renderer,
-		text      : "",
-		pending   : "",
-		tokens    : tokens,
-		len       : 0,
-		token     : DOCUMENT,
+		renderer   : renderer,
+		text       : "",
+		pending    : "",
+		tokens     : tokens,
+		len        : 0,
+		token      : DOCUMENT,
 		code_fence_body: 0,
 		blockquote_idx: 0,
-		hr_char   : '',
-		hr_chars  : 0,
+		hr_char    : '',
+		hr_chars   : 0,
 		backticks_count: 0,
-		spaces    : new Uint8Array(TOKEN_ARRAY_CAP),
-		indent    : "",
-		indent_len: 0,
+		spaces     : new Uint8Array(TOKEN_ARRAY_CAP),
+		indent     : "",
+		indent_len : 0,
+		table_state: 0,
 	}
 }
 
@@ -575,6 +577,15 @@ export function parser_write(p, chunk) {
 					}
 				}
 				break // fail
+			/* Table */
+			case '|':
+				add_token(p, TABLE)
+				add_token(p, TABLE_ROW)
+
+				p.pending = ""
+				parser_write(p, char)
+
+				continue
 			}
 
 			let to_write = pending_with_char
@@ -618,6 +629,67 @@ export function parser_write(p, chunk) {
 			clear_root_pending(p)
 			parser_write(p, to_write)
 			continue
+		case TABLE:
+			if (p.table_state === 1) {
+				switch (char) {
+				case '-':
+				case ' ':
+				case '|':
+				case ':':
+					p.pending = pending_with_char
+					continue
+				case '\n':
+					p.table_state = 2
+					p.pending = ""
+					continue
+				default:
+					end_token(p)
+					p.table_state = 0
+					break
+				}
+			} else {
+				switch (p.pending) {
+				case "|":
+					add_token(p, TABLE_ROW)
+					p.pending = ""
+					parser_write(p, char)
+					continue
+				case "\n":
+				case " ":
+				}
+			}
+			break
+		case TABLE_ROW:
+			switch (p.pending) {
+			case "":
+				break
+			case "|":
+				add_token(p, TABLE_CELL)
+				end_token(p)
+				p.pending = ""
+				parser_write(p, char)
+				continue
+			case "\n":
+				end_token(p)
+				p.table_state = Math.min(p.table_state+1, 2)
+				p.pending = ""
+				parser_write(p, char)
+				continue
+			default:
+				add_token(p, TABLE_CELL)
+				p.pending = pending_with_char
+				continue
+			}
+			break
+		case TABLE_CELL:
+			if (p.pending === "|") {
+				add_text(p)
+				end_token(p)
+				p.pending = ""
+				parser_write(p, char)
+				continue
+			}
+			break
 		case CODE_BLOCK:
 			switch (pending_with_char) {
 			case "\n    ":
@@ -910,11 +982,11 @@ export function parser_write(p, chunk) {
 			} else {
 				const char_code = char.charCodeAt(0)
 				p.pending = ""
-				p.text += is_digit(char_code)                 || // 0-9
+				p.text += is_digit(char_code)                  || // 0-9
 				          (char_code >= 65 && char_code <= 90) || // A-Z
 				          (char_code >= 97 && char_code <= 122)   // a-z
-				          ? pending_with_char
-				          : char
+				          	? pending_with_char
+				          	: char
 			}
 			continue
 		/* Newline */

@@ -2,6 +2,20 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "Launch via NPM",
+			"request": "launch",
+			"runtimeArgs": [
+				"run",
+				"test",
+			],
+			"runtimeExecutable": "npm",
+			"skipFiles": [
+				"<node_internals>/**",
+				"**/smd_test_setup.js",
+			],
+			"type": "node"
+		},
+		{
 			"type": "chrome",
 			"request": "launch",
 			"name": "Launch Chrome against localhost",
