@@ -2,18 +2,18 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Launch via NPM",
+			"name": "Run Test",
 			"request": "launch",
+			"runtimeExecutable": "npm",
 			"runtimeArgs": [
 				"run",
 				"test",
 			],
-			"runtimeExecutable": "npm",
 			"skipFiles": [
 				"<node_internals>/**",
 				"**/smd_test_setup.js",
 			],
-			"type": "node"
+			"type": "node",
 		},
 		{
 			"type": "chrome",
