@@ -1242,3 +1242,57 @@ test_single_write("Failed nesting of ul in ol",
 // 		}]
 // 	}]
 // )
+
+test_single_write("Simple Table",
+`| Foo | Bar |
+| -- | -- |
+| A\\|a | Bb |
+| aA| bB |`,
+[{
+	type    : smd.Token.Table,
+	children: [{
+		type:     smd.Token.Table_Row,
+		children: [
+			{type: smd.Token.Table_Cell, children: [" Foo "]},
+			{type: smd.Token.Table_Cell, children: [" Bar "]},
+		]
+	}, {
+		type:     smd.Token.Table_Row,
+		children: [
+			{type: smd.Token.Table_Cell, children: [" A|a "]},
+			{type: smd.Token.Table_Cell, children: [" Bb "]},
+		]
+	}, {
+		type:     smd.Token.Table_Row,
+		children: [
+			{type: smd.Token.Table_Cell, children: [" aA"]},
+			{type: smd.Token.Table_Cell, children: [" bB "]},
+		]
+	}]
+}])
+
+test_single_write("Table Empty Cells",
+`||
+|-|
+||`,
+[{
+	type    : smd.Token.Table,
+	children: [{
+		type:     smd.Token.Table_Row,
+		children: [
+			{type: smd.Token.Table_Cell, children: []},
+		]
+	}, {
+		type:     smd.Token.Table_Row,
+		children: [
+			{type: smd.Token.Table_Cell, children: []},
+		]
+	}]
+}])
+
+test_single_write("Table Escaped Pipe",
+`\\| a | b | c |`,
+[{
+	type    : smd.Token.Paragraph,
+	children: ["\| a | b | c |"],
+}])
