@@ -655,7 +655,10 @@ export function parser_write(p, chunk) {
 					parser_write(p, char)
 					continue
 				case "\n":
-				case " ":
+					end_token(p)
+					p.pending = ""
+					parser_write(p, char)
+					continue
 				}
 			}
 			break
@@ -1113,7 +1116,7 @@ export function parser_write(p, chunk) {
 			break
 		/* Trim spaces */
 		case ' ':
-			if (' ' === char) {
+			if (p.pending.length === 1 && ' ' === char) {
 				continue
 			}
 			break
