@@ -1180,11 +1180,11 @@ export function parser_write(p, chunk) {
  * The renderer interface.
  * @template T
  * @typedef  {object               } Renderer
- * @property {T                    } data
- * @property {Renderer_Add_Token<T>} add_token
- * @property {Renderer_End_Token<T>} end_token
- * @property {Renderer_Add_Text <T>} add_text
- * @property {Renderer_Set_Attr <T>} set_attr
+ * @property {T                    } data      User data object. Available as first param in callbacks.
+ * @property {Renderer_Add_Token<T>} add_token When the tokens starts.
+ * @property {Renderer_End_Token<T>} end_token When the token ends.
+ * @property {Renderer_Add_Text <T>} add_text  To append text to current token. Can be called multiple times or none.
+ * @property {Renderer_Set_Attr <T>} set_attr  Set additional attributes of current token eg. the link url.
  */
 
 /** @typedef {Renderer<any>} Any_Renderer */
@@ -1276,7 +1276,7 @@ export function default_add_token(data, type) {
 		slot = document.createElement("tr")
 		break
 	case TABLE_CELL:
-		slot = document.createElement("td")
+		slot = document.createElement(parent.parentElement?.tagName === "THEAD" ? "th" : "td")
 		break
 	}
 
