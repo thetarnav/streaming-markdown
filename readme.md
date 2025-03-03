@@ -73,13 +73,13 @@ smd.parser_end(parser)
 
 ### Renderer interface
 
-| Field name | Type                   | Description |
-| ---------- | ----                   | ----------- |
-| `data`       | `T`                    | User data object. Available as first param in callbacks. |
-| `add_token`  | `Renderer_Add_Token<T>`| When the tokens starts. |
-| `end_token`  | `Renderer_End_Token<T>`| When the token ends. |
-| `add_text`   | `Renderer_Add_Text<T>` | To append text to current token. Can be called multiple times or none. |
-| `set_attr`   | `Renderer_Set_Attr<T>` | Set additional attributes of current token eg. the link url. |
+| Field name  | Type                   | Description |
+| ----------- | ---------------------- | ----------- |
+| `data`      | `T`                    | User data object. Available as first param in callbacks. |
+| `add_token` | `Renderer_Add_Token<T>`| When the tokens starts. |
+| `end_token` | `Renderer_End_Token<T>`| When the token ends. |
+| `add_text`  | `Renderer_Add_Text<T>` | To append text to current token. Can be called multiple times or none. |
+| `set_attr`  | `Renderer_Set_Attr<T>` | Set additional attributes of current token eg. the link url. |
 
 ## Markdown features
 
