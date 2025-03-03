@@ -1323,6 +1323,46 @@ Hello`,
 	children: ["Hello"],
 }])
 
+test_single_write("Table after table",
+`| A | B |
+| - | - |
+| a | b |
+
+| C | D |
+| - | - |
+| c | d |`,
+[{
+	type    : smd.Token.Table,
+	children: [{
+		type:     smd.Token.Table_Row,
+		children: [
+			{type: smd.Token.Table_Cell, children: [" A "]},
+			{type: smd.Token.Table_Cell, children: [" B "]},
+		]
+	}, {
+		type:     smd.Token.Table_Row,
+		children: [
+			{type: smd.Token.Table_Cell, children: [" a "]},
+			{type: smd.Token.Table_Cell, children: [" b "]},
+		]
+	}]
+}, {
+	type    : smd.Token.Table,
+	children: [{
+		type:     smd.Token.Table_Row,
+		children: [
+			{type: smd.Token.Table_Cell, children: [" C "]},
+			{type: smd.Token.Table_Cell, children: [" D "]},
+		]
+	}, {
+		type:     smd.Token.Table_Row,
+		children: [
+			{type: smd.Token.Table_Cell, children: [" c "]},
+			{type: smd.Token.Table_Cell, children: [" d "]},
+		]
+	}]
+}])
+
 test_single_write("Table with nested elements",
 `| *Aa* | Bb |
 | -- | -- |

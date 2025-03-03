@@ -657,6 +657,7 @@ export function parser_write(p, chunk) {
 				case "\n":
 					end_token(p)
 					p.pending = ""
+					p.table_state = 0
 					parser_write(p, char)
 					continue
 				}
