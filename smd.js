@@ -6,50 +6,37 @@ https://github.com/thetarnav/streaming-markdown
 */
 
 export const
-	DOCUMENT       =        1, //  1
-	PARAGRAPH      =        2, //  2
-	HEADING_1      =        4, //  3
-	HEADING_2      =        8, //  4
-	HEADING_3      =       16, //  5
-	HEADING_4      =       32, //  6
-	HEADING_5      =       64, //  7
-	HEADING_6      =      128, //  8
-	CODE_BLOCK     =      256, //  9
-	CODE_FENCE     =      512, // 10
-	CODE_INLINE    =     1024, // 11
-	ITALIC_AST     =     2048, // 12
-	ITALIC_UND     =     4096, // 13
-	STRONG_AST     =     8192, // 14
-	STRONG_UND     =    16384, // 15
-	STRIKE         =    32768, // 16
-	LINK           =    65536, // 17
-	RAW_URL        =   131072, // 18
-	IMAGE          =   262144, // 19
-	BLOCKQUOTE     =   524288, // 20
-	LINE_BREAK     =  1048576, // 21
-	RULE           =  4194304, // 22
-	LIST_UNORDERED =  8388608, // 23
-	LIST_ORDERED   = 16777216, // 24
-	LIST_ITEM      = 33554432, // 25
-	CHECKBOX       = 67108864, // 26
-	MAYBE_URL      =134217728, // 27
-	MAYBE_TASK     =268435456, // 28
-	/** `HEADING_1 | HEADING_2 | HEADING_3 | HEADING_4 | HEADING_5 | HEADING_6` */
-	ANY_HEADING    =      252,
-	/** `CODE_BLOCK | CODE_FENCE | CODE_INLINE` */
-	ANY_CODE       =     1792,
-	/** `ITALIC_AST | ITALIC_UND` */
-	ANY_ITALIC     =     6144,
-	/** `STRONG_AST | STRONG_UND` */
-	ANY_STRONG     =    24576,
-	/** `STRONG_AST | ITALIC_AST` */
-	ANY_AST        =    10240,
-	/** `STRONG_UND | ITALIC_UND` */
-	ANY_UND        =    20480,
-	/** `LIST_UNORDERED | LIST_ORDERED` */
-	ANY_LIST       = 25165824,
-	/** `DOCUMENT | BLOCKQUOTE` */
-	ANY_ROOT       =   262145
+	DOCUMENT       =  1,
+	PARAGRAPH      =  2,
+	HEADING_1      =  3,
+	HEADING_2      =  4,
+	HEADING_3      =  5,
+	HEADING_4      =  6,
+	HEADING_5      =  7,
+	HEADING_6      =  8,
+	CODE_BLOCK     =  9,
+	CODE_FENCE     = 10,
+	CODE_INLINE    = 11,
+	ITALIC_AST     = 12,
+	ITALIC_UND     = 13,
+	STRONG_AST     = 14,
+	STRONG_UND     = 15,
+	STRIKE         = 16,
+	LINK           = 17,
+	RAW_URL        = 18,
+	IMAGE          = 19,
+	BLOCKQUOTE     = 20,
+	LINE_BREAK     = 21,
+	RULE           = 22,
+	LIST_UNORDERED = 23,
+	LIST_ORDERED   = 24,
+	LIST_ITEM      = 25,
+	CHECKBOX       = 26,
+	TABLE          = 27,
+	TABLE_ROW      = 28,
+	TABLE_CELL     = 29,
+	MAYBE_URL      = 30,
+	MAYBE_TASK     = 31
 
 /** @enum {(typeof Token)[keyof typeof Token]} */
 export const Token = /** @type {const} */({
@@ -79,6 +66,9 @@ export const Token = /** @type {const} */({
 	List_Ordered:   LIST_ORDERED,
 	List_Item:      LIST_ITEM,
 	Checkbox:       CHECKBOX,
+	Table:          TABLE,
+	Table_Row:      TABLE_ROW,
+	Table_Cell:     TABLE_CELL,
 })
 
 /**
@@ -112,6 +102,9 @@ export function token_to_string(type) {
 	case LIST_ORDERED:   return "List_Ordered"
 	case LIST_ITEM:      return "List_Item"
 	case CHECKBOX:       return "Checkbox"
+	case TABLE:          return "Table"
+	case TABLE_ROW:      return "Table_Row"
+	case TABLE_CELL:     return "Table_Cell"
 	}
 }
 
@@ -160,6 +153,7 @@ export function attr_to_html_attr(type) {
  * @property {number      } blockquote_idx  - For Blockquote parsing
  * @property {string      } hr_char         - For horizontal rule parsing
  * @property {number      } hr_chars        - For horizontal rule parsing
+ * @property {number      } table_state
  */
 
 const TOKEN_ARRAY_CAP = 24
@@ -172,20 +166,21 @@ export function parser(renderer) {
 	const tokens = new Uint32Array(TOKEN_ARRAY_CAP)
 	tokens[0] = DOCUMENT
 	return {
-		renderer  : renderer,
-		text      : "",
-		pending   : "",
-		tokens    : tokens,
-		len       : 0,
-		token     : DOCUMENT,
+		renderer   : renderer,
+		text       : "",
+		pending    : "",
+		tokens     : tokens,
+		len        : 0,
+		token      : DOCUMENT,
 		code_fence_body: 0,
 		blockquote_idx: 0,
-		hr_char   : '',
-		hr_chars  : 0,
+		hr_char    : '',
+		hr_chars   : 0,
 		backticks_count: 0,
-		spaces    : new Uint8Array(TOKEN_ARRAY_CAP),
-		indent    : "",
-		indent_len: 0,
+		spaces     : new Uint8Array(TOKEN_ARRAY_CAP),
+		indent     : "",
+		indent_len : 0,
+		table_state: 0,
 	}
 }
 
@@ -233,7 +228,9 @@ function add_token(p, token) {
 	 <empty line>
 	 <not_a_list_item> <- new token
 	*/
-	if (p.tokens[p.len] & ANY_LIST && !(token & LIST_ITEM)) {
+	if ((p.tokens[p.len] === LIST_ORDERED || p.tokens[p.len] === LIST_UNORDERED) &&
+	    token !== LIST_ITEM
+	) {
 		end_token(p)
 	}
 
@@ -250,7 +247,7 @@ function add_token(p, token) {
  * @returns {number} */
 function idx_of_token(p, token, start_idx) {
 	while (start_idx <= p.len) {
-		if (p.tokens[start_idx] & token) {
+		if (p.tokens[start_idx] === token) {
 			return start_idx
 		}
 		start_idx += 1
@@ -286,13 +283,13 @@ function continue_or_add_list(p, list_token) {
 	let item_idx = -1
 
 	for (let i = p.blockquote_idx+1; i <= p.len; i += 1) {
-		if (p.tokens[i] & LIST_ITEM) {
+		if (p.tokens[i] === LIST_ITEM) {
 			if (p.indent_len < p.spaces[i]) {
 				item_idx = -1
 				break
 			}
 			item_idx = i
-		} else if (p.tokens[i] & list_token) {
+		} else if (p.tokens[i] === list_token) {
 			list_idx = i
 		}
 	}
@@ -390,7 +387,7 @@ export function parser_write(p, chunk) {
 				 <empty>
 				 2. bar
 				*/
-				if (p.tokens[p.len] & LIST_ITEM && p.token & LINE_BREAK) {
+				if (p.tokens[p.len] === LIST_ITEM && p.token === LINE_BREAK) {
 					end_token(p)
 					p.pending = char
 					continue
@@ -580,12 +577,21 @@ export function parser_write(p, chunk) {
 					}
 				}
 				break // fail
+			/* Table */
+			case '|':
+				add_token(p, TABLE)
+				add_token(p, TABLE_ROW)
+
+				p.pending = ""
+				parser_write(p, char)
+
+				continue
 			}
 
 			let to_write = pending_with_char
 
 			/* Add line break */
-			if (p.token & LINE_BREAK) {
+			if (p.token === LINE_BREAK) {
 				/* Add a line break and continue in previous token */
 				p.token = p.tokens[p.len]
 				p.renderer.add_token(p.renderer.data, LINE_BREAK)
@@ -623,6 +629,71 @@ export function parser_write(p, chunk) {
 			clear_root_pending(p)
 			parser_write(p, to_write)
 			continue
+		case TABLE:
+			if (p.table_state === 1) {
+				switch (char) {
+				case '-':
+				case ' ':
+				case '|':
+				case ':':
+					p.pending = pending_with_char
+					continue
+				case '\n':
+					p.table_state = 2
+					p.pending = ""
+					continue
+				default:
+					end_token(p)
+					p.table_state = 0
+					break
+				}
+			} else {
+				switch (p.pending) {
+				case "|":
+					add_token(p, TABLE_ROW)
+					p.pending = ""
+					parser_write(p, char)
+					continue
+				case "\n":
+					end_token(p)
+					p.pending = ""
+					p.table_state = 0
+					parser_write(p, char)
+					continue
+				}
+			}
+			break
+		case TABLE_ROW:
+			switch (p.pending) {
+			case "":
+				break
+			case "|":
+				add_token(p, TABLE_CELL)
+				end_token(p)
+				p.pending = ""
+				parser_write(p, char)
+				continue
+			case "\n":
+				end_token(p)
+				p.table_state = Math.min(p.table_state+1, 2)
+				p.pending = ""
+				parser_write(p, char)
+				continue
+			default:
+				add_token(p, TABLE_CELL)
+				parser_write(p, char)
+				continue
+			}
+			break
+		case TABLE_CELL:
+			if (p.pending === "|") {
+				add_text(p)
+				end_token(p)
+				p.pending = ""
+				parser_write(p, char)
+				continue
+			}
+			break
 		case CODE_BLOCK:
 			switch (pending_with_char) {
 			case "\n    ":
@@ -931,7 +1002,7 @@ export function parser_write(p, chunk) {
 			continue
 		/* `Code Inline` */
 		case '`':
-			if (p.token & IMAGE) break
+			if (p.token === IMAGE) break
 
 			if ('`' === char) {
 				p.backticks_count += 1
@@ -946,7 +1017,7 @@ export function parser_write(p, chunk) {
 			continue
 		case '_':
 		case '*': {
-			if (p.token & IMAGE) break
+			if (p.token === IMAGE) break
 
 			/** @type {Token} */ let italic = ITALIC_AST
 			/** @type {Token} */ let strong = STRONG_AST
@@ -998,7 +1069,7 @@ export function parser_write(p, chunk) {
 			break
 		}
 		case '~':
-			if (p.token & (IMAGE | STRIKE)) break
+			if (p.token === IMAGE || p.token === STRIKE) break
 
 			if ("~" === p.pending) {
 				/* ~~Strike~~
@@ -1023,7 +1094,8 @@ export function parser_write(p, chunk) {
 			break
 		/* [Image](url) */
 		case '[':
-			if (!(p.token & (IMAGE | LINK)) &&
+			if (p.token !== IMAGE &&
+			    p.token !== LINK &&
 			    ']' !== char
 			) {
 				add_text(p)
@@ -1034,7 +1106,7 @@ export function parser_write(p, chunk) {
 			break
 		/* ![Image](url) */
 		case '!':
-			if (!(p.token & IMAGE) &&
+			if (!(p.token === IMAGE) &&
 			    '[' === char
 			) {
 				add_text(p)
@@ -1045,7 +1117,7 @@ export function parser_write(p, chunk) {
 			break
 		/* Trim spaces */
 		case ' ':
-			if (' ' === char) {
+			if (p.pending.length === 1 && ' ' === char) {
 				continue
 			}
 			break
@@ -1054,7 +1126,8 @@ export function parser_write(p, chunk) {
 		/* foo http://...
 		       ^
 		*/
-		if (!(p.token & (IMAGE | LINK)) &&
+		if (p.token !== IMAGE &&
+		    p.token !== LINK &&
 		    'h' === char &&
 		   (" " === p.pending ||
 		    ""  === p.pending)
@@ -1108,11 +1181,11 @@ export function parser_write(p, chunk) {
  * The renderer interface.
  * @template T
  * @typedef  {object               } Renderer
- * @property {T                    } data
- * @property {Renderer_Add_Token<T>} add_token
- * @property {Renderer_End_Token<T>} end_token
- * @property {Renderer_Add_Text <T>} add_text
- * @property {Renderer_Set_Attr <T>} set_attr
+ * @property {T                    } data      User data object. Available as first param in callbacks.
+ * @property {Renderer_Add_Token<T>} add_token When the tokens starts.
+ * @property {Renderer_End_Token<T>} end_token When the token ends.
+ * @property {Renderer_Add_Text <T>} add_text  To append text to current token. Can be called multiple times or none.
+ * @property {Renderer_Set_Attr <T>} set_attr  Set additional attributes of current token eg. the link url.
  */
 
 /** @typedef {Renderer<any>} Any_Renderer */
@@ -1148,50 +1221,67 @@ export function default_renderer(root) {
 
 /** @type {Default_Renderer_Add_Token} */
 export function default_add_token(data, type) {
-	/**@type {HTMLElement}*/ let mount
+
+	/**@type {Element}*/ let parent = data.nodes[data.index]
+
 	/**@type {HTMLElement}*/ let slot
 
 	switch (type) {
 	case DOCUMENT: return // document is provided
-	case BLOCKQUOTE:    mount = slot = document.createElement("blockquote");break
-	case PARAGRAPH:     mount = slot = document.createElement("p")         ;break
-	case LINE_BREAK:    mount = slot = document.createElement("br")        ;break
-	case RULE:          mount = slot = document.createElement("hr")        ;break
-	case HEADING_1:     mount = slot = document.createElement("h1")        ;break
-	case HEADING_2:     mount = slot = document.createElement("h2")        ;break
-	case HEADING_3:     mount = slot = document.createElement("h3")        ;break
-	case HEADING_4:     mount = slot = document.createElement("h4")        ;break
-	case HEADING_5:     mount = slot = document.createElement("h5")        ;break
-	case HEADING_6:     mount = slot = document.createElement("h6")        ;break
+	case BLOCKQUOTE:    slot = document.createElement("blockquote");break
+	case PARAGRAPH:     slot = document.createElement("p")         ;break
+	case LINE_BREAK:    slot = document.createElement("br")        ;break
+	case RULE:          slot = document.createElement("hr")        ;break
+	case HEADING_1:     slot = document.createElement("h1")        ;break
+	case HEADING_2:     slot = document.createElement("h2")        ;break
+	case HEADING_3:     slot = document.createElement("h3")        ;break
+	case HEADING_4:     slot = document.createElement("h4")        ;break
+	case HEADING_5:     slot = document.createElement("h5")        ;break
+	case HEADING_6:     slot = document.createElement("h6")        ;break
 	case ITALIC_AST:
-	case ITALIC_UND:    mount = slot = document.createElement("em")        ;break
+	case ITALIC_UND:    slot = document.createElement("em")        ;break
 	case STRONG_AST:
-	case STRONG_UND:    mount = slot = document.createElement("strong")    ;break
-	case STRIKE:        mount = slot = document.createElement("s")         ;break
-	case CODE_INLINE:   mount = slot = document.createElement("code")      ;break
+	case STRONG_UND:    slot = document.createElement("strong")    ;break
+	case STRIKE:        slot = document.createElement("s")         ;break
+	case CODE_INLINE:   slot = document.createElement("code")      ;break
 	case RAW_URL:
-	case LINK:          mount = slot = document.createElement("a")         ;break
-	case IMAGE:         mount = slot = document.createElement("img")       ;break
-	case LIST_UNORDERED:mount = slot = document.createElement("ul")        ;break
-	case LIST_ORDERED:  mount = slot = document.createElement("ol")        ;break
-	case LIST_ITEM:     mount = slot = document.createElement("li")        ;break
+	case LINK:          slot = document.createElement("a")         ;break
+	case IMAGE:         slot = document.createElement("img")       ;break
+	case LIST_UNORDERED:slot = document.createElement("ul")        ;break
+	case LIST_ORDERED:  slot = document.createElement("ol")        ;break
+	case LIST_ITEM:     slot = document.createElement("li")        ;break
 	case CHECKBOX:
-		const checkbox = document.createElement("input")
+		let checkbox = slot = document.createElement("input")
 		checkbox.type = "checkbox"
 		checkbox.disabled = true
-		mount = slot = checkbox
 		break
 	case CODE_BLOCK:
 	case CODE_FENCE:
-		mount = document.createElement("pre")
-		slot  = document.createElement("code")
-		mount.appendChild(slot)
+		parent = parent.appendChild(document.createElement("pre"))
+		slot   = document.createElement("code")
+		break
+	case TABLE:
+		slot = document.createElement("table")
+		break
+	case TABLE_ROW:
+		switch (parent.children.length) {
+		case 0:
+			parent = parent.appendChild(document.createElement("thead"))
+			break
+		case 1:
+			parent = parent.appendChild(document.createElement("tbody"))
+			break
+		default:
+			parent = parent.children[1]
+		}
+		slot = document.createElement("tr")
+		break
+	case TABLE_CELL:
+		slot = document.createElement(parent.parentElement?.tagName === "THEAD" ? "th" : "td")
 		break
 	}
 
-	data.nodes[data.index].appendChild(mount)
-	data.index += 1
-	data.nodes[data.index] = slot
+	data.nodes[++data.index] = parent.appendChild(slot)
 }
 
 /** @type {Default_Renderer_End_Token} */
