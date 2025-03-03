@@ -25,6 +25,9 @@ export {
 	LIST_ORDERED,
 	LIST_ITEM,
 	CHECKBOX,
+	TABLE,
+	TABLE_ROW,
+	TABLE_CELL,
 	// Attr enum
 	HREF,
 	SRC,
