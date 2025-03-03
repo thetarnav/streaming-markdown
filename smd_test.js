@@ -1322,3 +1322,38 @@ Hello`,
 	type:     smd.Token.Paragraph,
 	children: ["Hello"],
 }])
+
+test_single_write("Table with nested elements",
+`| *Aa* | Bb |
+| -- | -- |
+| \`aA\` | bB |`,
+[{
+	type    : smd.Token.Table,
+	children: [{
+		type:     smd.Token.Table_Row,
+		children: [{
+			type:     smd.Token.Table_Cell,
+			children: [
+				" ",
+				{type: smd.Token.Italic_Ast, children: ["Aa"]},
+				" ",
+			]
+		}, {
+			type:     smd.Token.Table_Cell,
+			children: [" Bb "],
+		}],
+	}, {
+		type:     smd.Token.Table_Row,
+		children: [{
+			type: smd.Token.Table_Cell,
+			children: [
+				" ",
+				{type: smd.Token.Code_Inline, children: ["aA"]},
+				" ",
+			]
+		}, {
+			type: smd.Token.Table_Cell,
+			children: [" bB "],
+		}],
+	}],
+}])

@@ -680,7 +680,7 @@ export function parser_write(p, chunk) {
 				continue
 			default:
 				add_token(p, TABLE_CELL)
-				p.pending = pending_with_char
+				parser_write(p, char)
 				continue
 			}
 			break
