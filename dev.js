@@ -3,33 +3,33 @@ import * as fsp  from "node:fs/promises"
 import * as path from "node:path"
 import * as url  from "node:url"
 import * as http from "node:http"
-import * as ws   from "ws"
 
 const dirname         = path.dirname(url.fileURLToPath(import.meta.url))
 const index_html_path = path.join(dirname, "index.html")
 
 const HTTP_PORT       = 3000
-const WEB_SOCKET_PORT = 8080
 const HTTP_URL        = "http://localhost:" + HTTP_PORT
-const WEB_SOCKET_URL  = "ws://localhost:" + WEB_SOCKET_PORT
+const SSE_ENDPOINT    = "/events"
 const MESSAGE_RELOAD  = "reload"
 
 const reload_client_script = /*html*/`<script>
-new WebSocket("${WEB_SOCKET_URL}").addEventListener("message",
-	event => event.data === "${MESSAGE_RELOAD}" && location.reload(),
-)
+const evtSource = new EventSource("${SSE_ENDPOINT}");
+evtSource.onmessage = event => event.data === "${MESSAGE_RELOAD}" && location.reload();
+evtSource.onerror = () => {
+	// Try to reconnect if connection is lost
+	setTimeout(() => new EventSource("${SSE_ENDPOINT}"), 1000);
+};
 </script>`
 
 function main() {
 	const server = makeHttpServer(requestListener)
-	const wss = new ws.WebSocketServer({port: WEB_SOCKET_PORT})
+	const clients = /** @type {Set<http.ServerResponse>} */(new Set())
 	
 	const watched_paths = /** @type {Set<string>} */(new Set())
 	
 	function exit() {
 		void server.close()
-		void wss.close()
-		sendToAllClients(wss, MESSAGE_RELOAD)
+		sendToAllClients(clients, MESSAGE_RELOAD)
 		clearWatchedFiles()
 		void process.exit(0)
 	}
@@ -43,7 +43,7 @@ function main() {
 		if (stat.isDirectory()) return
 		// eslint-disable-next-line no-console
 		console.log("Reloading page...")
-		sendToAllClients(wss, MESSAGE_RELOAD)
+		sendToAllClients(clients, MESSAGE_RELOAD)
 		clearWatchedFiles()
 	}
 	
@@ -70,6 +70,23 @@ function main() {
 		/** @type {http.ServerResponse} */ res,
 	) {
 		if (!req.url || req.method !== "GET") return end404(req, res)
+
+		// Set up SSE connection
+		if (req.url === SSE_ENDPOINT) {
+			
+			res.writeHead(200, {
+				"Content-Type":  "text/event-stream",
+				"Cache-Control": "no-cache",
+				"Connection":    "keep-alive"
+			})
+			
+			res.write(":\n\n") // initial comment to keep connection open
+			
+			clients.add(res)
+			req.on("close", () => clients.delete(res))
+			
+			return
+		}
 
 		if (req.url === "/") {
 			const html = await fsp.readFile(index_html_path, "utf8")
@@ -111,12 +128,10 @@ function makeHttpServer(requestListener) {
 	return server
 }
 
-/** @typedef {Parameters<ws.WebSocket["send"]>[0]} BufferLike */
-
 /** @returns {void} */
-function sendToAllClients(/** @type {ws.WebSocketServer} */ wss, /** @type {BufferLike} */ data) {
-	for (const client of wss.clients) {
-		client.send(data)
+function sendToAllClients(/** @type {Set<http.ServerResponse>} */ clients, /** @type {string} */ data) {
+	for (const client of clients) {
+		client.write(`data: ${data}\n\n`)
 	}
 }
 
