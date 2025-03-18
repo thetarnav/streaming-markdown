@@ -1397,3 +1397,158 @@ test_single_write("Table with nested elements",
 		}],
 	}],
 }])
+
+test_single_write("Inline Equation $",
+		"$equation$",
+		[{
+			type    : smd.Token.Paragraph,
+			children: [{
+				type    : smd.Token.Equation_Inline,
+				children: ["equation"],
+			}]
+		}]
+)
+	
+test_single_write("Inline Equation ()",
+	"\\(equation\\)",
+	[{
+		type: smd.Token.Paragraph,
+		children: [{
+			type: smd.Token.Equation_Inline,
+			children: ["equation"],
+		}]
+	}]
+)
+	
+test_single_write("Block Equation $$",
+	"$$\nequation\n$$",
+	[{
+		type: smd.Token.Paragraph,
+		children: [{
+			type: smd.Token.Equation_block,
+			children: ["\nequation\n"],
+		}]
+	}]
+)
+	
+test_single_write("Block Equation []",
+	"\\[\nequation\n\\]",
+	[{
+		type: smd.Token.Paragraph,
+		children: [{
+			type: smd.Token.Equation_block,
+			children: ["\nequation\n"],
+		}]
+	}]
+)
+	
+test_single_write("Equation in text",
+	"some text $equation$ more text",
+	[{
+		type: smd.Token.Paragraph,
+		children: [
+			"some text ",
+			{
+				type: smd.Token.Equation_Inline,
+				children: ["equation"],
+			},
+			" more text"
+		]
+	}]
+)
+
+test_single_write("Inline Equation $",
+	"$equation$",
+	[{
+		type: smd.Token.Paragraph,
+		children: [{
+			type: smd.Token.Equation_Inline,
+			children: ["equation"],
+		}]
+	}]
+)
+		
+test_single_write("Inline Equation ()",
+	"\\(equation\\)",
+	[{
+		type: smd.Token.Paragraph,
+		children: [{
+			type: smd.Token.Equation_Inline,
+			children: ["equation"],
+		}]
+	}]
+)
+		
+test_single_write("Inline Equation () no escape",
+	"(equation)",
+	[{
+		type: smd.Token.Paragraph,
+		children: ["(equation)"],
+	}]
+)
+
+test_single_write("Block Equation $$",
+	"$$\nequation\n$$",
+	[{
+		type: smd.Token.Paragraph,
+		children: [{
+			type: smd.Token.Equation_block,
+			children: ["\nequation\n"]
+		}]
+	}]
+)
+
+test_single_write("Block Equation []",
+	"\\[\nequation\n\\]",
+	[{
+		type: smd.Token.Paragraph,
+		children: [{
+			type: smd.Token.Equation_block,
+			children: ["\nequation\n"],
+		}] 
+	}]
+)
+
+test_single_write("Equation in text",
+	"some text $equation$ more text",
+	[{
+		type: smd.Token.Paragraph,
+		children: [
+			"some text ",
+			{
+				type: smd.Token.Equation_Inline,
+				children: ["equation"],
+			},
+			" more text"
+		]
+	}]
+)
+
+test_single_write("Equation in text ()",
+	"some text \\(equation\\) more text",
+	[{
+		type: smd.Token.Paragraph,
+		children: [
+			"some text ",
+			{
+				type: smd.Token.Equation_Inline,
+				children: ["equation"],
+			},
+			" more text"
+		]
+	}]
+)
+
+test_single_write("Equation in text $ no closing",
+	"some text $equation more text",
+	[{
+		type: smd.Token.Paragraph,
+		children: [
+			"some text ",
+			{
+				type: smd.Token.Equation_Inline,
+				children: ["equation more text"],
+			}
+		]
+	}]
+)
