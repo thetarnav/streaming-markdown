@@ -455,10 +455,6 @@ export function parser_write(p, chunk) {
 			case '-':
 			case '*':
 			case '_':
-				if (p.token === IMAGE || 
-					p.token === EQUATION_BLOCK || 
-					p.token === EQUATION_INLINE)
-				 break
 				if (p.hr_chars === 0) {
 					console.assert(p.pending.length === 1, "Pending should be one character")
 					p.hr_chars = 1
