@@ -923,9 +923,9 @@ export function parser_write(p, chunk) {
 				end_token(p)
 
 				if(char === ')'){
-					p.pending = "";
+					p.pending = ""
 				} else {
-					p.pending = char;
+					p.pending = char
 				}
 				continue
 			}
@@ -1170,7 +1170,7 @@ export function parser_write(p, chunk) {
 					p.token === STRIKE)
 				 break
 				
-				const delimiters = [" ", ":", ";", ")", "", ",", "!", ".", "?", "]", "\n"];
+				const delimiters = [" ", ":", ";", ")", "", ",", "!", ".", "?", "]", "\n"]
 
 				if ("$" === p.pending) {
 
@@ -1180,7 +1180,7 @@ export function parser_write(p, chunk) {
 					*/
 					add_text(p)
 					add_token(p, EQUATION_BLOCK)
-					p.pending = "";
+					p.pending = ""
 					continue
 					} else if (delimiters.includes(char) || /^\d$/.test(char)) {
 					/* $123
@@ -1193,7 +1193,7 @@ export function parser_write(p, chunk) {
 					*/
 					add_text(p)
 					add_token(p, EQUATION_INLINE)
-					p.pending = char;
+					p.pending = char
 					continue
 					}
 				}
