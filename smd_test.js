@@ -243,6 +243,14 @@ for (let l = 3; l <= 5; l += 1) {
 		}]
 	)
 
+	test_single_write("Code_Fence space before close - " + l + " backticks",
+		c+"\nfoo\n "+c,
+		[{
+			type    : smd.Token.Code_Fence,
+			children: ["foo"]
+		}]
+	)
+
 	test_single_write("Code_Fence with language - " + l + " backticks",
 		c+"js\nfoo\n"+c,
 		[{

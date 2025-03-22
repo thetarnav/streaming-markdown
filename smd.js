@@ -746,6 +746,13 @@ export function parser_write(p, chunk) {
 				p.pending = char
 				p.code_fence_body = 1
 				continue
+			// @ts-expect-error intentional fallthrough
+			case ' ':
+				if (p.pending.startsWith("\n")) {
+					p.pending = pending_with_char
+					p.code_fence_body += 1
+					continue
+				}
 			default:
 				p.text   += pending_with_char
 				p.pending = ""
