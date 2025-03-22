@@ -1419,6 +1419,25 @@ test_single_write("Inline Equation ()",
 		}]
 	}]
 )
+
+test_single_write("Inline Equation $ prevented by spaces",
+	"$ equation $",
+	[{
+		type    : smd.Token.Paragraph,
+		children: ["$ equation $"]
+	}]
+)
+
+test_single_write("Inline Equation () with spaces",
+	"\\( equation \\)",
+	[{
+		type: smd.Token.Paragraph,
+		children: [{
+			type: smd.Token.Equation_Inline,
+			children: [" equation "],
+		}]
+	}]
+)
 	
 test_single_write("Block Equation $$",
 	"$$\nequation\n$$",

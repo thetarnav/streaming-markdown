@@ -37,8 +37,8 @@ export const
 	TABLE_CELL      = 29,
 	MAYBE_URL       = 30,
 	MAYBE_TASK      = 31,
-	EQUATION_BLOCK  = 32,    
-	EQUATION_INLINE = 33 
+	EQUATION_BLOCK  = 32,
+	EQUATION_INLINE = 33
 
 /** @enum {(typeof Token)[keyof typeof Token]} */
 export const Token = /** @type {const} */({
@@ -71,8 +71,8 @@ export const Token = /** @type {const} */({
 	Table:          TABLE,
 	Table_Row:      TABLE_ROW,
 	Table_Cell:     TABLE_CELL,
-	Equation_block: EQUATION_BLOCK,  
-	Equation_Inline:EQUATION_INLINE,  
+	Equation_block: EQUATION_BLOCK,
+	Equation_Inline:EQUATION_INLINE,
 })
 
 /**
@@ -109,8 +109,8 @@ export function token_to_string(type) {
 	case TABLE:          return "Table"
 	case TABLE_ROW:      return "Table_Row"
 	case TABLE_CELL:     return "Table_Cell"
-	case EQUATION_BLOCK: return "Equation_block"   
-	case EQUATION_INLINE:return "Equation_Inline"  
+	case EQUATION_BLOCK: return "Equation_block"
+	case EQUATION_INLINE:return "Equation_Inline"
 	}
 }
 
@@ -905,7 +905,7 @@ export function parser_write(p, chunk) {
 				continue
 			}
 			break
-			case EQUATION_BLOCK: 
+		case EQUATION_BLOCK:
 			if ("\\]" === pending_with_char || "$$" === pending_with_char) {
 				add_text(p)
 				end_token(p)
@@ -1007,8 +1007,8 @@ export function parser_write(p, chunk) {
 		switch (p.pending[0]) {
 		/* Escape character */
 		case '\\':
-			if (p.token === IMAGE || 
-				p.token === EQUATION_BLOCK || 
+			if (p.token === IMAGE ||
+				p.token === EQUATION_BLOCK ||
 				p.token === EQUATION_INLINE)
 			 break
 
@@ -1021,7 +1021,7 @@ export function parser_write(p, chunk) {
 			} else {
 
 				if (pending_with_char === "\\[\n") {
-	
+
 					add_text(p)
 					add_token(p, EQUATION_BLOCK)
 					p.pending = char
@@ -1035,7 +1035,7 @@ export function parser_write(p, chunk) {
 					continue
 				} else {
 					p.text = pending_with_char.slice(-2)
-					p.pending = ""						
+					p.pending = ""
 				}
 			continue
 			}
@@ -1055,8 +1055,8 @@ export function parser_write(p, chunk) {
 			continue
 		/* Newline */
 		case '\n':
-			if (p.token === IMAGE || 
-				p.token === EQUATION_BLOCK || 
+			if (p.token === IMAGE ||
+				p.token === EQUATION_BLOCK ||
 				p.token === EQUATION_INLINE)
 			 break
 
@@ -1082,10 +1082,10 @@ export function parser_write(p, chunk) {
 			continue
 		case '_':
 		case '*': {
-			if (p.token === IMAGE ||  
-				p.token === EQUATION_BLOCK || 
+			if (p.token === IMAGE ||
+				p.token === EQUATION_BLOCK ||
 				p.token === EQUATION_INLINE ||
-				p.token === STRONG_AST )
+				p.token === STRONG_AST)
 			 break
 
 			/** @type {Token} */ let italic = ITALIC_AST
@@ -1162,10 +1162,10 @@ export function parser_write(p, chunk) {
 			break
 
 			case '$':
-				if (p.token === IMAGE || 
+				if (p.token === IMAGE ||
 					p.token === STRIKE)
 				 break
-				
+
 				const delimiters = [" ", ":", ";", ")", "", ",", "!", ".", "?", "]", "\n"]
 
 				if ("$" === p.pending) {
@@ -1193,15 +1193,15 @@ export function parser_write(p, chunk) {
 					continue
 					}
 				}
-				break	
+				break
 		/* [Image](url) */
 		case '[':
-			if (p.token === IMAGE || 
-				p.token === STRIKE ||  
-				p.token === EQUATION_BLOCK || 
+			if (p.token === IMAGE ||
+				p.token === STRIKE ||
+				p.token === EQUATION_BLOCK ||
 				p.token === EQUATION_INLINE)
 			 break
-		
+
 		if (p.token !== IMAGE &&
 			    p.token !== LINK &&
 			    ']' !== char
@@ -1243,9 +1243,9 @@ export function parser_write(p, chunk) {
 			p.text   += p.pending
 			p.pending = char
 
-			if (p.token === IMAGE || 
-				p.token === STRIKE ||  
-				p.token === EQUATION_BLOCK || 
+			if (p.token === IMAGE ||
+				p.token === STRIKE ||
+				p.token === EQUATION_BLOCK ||
 				p.token === EQUATION_INLINE)
 			 break
 
@@ -1395,8 +1395,7 @@ export function default_add_token(data, type) {
 		slot = document.createElement(parent.parentElement?.tagName === "THEAD" ? "th" : "td")
 		break
 	case EQUATION_BLOCK:  slot = document.createElement("equation-block"); break
-	case EQUATION_INLINE: slot = document.createElement("equation-inline"); break  
-
+	case EQUATION_INLINE: slot = document.createElement("equation-inline"); break
 	}
 
 	data.nodes[++data.index] = parent.appendChild(slot)

@@ -28,6 +28,8 @@ export {
 	TABLE,
 	TABLE_ROW,
 	TABLE_CELL,
+	EQUATION_BLOCK,
+	EQUATION_INLINE,
 	// Attr enum
 	HREF,
 	SRC,
