@@ -71,7 +71,7 @@ export const Token = /** @type {const} */({
 	Table:          TABLE,
 	Table_Row:      TABLE_ROW,
 	Table_Cell:     TABLE_CELL,
-	Equation_block: EQUATION_BLOCK,
+	Equation_Block: EQUATION_BLOCK,
 	Equation_Inline:EQUATION_INLINE,
 })
 
@@ -109,7 +109,7 @@ export function token_to_string(type) {
 	case TABLE:          return "Table"
 	case TABLE_ROW:      return "Table_Row"
 	case TABLE_CELL:     return "Table_Cell"
-	case EQUATION_BLOCK: return "Equation_block"
+	case EQUATION_BLOCK: return "Equation_Block"
 	case EQUATION_INLINE:return "Equation_Inline"
 	}
 }

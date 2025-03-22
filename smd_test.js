@@ -1408,7 +1408,7 @@ test_single_write("Inline Equation $",
 			}]
 		}]
 )
-	
+
 test_single_write("Inline Equation ()",
 	"\\(equation\\)",
 	[{
@@ -1438,29 +1438,29 @@ test_single_write("Inline Equation () with spaces",
 		}]
 	}]
 )
-	
+
 test_single_write("Block Equation $$",
 	"$$\nequation\n$$",
 	[{
 		type: smd.Token.Paragraph,
 		children: [{
-			type: smd.Token.Equation_block,
+			type: smd.Token.Equation_Block,
 			children: ["\nequation\n"],
 		}]
 	}]
 )
-	
+
 test_single_write("Block Equation []",
 	"\\[\nequation\n\\]",
 	[{
 		type: smd.Token.Paragraph,
 		children: [{
-			type: smd.Token.Equation_block,
+			type: smd.Token.Equation_Block,
 			children: ["\nequation\n"],
 		}]
 	}]
 )
-	
+
 test_single_write("Equation in text",
 	"some text $equation$ more text",
 	[{
@@ -1486,7 +1486,7 @@ test_single_write("Inline Equation $",
 		}]
 	}]
 )
-		
+
 test_single_write("Inline Equation ()",
 	"\\(equation\\)",
 	[{
@@ -1497,7 +1497,7 @@ test_single_write("Inline Equation ()",
 		}]
 	}]
 )
-		
+
 test_single_write("Inline Equation () no escape",
 	"(equation)",
 	[{
@@ -1511,7 +1511,7 @@ test_single_write("Block Equation $$",
 	[{
 		type: smd.Token.Paragraph,
 		children: [{
-			type: smd.Token.Equation_block,
+			type: smd.Token.Equation_Block,
 			children: ["\nequation\n"]
 		}]
 	}]
@@ -1522,9 +1522,9 @@ test_single_write("Block Equation []",
 	[{
 		type: smd.Token.Paragraph,
 		children: [{
-			type: smd.Token.Equation_block,
+			type: smd.Token.Equation_Block,
 			children: ["\nequation\n"],
-		}] 
+		}]
 	}]
 )
 
