@@ -6,37 +6,39 @@ https://github.com/thetarnav/streaming-markdown
 */
 
 export const
-	DOCUMENT       =  1,
-	PARAGRAPH      =  2,
-	HEADING_1      =  3,
-	HEADING_2      =  4,
-	HEADING_3      =  5,
-	HEADING_4      =  6,
-	HEADING_5      =  7,
-	HEADING_6      =  8,
-	CODE_BLOCK     =  9,
-	CODE_FENCE     = 10,
-	CODE_INLINE    = 11,
-	ITALIC_AST     = 12,
-	ITALIC_UND     = 13,
-	STRONG_AST     = 14,
-	STRONG_UND     = 15,
-	STRIKE         = 16,
-	LINK           = 17,
-	RAW_URL        = 18,
-	IMAGE          = 19,
-	BLOCKQUOTE     = 20,
-	LINE_BREAK     = 21,
-	RULE           = 22,
-	LIST_UNORDERED = 23,
-	LIST_ORDERED   = 24,
-	LIST_ITEM      = 25,
-	CHECKBOX       = 26,
-	TABLE          = 27,
-	TABLE_ROW      = 28,
-	TABLE_CELL     = 29,
-	MAYBE_URL      = 30,
-	MAYBE_TASK     = 31
+	DOCUMENT        =  1,
+	PARAGRAPH       =  2,
+	HEADING_1       =  3,
+	HEADING_2       =  4,
+	HEADING_3       =  5,
+	HEADING_4       =  6,
+	HEADING_5       =  7,
+	HEADING_6       =  8,
+	CODE_BLOCK      =  9,
+	CODE_FENCE      = 10,
+	CODE_INLINE     = 11,
+	ITALIC_AST      = 12,
+	ITALIC_UND      = 13,
+	STRONG_AST      = 14,
+	STRONG_UND      = 15,
+	STRIKE          = 16,
+	LINK            = 17,
+	RAW_URL         = 18,
+	IMAGE           = 19,
+	BLOCKQUOTE      = 20,
+	LINE_BREAK      = 21,
+	RULE            = 22,
+	LIST_UNORDERED  = 23,
+	LIST_ORDERED    = 24,
+	LIST_ITEM       = 25,
+	CHECKBOX        = 26,
+	TABLE           = 27,
+	TABLE_ROW       = 28,
+	TABLE_CELL      = 29,
+	MAYBE_URL       = 30,
+	MAYBE_TASK      = 31,
+	EQUATION_BLOCK  = 32,
+	EQUATION_INLINE = 33
 
 /** @enum {(typeof Token)[keyof typeof Token]} */
 export const Token = /** @type {const} */({
@@ -69,6 +71,8 @@ export const Token = /** @type {const} */({
 	Table:          TABLE,
 	Table_Row:      TABLE_ROW,
 	Table_Cell:     TABLE_CELL,
+	Equation_block: EQUATION_BLOCK,
+	Equation_Inline:EQUATION_INLINE,
 })
 
 /**
@@ -105,6 +109,8 @@ export function token_to_string(type) {
 	case TABLE:          return "Table"
 	case TABLE_ROW:      return "Table_Row"
 	case TABLE_CELL:     return "Table_Cell"
+	case EQUATION_BLOCK: return "Equation_block"
+	case EQUATION_INLINE:return "Equation_Inline"
 	}
 }
 
@@ -899,6 +905,27 @@ export function parser_write(p, chunk) {
 				continue
 			}
 			break
+		case EQUATION_BLOCK:
+			if ("\\]" === pending_with_char || "$$" === pending_with_char) {
+				add_text(p)
+				end_token(p)
+				p.pending = ""
+				continue
+			}
+			break
+		case EQUATION_INLINE:
+			if ("\\)" === pending_with_char || "$" === p.pending[0]) {
+				add_text(p)
+				end_token(p)
+
+				if(char === ')'){
+					p.pending = ""
+				} else {
+					p.pending = char
+				}
+				continue
+			}
+			break
 		/* Raw URLs */
 		case MAYBE_URL:
 			if ("http://"  === pending_with_char ||
@@ -980,6 +1007,39 @@ export function parser_write(p, chunk) {
 		switch (p.pending[0]) {
 		/* Escape character */
 		case '\\':
+			if (p.token === IMAGE ||
+				p.token === EQUATION_BLOCK ||
+				p.token === EQUATION_INLINE)
+			 break
+
+			 if ("\\" === p.pending) {
+
+				if ('(' === char || '[' === char) {
+					p.pending = pending_with_char
+					continue
+				}
+			} else {
+
+				if (pending_with_char === "\\[\n") {
+
+					add_text(p)
+					add_token(p, EQUATION_BLOCK)
+					p.pending = char
+					continue
+
+				} else if (pending_with_char === "\\( " || pending_with_char.startsWith("\\(")) {
+
+					add_text(p)
+					add_token(p, EQUATION_INLINE)
+					p.pending = char
+					continue
+				} else {
+					p.text = pending_with_char.slice(-2)
+					p.pending = ""
+				}
+			continue
+			}
+
 			if ('\n' === char) {
 				// Escaped newline has the same affect as unescaped one
 				p.pending = char
@@ -995,6 +1055,11 @@ export function parser_write(p, chunk) {
 			continue
 		/* Newline */
 		case '\n':
+			if (p.token === IMAGE ||
+				p.token === EQUATION_BLOCK ||
+				p.token === EQUATION_INLINE)
+			 break
+
 			add_text(p)
 			p.token = LINE_BREAK
 			p.blockquote_idx = 0
@@ -1017,7 +1082,11 @@ export function parser_write(p, chunk) {
 			continue
 		case '_':
 		case '*': {
-			if (p.token === IMAGE) break
+			if (p.token === IMAGE ||
+				p.token === EQUATION_BLOCK ||
+				p.token === EQUATION_INLINE ||
+				p.token === STRONG_AST)
+			 break
 
 			/** @type {Token} */ let italic = ITALIC_AST
 			/** @type {Token} */ let strong = STRONG_AST
@@ -1090,11 +1159,50 @@ export function parser_write(p, chunk) {
 					continue
 				}
 			}
-
 			break
+
+			case '$':
+				if (p.token === IMAGE ||
+					p.token === STRIKE)
+				 break
+
+				const delimiters = [" ", ":", ";", ")", "", ",", "!", ".", "?", "]", "\n"]
+
+				if ("$" === p.pending) {
+
+					if ('$' === char) {
+					/* $$EQUATION_BLOCK$$
+						^
+					*/
+					add_text(p)
+					add_token(p, EQUATION_BLOCK)
+					p.pending = ""
+					continue
+					} else if (delimiters.includes(char) || /^\d$/.test(char)) {
+					/* $123
+						^
+					*/
+						break
+					} else {
+					/* $EQUATION_INLINE$
+						^
+					*/
+					add_text(p)
+					add_token(p, EQUATION_INLINE)
+					p.pending = char
+					continue
+					}
+				}
+				break
 		/* [Image](url) */
 		case '[':
-			if (p.token !== IMAGE &&
+			if (p.token === IMAGE ||
+				p.token === STRIKE ||
+				p.token === EQUATION_BLOCK ||
+				p.token === EQUATION_INLINE)
+			 break
+
+		if (p.token !== IMAGE &&
 			    p.token !== LINK &&
 			    ']' !== char
 			) {
@@ -1134,6 +1242,13 @@ export function parser_write(p, chunk) {
 		) {
 			p.text   += p.pending
 			p.pending = char
+
+			if (p.token === IMAGE ||
+				p.token === STRIKE ||
+				p.token === EQUATION_BLOCK ||
+				p.token === EQUATION_INLINE)
+			 break
+
 			p.token = MAYBE_URL
 			continue
 		}
@@ -1279,6 +1394,8 @@ export function default_add_token(data, type) {
 	case TABLE_CELL:
 		slot = document.createElement(parent.parentElement?.tagName === "THEAD" ? "th" : "td")
 		break
+	case EQUATION_BLOCK:  slot = document.createElement("equation-block"); break
+	case EQUATION_INLINE: slot = document.createElement("equation-inline"); break
 	}
 
 	data.nodes[++data.index] = parent.appendChild(slot)
