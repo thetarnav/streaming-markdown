@@ -154,8 +154,8 @@ export function attr_to_html_attr(type) {
  * @property {Uint8Array  } spaces
  * @property {string      } indent
  * @property {number      } indent_len
- * @property {0 | 1       } code_fence_body - For {@link Token.Code_Fence} parsing
- * @property {number      } backticks_count
+ * @property {number      } fence_end       - For {@link Token.Code_Fence} parsing
+ * @property {number      } fence_start
  * @property {number      } blockquote_idx  - For Blockquote parsing
  * @property {string      } hr_char         - For horizontal rule parsing
  * @property {number      } hr_chars        - For horizontal rule parsing
@@ -178,11 +178,11 @@ export function parser(renderer) {
 		tokens     : tokens,
 		len        : 0,
 		token      : DOCUMENT,
-		code_fence_body: 0,
+		fence_end: 0,
 		blockquote_idx: 0,
 		hr_char    : '',
 		hr_chars   : 0,
-		backticks_count: 0,
+		fence_start: 0,
 		spaces     : new Uint8Array(TOKEN_ARRAY_CAP),
 		indent     : "",
 		indent_len : 0,
@@ -404,7 +404,7 @@ export function parser_write(p, chunk) {
 				*/
 				end_tokens_to_len(p, p.blockquote_idx)
 				p.blockquote_idx = 0
-				p.backticks_count = 0
+				p.fence_start = 0
 				p.pending = char
 				continue
 			/* Heading */
@@ -439,7 +439,7 @@ export function parser_write(p, chunk) {
 				if (next_blockquote_idx === -1) {
 					end_tokens_to_len(p, p.blockquote_idx)
 					p.blockquote_idx += 1
-					p.backticks_count = 0
+					p.fence_start = 0
 					add_token(p, BLOCKQUOTE)
 				} else {
 					p.blockquote_idx = next_blockquote_idx
@@ -505,10 +505,10 @@ export function parser_write(p, chunk) {
 				if (p.pending.length < 3) {
 					if ('`' === char) {
 						p.pending = pending_with_char
-						p.backticks_count = pending_with_char.length
+						p.fence_start = pending_with_char.length
 						continue
 					}
-					p.backticks_count = 0
+					p.fence_start = 0
 					break // fail
 				}
 
@@ -517,9 +517,9 @@ export function parser_write(p, chunk) {
 					/*  ````?
 					       ^
 					*/
-					if (p.pending.length === p.backticks_count) {
+					if (p.pending.length === p.fence_start) {
 						p.pending = pending_with_char
-						p.backticks_count = pending_with_char.length
+						p.fence_start = pending_with_char.length
 					}
 					/*  ```code`
 					           ^
@@ -527,7 +527,7 @@ export function parser_write(p, chunk) {
 					else {
 						add_token(p, PARAGRAPH)
 						clear_root_pending(p)
-						p.backticks_count = 0
+						p.fence_start = 0
 						parser_write(p, pending_with_char)
 					}
 					continue
@@ -536,8 +536,8 @@ export function parser_write(p, chunk) {
 					            ^
 					*/
 					add_token(p, CODE_FENCE)
-					if (p.pending.length > p.backticks_count) {
-						p.renderer.set_attr(p.renderer.data, LANG, p.pending.slice(p.backticks_count))
+					if (p.pending.length > p.fence_start) {
+						p.renderer.set_attr(p.renderer.data, LANG, p.pending.slice(p.fence_start))
 					}
 					clear_root_pending(p)
 					continue
@@ -729,46 +729,50 @@ export function parser_write(p, chunk) {
 		case CODE_FENCE:
 			switch (char) {
 			case '`':
-				if (pending_with_char.length ===
-					p.backticks_count + p.code_fence_body // 0 or 1 for \n
-				) {
+				/*  ```\n<code>\n``??
+				                  ^
+				*/
+				p.pending = pending_with_char
+				continue
+			case '\n':
+				/*  ```\n<code>\n```\n
+				                     ^
+				*/
+				if (pending_with_char.length === p.fence_start + p.fence_end + 1) {
 					add_text(p)
 					end_token(p)
 					p.pending = ""
-					p.backticks_count = 0
-					p.code_fence_body = 0
-				} else {
-					p.pending = pending_with_char
-				}
-				continue
-			case '\n':
-				p.text   += p.pending
-				p.pending = char
-				p.code_fence_body = 1
-				continue
-			// @ts-expect-error intentional fallthrough
-			case ' ':
-				if (p.pending.startsWith("\n")) {
-					p.pending = pending_with_char
-					p.code_fence_body += 1
+					p.fence_start = 0
+					p.fence_end   = 0
 					continue
 				}
-			default:
-				p.text   += pending_with_char
-				p.pending = ""
-				p.code_fence_body = 1
-				continue
+				break
+			case ' ':
+				/*  ```\n<code>\n ??
+				                 ^  (space after newline is allowed)
+				*/
+				if (p.pending.startsWith("\n")) {
+					p.pending = pending_with_char
+					p.fence_end += 1
+					continue
+				}
+				break
 			}
+			// any other char
+			p.text   += p.pending
+			p.pending = char
+			p.fence_end = 1
+			continue
 		case CODE_INLINE:
 			switch (char) {
 			case '`':
 				if (pending_with_char.length ===
-				    p.backticks_count + Number(p.pending[0] === ' ') // 0 or 1 for space
+				    p.fence_start + Number(p.pending[0] === ' ') // 0 or 1 for space
 				) {
 					add_text(p)
 					end_token(p)
 					p.pending = ""
-					p.backticks_count = 0
+					p.fence_start = 0
 				} else {
 					p.pending = pending_with_char
 				}
@@ -1077,10 +1081,10 @@ export function parser_write(p, chunk) {
 			if (p.token === IMAGE) break
 
 			if ('`' === char) {
-				p.backticks_count += 1
+				p.fence_start += 1
 				p.pending = pending_with_char
 			} else {
-				p.backticks_count += 1 // started at 0, and first wasn't counted
+				p.fence_start += 1 // started at 0, and first wasn't counted
 				add_text(p)
 				add_token(p, CODE_INLINE)
 				p.text = ' ' === char || '\n' === char ? "" : char // trim leading space

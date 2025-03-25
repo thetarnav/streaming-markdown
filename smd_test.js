@@ -271,11 +271,43 @@ for (let l = 3; l <= 5; l += 1) {
 		}]
 	)
 
-	test_single_write("Code_Fence with unfinished end backticks - "+l+" backticks",
-		fence+"\na\n"+fence_less+"\n"+fence,
+	test_single_write("Code_Fence - bad_end_fence:less - "+l+" backticks",
+		fence+"\n"+
+		fence_less+"\n"+
+		fence,
 		[{
 			type    : smd.Token.Code_Fence,
-			children: ["a\n"+fence_less+""]
+			children: [fence_less]
+		}]
+	)
+
+	test_single_write("Code_Fence - bad_end_fence:more - "+l+" backticks",
+		fence+"\n"+
+		fence_more+"\n"+
+		fence,
+		[{
+			type    : smd.Token.Code_Fence,
+			children: [fence_more]
+		}]
+	)
+
+	test_single_write("Code_Fence - bad_end_fence:char - "+l+" backticks",
+		fence+"\n"+
+		fence+"b"+"\n"+
+		fence,
+		[{
+			type    : smd.Token.Code_Fence,
+			children: [fence+"b"]
+		}]
+	)
+
+	test_single_write("Code_Fence - bad_end_fence:space - "+l+" backticks",
+		fence+"\n"+
+		"`".padStart(l)+"\n"+
+		fence,
+		[{
+			type    : smd.Token.Code_Fence,
+			children: ["`".padStart(l)]
 		}]
 	)
 
@@ -300,19 +332,6 @@ for (let l = 3; l <= 5; l += 1) {
 			children: [`before\n${fence}js\nsome js\n${fence}`],
 		}],
 	)
-
-	// TODO: issue #14
-	// test_single_write("Wrong Nested Code Fences - "+l+" backticks",
-	// 	`${fence}md\nbefore\n${fence}js\nsome js\n${fence}\n${fence}\nafter\n${fence}`,
-	// 	[{
-	// 		type    : smd.Token.Code_Fence,
-	// 		attrs   : {[smd.Attr.Lang]: "md"},
-	// 		children: [`before\n${fence}js\nsome js`],
-	// 	}, {
-	// 		type    : smd.Token.Code_Fence,
-	// 		children: [`after`],
-	// 	}],
-	// )
 }
 
 
