@@ -225,34 +225,37 @@ for (let l = 1; l <= 2; l += 1) {
 }
 
 for (let l = 3; l <= 5; l += 1) {
-	const c = '`'.repeat(l)
 
-	test_single_write("Empty Code_Fence - " + l + " backticks",
-		c+"\n"+c,
+	let fence      = '`'.repeat(l)
+	let fence_less = '`'.repeat(l - 1)
+	let fence_more = '`'.repeat(l + 1)
+
+	test_single_write("Empty Code_Fence - "+l+" backticks",
+		fence+"\n"+fence,
 		[{
 			type    : smd.Token.Code_Fence,
 			children: []
 		}]
 	)
 
-	test_single_write("Code_Fence - " + l + " backticks",
-		c+"\nfoo\n"+c,
+	test_single_write("Code_Fence - "+l+" backticks",
+		fence+"\nfoo\n"+fence,
 		[{
 			type    : smd.Token.Code_Fence,
 			children: ["foo"]
 		}]
 	)
 
-	test_single_write("Code_Fence space before close - " + l + " backticks",
-		c+"\nfoo\n "+c,
+	test_single_write("Code_Fence space before close - "+l+" backticks",
+		fence+"\nfoo\n "+fence,
 		[{
 			type    : smd.Token.Code_Fence,
 			children: ["foo"]
 		}]
 	)
 
-	test_single_write("Code_Fence with language - " + l + " backticks",
-		c+"js\nfoo\n"+c,
+	test_single_write("Code_Fence with language - "+l+" backticks",
+		fence+"js\nfoo\n"+fence,
 		[{
 			type    : smd.Token.Code_Fence,
 			children: ["foo"],
@@ -260,26 +263,24 @@ for (let l = 3; l <= 5; l += 1) {
 		}]
 	)
 
-	const m = '`'.repeat(l - 1)
-
-	test_single_write("Code_Fence escaped backticks - " + l + " backticks",
-		c+"\n"+m+"\n"+c,
+	test_single_write("Code_Fence escaped backticks - "+l+" backticks",
+		fence+"\n"+fence_less+"\n"+fence,
 		[{
 			type    : smd.Token.Code_Fence,
-			children: [m]
+			children: [fence_less]
 		}]
 	)
 
-	test_single_write("Code_Fence with unfinished end backticks - " + l + " backticks",
-		c+"\na\n"+m+"\n"+c,
+	test_single_write("Code_Fence with unfinished end backticks - "+l+" backticks",
+		fence+"\na\n"+fence_less+"\n"+fence,
 		[{
 			type    : smd.Token.Code_Fence,
-			children: ["a\n"+m+""]
+			children: ["a\n"+fence_less+""]
 		}]
 	)
 
-	test_single_write("Multiple Code Fences should be separated",
-		`${c}\nFoo\n${c}\n\nBar\n\n${c}\nBaz\n${c}`,
+	test_single_write("Multiple Code Fences should be separated - "+l+" backticks",
+		`${fence}\nFoo\n${fence}\n\nBar\n\n${fence}\nBaz\n${fence}`,
 		[{
 			type    : smd.Token.Code_Fence,
 			children: ["Foo"]
@@ -290,6 +291,14 @@ for (let l = 3; l <= 5; l += 1) {
 			type    : smd.Token.Code_Fence,
 			children: ["Baz"]
 		}]
+	)
+
+	test_single_write("Nested Code Fences - "+l+" backticks",
+		`${fence_more}\nbefore\n${fence}js\nsome js\n${fence}\n${fence_more}`,
+		[{
+			type    : smd.Token.Code_Fence,
+			children: [`before\n${fence}js\nsome js\n${fence}`],
+		}],
 	)
 }
 
