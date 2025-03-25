@@ -277,6 +277,20 @@ for (let l = 3; l <= 5; l += 1) {
 			children: ["a\n"+m+""]
 		}]
 	)
+
+	test_single_write("Multiple Code Fences should be separated",
+		`${c}\nFoo\n${c}\n\nBar\n\n${c}\nBaz\n${c}`,
+		[{
+			type    : smd.Token.Code_Fence,
+			children: ["Foo"]
+		}, {
+			type    : smd.Token.Paragraph,
+			children: ["Bar"]
+		}, {
+			type    : smd.Token.Code_Fence,
+			children: ["Baz"]
+		}]
+	)
 }
 
 
