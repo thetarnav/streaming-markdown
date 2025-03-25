@@ -300,6 +300,19 @@ for (let l = 3; l <= 5; l += 1) {
 			children: [`before\n${fence}js\nsome js\n${fence}`],
 		}],
 	)
+
+	// TODO: issue #14
+	// test_single_write("Wrong Nested Code Fences - "+l+" backticks",
+	// 	`${fence}md\nbefore\n${fence}js\nsome js\n${fence}\n${fence}\nafter\n${fence}`,
+	// 	[{
+	// 		type    : smd.Token.Code_Fence,
+	// 		attrs   : {[smd.Attr.Lang]: "md"},
+	// 		children: [`before\n${fence}js\nsome js`],
+	// 	}, {
+	// 		type    : smd.Token.Code_Fence,
+	// 		children: [`after`],
+	// 	}],
+	// )
 }
 
 
