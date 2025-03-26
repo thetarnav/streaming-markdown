@@ -44,7 +44,7 @@ for (let level = 1; level <= 6; level += 1) {
 	)
 }
 
-test_single_write("Line Breaks",
+test_single_write("Newline",
 	"foo\nbar",
 	[{
 		type    : smd.Token.Paragraph,
@@ -52,7 +52,7 @@ test_single_write("Line Breaks",
 	}]
 )
 
-test_single_write("Line Breaks with Italic",
+test_single_write("Newline with Italic",
 	"*a\nb*",
 	[{
 		type    : smd.Token.Paragraph,
@@ -63,7 +63,7 @@ test_single_write("Line Breaks with Italic",
 	}]
 )
 
-test_single_write("Escaped Line Breaks",
+test_single_write("Escaped Newline",
 	"a\\\nb",
 	[{
 		type    : smd.Token.Paragraph,
@@ -209,7 +209,7 @@ for (let l = 1; l <= 2; l += 1) {
 		}]
 	)
 
-	test_single_write("Code with two line breaks" + " - "+l+" backticks",
+	test_single_write("Code with two newlines" + " - "+l+" backticks",
 		c + "a\n\nb",
 		[{
 			type    : smd.Token.Paragraph,
@@ -1550,6 +1550,18 @@ test_single_write("Inline Equation $",
 	}]
 )
 
+// TODO: How to allow equations starting with a number?
+// test_single_write("Inline Equation $ number",
+// 	"$123$",
+// 	[{
+// 		type: smd.Token.Paragraph,
+// 		children: [{
+// 			type: smd.Token.Equation_Inline,
+// 			children: ["123"],
+// 		}]
+// 	}]
+// )
+
 test_single_write("Inline Equation ()",
 	"\\(equation\\)",
 	[{
@@ -1633,4 +1645,90 @@ test_single_write("Equation in text $ no closing",
 			}
 		]
 	}]
+)
+
+test_single_write("Dollar sign followed by digit is not equation",
+    "$123 is not an equation",
+    [{
+        type: smd.Token.Paragraph,
+        children: ["$123 is not an equation"]
+    }]
+)
+
+test_single_write("Dollar sign followed by comma is not equation",
+    "$,000 is not an equation",
+    [{
+        type: smd.Token.Paragraph,
+        children: ["$,000 is not an equation"]
+    }]
+)
+
+test_single_write("Dollar sign followed by period is not equation",
+    "$.99 is not an equation",
+    [{
+        type: smd.Token.Paragraph,
+        children: ["$.99 is not an equation"]
+    }]
+)
+
+test_single_write("Multiple currency values in text",
+    "The items cost $10, $20, and $30 respectively.",
+    [{
+        type: smd.Token.Paragraph,
+        children: ["The items cost $10, $20, and $30 respectively."]
+    }]
+)
+
+test_single_write("Mixed currency and equation usage",
+    "Price: $50 where $x^2$ is the formula",
+    [{
+        type: smd.Token.Paragraph,
+        children: [
+            "Price: $50 where ",
+            {
+                type: smd.Token.Equation_Inline,
+                children: ["x^2"]
+            },
+            " is the formula"
+        ]
+    }]
+)
+
+test_single_write("Currency at end of line",
+    "Total cost: $99\nNext line",
+    [{
+        type: smd.Token.Paragraph,
+        children: ["Total cost: $99", BR, "Next line"]
+    }]
+)
+
+test_single_write("Dollar sign followed by various delimiters",
+    "$: a, $; b, $) c, $? d, $] e",
+    [{
+        type: smd.Token.Paragraph,
+        children: ["$: a, $; b, $) c, $? d, $] e"]
+    }]
+)
+
+test_single_write("Valid equation after text without space",
+    "Value$x=y$formula",
+    [{
+        type: smd.Token.Paragraph,
+        children: [
+            "Value",
+            {
+                type: smd.Token.Equation_Inline,
+                children: ["x=y"]
+            },
+            "formula"
+        ]
+    }]
+)
+
+test_single_write("Escaped dollar sign",
+    "\\$foo$",
+    [{
+        type: smd.Token.Paragraph,
+        children: ["$foo$"]
+    }]
 )

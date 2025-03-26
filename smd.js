@@ -328,7 +328,7 @@ function add_list_item(p, prefix_length) {
 }
 
 /**
- * @param {Parser} p
+ * @param   {Parser} p
  * @returns {void  } */
 function clear_root_pending(p) {
 	p.indent = ""
@@ -337,7 +337,7 @@ function clear_root_pending(p) {
 }
 
 /**
- * @param {number} charcode
+ * @param   {number} charcode
  * @returns {boolean} */
 function is_digit(charcode) {
 	switch (charcode) {
@@ -347,6 +347,26 @@ function is_digit(charcode) {
 	default:
 		return false
 	}
+}
+
+/**
+ * @param   {number} charcode
+ * @returns {boolean} */
+function is_delimeter(charcode) {
+	switch (charcode) {
+	//   " "      ":"      ";"      ")"      ","      "!"      "."      "?"      "]"      "\n"
+	case 32: case 58: case 59: case 41: case 44: case 33: case 46: case 63: case 93: case 10: 
+		return true
+	default:
+		return false
+	}
+}
+
+/**
+ * @param   {number} charcode
+ * @returns {boolean} */
+function is_delimeter_or_number(charcode) {
+	return is_digit(charcode) || is_delimeter(charcode)
 }
 
 /**
@@ -1023,8 +1043,7 @@ export function parser_write(p, chunk) {
 				p.token === EQUATION_INLINE)
 			 break
 
-			 if ("\\" === p.pending) {
-
+			if ("\\" === p.pending) {
 				if ('(' === char || '[' === char) {
 					p.pending = pending_with_char
 					continue
@@ -1032,23 +1051,18 @@ export function parser_write(p, chunk) {
 			} else {
 
 				if (pending_with_char === "\\[\n") {
-
 					add_text(p)
 					add_token(p, EQUATION_BLOCK)
 					p.pending = char
-					continue
-
 				} else if (pending_with_char === "\\( " || pending_with_char.startsWith("\\(")) {
-
 					add_text(p)
 					add_token(p, EQUATION_INLINE)
 					p.pending = char
-					continue
 				} else {
 					p.text = pending_with_char.slice(-2)
 					p.pending = ""
 				}
-			continue
+				continue
 			}
 
 			if ('\n' === char) {
@@ -1172,16 +1186,13 @@ export function parser_write(p, chunk) {
 			}
 			break
 
-			case '$':
-				if (p.token === IMAGE ||
-					p.token === STRIKE)
-				 break
+		case '$':
+			if (p.token === IMAGE ||
+				p.token === STRIKE)
+				break
 
-				const delimiters = [" ", ":", ";", ")", "", ",", "!", ".", "?", "]", "\n"]
-
-				if ("$" === p.pending) {
-
-					if ('$' === char) {
+			if ("$" === p.pending) {
+				if ('$' === char) {
 					/* $$EQUATION_BLOCK$$
 						^
 					*/
@@ -1189,12 +1200,12 @@ export function parser_write(p, chunk) {
 					add_token(p, EQUATION_BLOCK)
 					p.pending = ""
 					continue
-					} else if (delimiters.includes(char) || /^\d$/.test(char)) {
+				} else if (is_delimeter_or_number(char.charCodeAt(0))) {
 					/* $123
 						^
 					*/
-						break
-					} else {
+					break
+				} else {
 					/* $EQUATION_INLINE$
 						^
 					*/
@@ -1202,19 +1213,15 @@ export function parser_write(p, chunk) {
 					add_token(p, EQUATION_INLINE)
 					p.pending = char
 					continue
-					}
 				}
-				break
+			}
+			break
 		/* [Image](url) */
 		case '[':
-			if (p.token === IMAGE ||
-				p.token === STRIKE ||
-				p.token === EQUATION_BLOCK ||
-				p.token === EQUATION_INLINE)
-			 break
-
-		if (p.token !== IMAGE &&
+			if (p.token !== IMAGE &&
 			    p.token !== LINK &&
+				p.token !== EQUATION_BLOCK &&
+				p.token !== EQUATION_INLINE &&
 			    ']' !== char
 			) {
 				add_text(p)
@@ -1247,18 +1254,14 @@ export function parser_write(p, chunk) {
 		*/
 		if (p.token !== IMAGE &&
 		    p.token !== LINK &&
+			p.token !== EQUATION_BLOCK &&
+			p.token !== EQUATION_INLINE &&
 		    'h' === char &&
 		   (" " === p.pending ||
 		    ""  === p.pending)
 		) {
 			p.text   += p.pending
 			p.pending = char
-
-			if (p.token === IMAGE ||
-				p.token === STRIKE ||
-				p.token === EQUATION_BLOCK ||
-				p.token === EQUATION_INLINE)
-			 break
 
 			p.token = MAYBE_URL
 			continue
