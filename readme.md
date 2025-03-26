@@ -75,10 +75,10 @@ smd.parser_end(parser)
 
 | Field name  | Type                   | Description |
 | ----------- | ---------------------- | ----------- |
-| `data`      | `T`                    | User data object. Available as first param in callbacks. |
+| `data`      | `T`                    | User data object.<br>Available as first param in callbacks. |
 | `add_token` | `Renderer_Add_Token<T>`| When the tokens starts. |
 | `end_token` | `Renderer_End_Token<T>`| When the token ends. |
-| `add_text`  | `Renderer_Add_Text<T>` | To append text to current token. Can be called multiple times or none. |
+| `add_text`  | `Renderer_Add_Text<T>` | To append text to current token.<br>Can be called multiple times or none. |
 | `set_attr`  | `Renderer_Set_Attr<T>` | Set additional attributes of current token eg. the link url. |
 
 ## Markdown features
@@ -144,6 +144,7 @@ smd.parser_end(parser)
 - [ ] Superscript
 - [ ] Emoji Shortcodes
 - [ ] Html tags (e.g. `<div>`, `<span>`, `<a>`, `<img>`, etc.)
+    - [x] Line breaks `<br>`, `<br/>`
 - [x] LaTex tags for blocks `\[...\]`, `$$...$$` and inline `\(...\)` or `$...$`
 
 If you think that something is missing or doesn't work, please [make an issue](https://github.com/thetarnav/streaming-markdown/issues).

@@ -35,10 +35,11 @@ export const
 	TABLE           = 27,
 	TABLE_ROW       = 28,
 	TABLE_CELL      = 29,
-	MAYBE_URL       = 30,
-	MAYBE_TASK      = 31,
-	EQUATION_BLOCK  = 32,
-	EQUATION_INLINE = 33
+	EQUATION_BLOCK  = 30,
+	EQUATION_INLINE = 31,
+	MAYBE_URL       = 100,
+	MAYBE_TASK      = 101,
+	MAYBE_BR        = 102
 
 /** @enum {(typeof Token)[keyof typeof Token]} */
 export const Token = /** @type {const} */({
@@ -1030,6 +1031,36 @@ export function parser_write(p, chunk) {
 				p.pending = pending_with_char
 			}
 			continue
+		case MAYBE_BR:
+			if (pending_with_char.startsWith("<br")) {
+				if (/* "<br" */
+				    pending_with_char.length === 3 ||
+				    /* "<br " */
+				    char === ' ' ||
+				    /* "<br/" | "<br /" */
+				    char === '/' && (pending_with_char.length === 4 ||
+				                     p.pending[p.pending.length-1] === ' ')
+				) {
+					p.pending = pending_with_char
+					continue
+				}
+
+				/* "<br>" | "<br/>" */
+				if (char === '>') {
+					add_text(p)
+					p.token = p.tokens[p.len]
+					p.renderer.add_token(p.renderer.data, LINE_BREAK)
+					p.renderer.end_token(p.renderer.data)
+					p.pending = ""
+					continue
+				}
+			}
+			// Fail
+			p.token = p.tokens[p.len]
+			p.text += '<'
+			p.pending = p.pending.slice(1)
+			parser_write(p, char)
+			continue
 		}
 
 		/*
@@ -1049,7 +1080,6 @@ export function parser_write(p, chunk) {
 					continue
 				}
 			} else {
-
 				if (pending_with_char === "\\[\n") {
 					add_text(p)
 					add_token(p, EQUATION_BLOCK)
@@ -1069,27 +1099,40 @@ export function parser_write(p, chunk) {
 				// Escaped newline has the same affect as unescaped one
 				p.pending = char
 			} else {
-				const char_code = char.charCodeAt(0)
+				let charcode = char.charCodeAt(0)
 				p.pending = ""
-				p.text += is_digit(char_code)                  || // 0-9
-				          (char_code >= 65 && char_code <= 90) || // A-Z
-				          (char_code >= 97 && char_code <= 122)   // a-z
+				p.text += is_digit(charcode)                 || // 0-9
+				          (charcode >= 65 && charcode <= 90) || // A-Z
+				          (charcode >= 97 && charcode <= 122)   // a-z
 				          	? pending_with_char
 				          	: char
 			}
 			continue
 		/* Newline */
 		case '\n':
-			if (p.token === IMAGE ||
-				p.token === EQUATION_BLOCK ||
-				p.token === EQUATION_INLINE)
-			 break
-
-			add_text(p)
-			p.token = LINE_BREAK
-			p.blockquote_idx = 0
-			p.pending = char
-			continue
+			if (p.token !== IMAGE &&
+			    p.token !== EQUATION_BLOCK &&
+			    p.token !== EQUATION_INLINE
+			) {
+				add_text(p)
+				p.pending = char
+				p.token = LINE_BREAK
+				p.blockquote_idx = 0
+				continue
+			}
+			break
+		/* <br> */
+		case '<':
+			if (p.token !== IMAGE &&
+			    p.token !== EQUATION_BLOCK &&
+			    p.token !== EQUATION_INLINE
+			) {
+				add_text(p)
+				p.pending = pending_with_char
+				p.token = MAYBE_BR
+				continue
+			}
+			break
 		/* `Code Inline` */
 		case '`':
 			if (p.token === IMAGE) break
@@ -1108,9 +1151,9 @@ export function parser_write(p, chunk) {
 		case '_':
 		case '*': {
 			if (p.token === IMAGE ||
-				p.token === EQUATION_BLOCK ||
-				p.token === EQUATION_INLINE ||
-				p.token === STRONG_AST)
+			    p.token === EQUATION_BLOCK ||
+			    p.token === EQUATION_INLINE ||
+			    p.token === STRONG_AST)
 			 break
 
 			/** @type {Token} */ let italic = ITALIC_AST
@@ -1190,8 +1233,8 @@ export function parser_write(p, chunk) {
 		/* $eq$ | $$eq$$ */
 		case '$':
 			if (p.token !== IMAGE &&
-				p.token !== STRIKE &&
-				"$" === p.pending
+			    p.token !== STRIKE &&
+			    "$" === p.pending
 			) {
 				/* $$EQUATION_BLOCK$$
 					^
@@ -1223,8 +1266,8 @@ export function parser_write(p, chunk) {
 		case '[':
 			if (p.token !== IMAGE &&
 			    p.token !== LINK &&
-				p.token !== EQUATION_BLOCK &&
-				p.token !== EQUATION_INLINE &&
+			    p.token !== EQUATION_BLOCK &&
+			    p.token !== EQUATION_INLINE &&
 			    ']' !== char
 			) {
 				add_text(p)
@@ -1257,8 +1300,8 @@ export function parser_write(p, chunk) {
 		*/
 		if (p.token !== IMAGE &&
 		    p.token !== LINK &&
-			p.token !== EQUATION_BLOCK &&
-			p.token !== EQUATION_INLINE &&
+		    p.token !== EQUATION_BLOCK &&
+		    p.token !== EQUATION_INLINE &&
 		    'h' === char &&
 		   (" " === p.pending ||
 		    ""  === p.pending)

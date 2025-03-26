@@ -71,6 +71,46 @@ test_single_write("Escaped Newline",
 	}]
 )
 
+for (let br of ["<br>", "<br/>", "<br />"]) {
+	test_single_write("Line Break ("+br+")",
+		"a"+br+"b",
+		[{
+			type    : smd.Token.Paragraph,
+			children: ["a", BR, "b"],
+		}]
+	)
+	
+	test_single_write("Line Break with Italic ("+br+")",
+		"*a"+br+"b*",
+		[{
+			type    : smd.Token.Paragraph,
+			children: [{
+				type    : smd.Token.Italic_Ast,
+				children: ["a", BR, "b"]
+			}],
+		}]
+	)
+	
+	test_single_write("Escaped Line Break ("+br+")",
+		"a\\"+br+"b",
+		[{
+			type    : smd.Token.Paragraph,
+			children: ["a"+br+"b"],
+		}]
+	)
+}
+
+for (let br of ["<bra>", "<br//>"]) {
+	test_single_write("Wrong Line Break ("+br+")",
+		"a"+br+"b",
+		[{
+			type    : smd.Token.Paragraph,
+			children: ["a"+br+"b"],
+		}]
+	)
+}
+
+
 test_single_write("Paragraphs",
 	"foo\n\nbar",
 	[{
@@ -1427,7 +1467,7 @@ test_single_write("Table after table",
 }])
 
 test_single_write("Table with nested elements",
-`| *Aa* | Bb |
+`| *Aa* | B<br>b |
 | -- | -- |
 | \`aA\` | bB |`,
 [{
@@ -1443,7 +1483,7 @@ test_single_write("Table with nested elements",
 			]
 		}, {
 			type:     smd.Token.Table_Cell,
-			children: [" Bb "],
+			children: [" B", BR, "b "],
 		}],
 	}, {
 		type:     smd.Token.Table_Row,
