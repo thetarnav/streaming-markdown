@@ -1163,52 +1163,55 @@ export function parser_write(p, chunk) {
 			break
 		}
 		case '~':
-			if (p.token === IMAGE || p.token === STRIKE) break
-
-			if ("~" === p.pending) {
-				/* ~~Strike~~
-				    ^
-				*/
-				if ('~' === char) {
-					p.pending = pending_with_char
-					continue
-				}
-			} else {
-				/* ~~Strike~~
-				     ^
-				*/
-				if (' ' !== char && '\n' !== char) {
-					add_text(p)
-					add_token(p, STRIKE)
-					p.pending = char
-					continue
+			if (p.token !== IMAGE &&
+				p.token !== STRIKE
+			) {
+				if ("~" === p.pending) {
+					/* ~~Strike~~
+						^
+					*/
+					if ('~' === char) {
+						p.pending = pending_with_char
+						continue
+					}
+				} else {
+					/* ~~Strike~~
+						 ^
+					*/
+					if (' ' !== char && '\n' !== char) {
+						add_text(p)
+						add_token(p, STRIKE)
+						p.pending = char
+						continue
+					}
 				}
 			}
 			break
-
+		/* $eq$ | $$eq$$ */
 		case '$':
-			if (p.token === IMAGE ||
-				p.token === STRIKE)
-				break
-
-			if ("$" === p.pending) {
+			if (p.token !== IMAGE &&
+				p.token !== STRIKE &&
+				"$" === p.pending
+			) {
+				/* $$EQUATION_BLOCK$$
+					^
+				*/
 				if ('$' === char) {
-					/* $$EQUATION_BLOCK$$
-						^
-					*/
 					add_text(p)
 					add_token(p, EQUATION_BLOCK)
 					p.pending = ""
 					continue
-				} else if (is_delimeter_or_number(char.charCodeAt(0))) {
-					/* $123
-						^
-					*/
+				}
+				/* $123
+					^
+				*/
+				else if (is_delimeter_or_number(char.charCodeAt(0))) {
 					break
-				} else {
-					/* $EQUATION_INLINE$
-						^
-					*/
+				}
+				/* $EQUATION_INLINE$
+					^
+				*/
+				else {
 					add_text(p)
 					add_token(p, EQUATION_INLINE)
 					p.pending = char
