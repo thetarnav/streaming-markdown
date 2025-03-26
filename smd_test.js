@@ -100,7 +100,7 @@ for (let br of ["<br>", "<br/>", "<br />"]) {
 	)
 }
 
-for (let br of ["<bra>", "<br//>"]) {
+for (let br of ["<bra>", "<br//>", "<b"]) {
 	test_single_write("Wrong Line Break ("+br+")",
 		"a"+br+"b",
 		[{
