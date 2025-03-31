@@ -413,6 +413,29 @@ for (let l = 3; l <= 5; l += 1) {
 			children: [`before\n${fence}js\nsome js\n${fence}`],
 		}],
 	)
+
+	// TODO: https://github.com/thetarnav/streaming-markdown/issues/16
+	// test_single_write("Code_Fence in a list item - "+l+" backticks",
+	// 	"- "+"a"+"\n"+
+	// 	"  "+fence+"\n"+
+	// 	"  "+"foo\n"+
+	// 	"  "+"bar\n"+
+	// 	"  "+fence+"\n"+
+	// 	"b",
+	// 	[{
+	// 		type    : smd.Token.List_Unordered,
+	// 		children: [{
+	// 			type    : smd.Token.List_Item,
+	// 			children: ["a", {
+	// 				type    : smd.Token.Code_Fence,
+	// 				children: ["foo\nbar"],
+	// 			}],
+	// 		}],
+	// 	}, {
+	// 		type    : smd.Token.Paragraph,
+	// 		children: ["b"],
+	// 	}],
+	// )
 }
 
 
