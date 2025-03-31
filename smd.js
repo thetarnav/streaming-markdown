@@ -268,6 +268,10 @@ function idx_of_token(p, token, start_idx) {
  * @param   {number} len
  * @returns {void  } */
 function end_tokens_to_len(p, len) {
+
+	// TODO: specific token state should be reset only when the token ends
+	p.fence_start = 0
+
 	while (p.len > len) {
 		end_token(p)
 	}

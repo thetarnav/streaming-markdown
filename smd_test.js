@@ -219,8 +219,24 @@ for (let l = 1; l <= 4; l += 1) {
 		}]
 	)
 
+	test_single_write("Escaped backtick before Code Inline"+" - "+l+" backticks",
+		"\\`"+c+"a"+c+"b`c`",
+		[{
+			type    : smd.Token.Paragraph,
+			children: [
+				"`", {
+					type    : smd.Token.Code_Inline,
+					children: ["a"],
+				}, "b", {
+					type    : smd.Token.Code_Inline,
+					children: ["c"],
+				},
+			],
+		}],
+	)
+
 	if (l > 1) {
-		const m = '`'.repeat(l - 1)
+		let m = '`'.repeat(l - 1)
 
 		test_single_write("Code ` Inline" + " - "+l+" backticks",
 		c + "a"+m+"b" + c,
@@ -230,16 +246,15 @@ for (let l = 1; l <= 4; l += 1) {
 				type    : smd.Token.Code_Inline,
 				children: ["a"+m+"b"]
 			}],
-		}]
-	)
+		}])
 	}
 }
 
 for (let l = 1; l <= 2; l += 1) {
-	const c = '`'.repeat(l)
+	let c = '`'.repeat(l)
 
-	test_single_write("Code with line break" + " - "+l+" backticks",
-		c + "a\nb" + c,
+	test_single_write("Code with newline" + " - "+l+" backticks",
+		c+"a\nb"+c,
 		[{
 			type    : smd.Token.Paragraph,
 			children: [{
@@ -249,8 +264,10 @@ for (let l = 1; l <= 2; l += 1) {
 		}]
 	)
 
-	test_single_write("Code with two newlines" + " - "+l+" backticks",
-		c + "a\n\nb",
+	test_single_write("Code with two newlines"+" - "+l+" backticks",
+		c+"a"+"\n"+
+		"\n"+
+		"b"+c+"c"+c,
 		[{
 			type    : smd.Token.Paragraph,
 			children: [{
@@ -259,8 +276,32 @@ for (let l = 1; l <= 2; l += 1) {
 			}],
 		}, {
 			type    : smd.Token.Paragraph,
-			children: ["b"],
-		}]
+			children: ["b", {
+				type    : smd.Token.Code_Inline,
+				children: ["c"],
+			}],
+		}],
+	)
+
+	test_single_write("Unfinished code in a list"+" - "+l+" backticks",
+		"- "+c+"a\n"+
+		"- "+c+"b"+c+"c",
+		[{
+			type    : smd.Token.List_Unordered,
+			children: [{
+				type    : smd.Token.List_Item,
+				children: [{
+					type    : smd.Token.Code_Inline,
+					children: ["a"]
+				}],
+			}, {
+				type    : smd.Token.List_Item,
+				children: [{
+					type    : smd.Token.Code_Inline,
+					children: ["b"],
+				}, "c"],
+			}],
+		}],
 	)
 }
 
