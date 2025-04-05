@@ -340,16 +340,16 @@ for (let l = 3; l <= 5; l += 1) {
 		[{
 			type    : smd.Token.Code_Fence,
 			children: ["foo"],
-			attrs   : {[smd.Attr.Lang]: "js"}
-		}]
+			attrs   : {[smd.Attr.Lang]: "js"},
+		}],
 	)
 
 	test_single_write("Code_Fence escaped backticks - "+l+" backticks",
 		fence+"\n"+fence_less+"\n"+fence,
 		[{
 			type    : smd.Token.Code_Fence,
-			children: [fence_less]
-		}]
+			children: [fence_less],
+		}],
 	)
 
 	test_single_write("Code_Fence - bad_end_fence:less - "+l+" backticks",
@@ -358,8 +358,8 @@ for (let l = 3; l <= 5; l += 1) {
 		fence,
 		[{
 			type    : smd.Token.Code_Fence,
-			children: [fence_less]
-		}]
+			children: [fence_less],
+		}],
 	)
 
 	test_single_write("Code_Fence - bad_end_fence:more - "+l+" backticks",
@@ -368,8 +368,8 @@ for (let l = 3; l <= 5; l += 1) {
 		fence,
 		[{
 			type    : smd.Token.Code_Fence,
-			children: [fence_more]
-		}]
+			children: [fence_more],
+		}],
 	)
 
 	test_single_write("Code_Fence - bad_end_fence:char - "+l+" backticks",
@@ -379,7 +379,7 @@ for (let l = 3; l <= 5; l += 1) {
 		[{
 			type    : smd.Token.Code_Fence,
 			children: [fence+"b"]
-		}]
+		}],
 	)
 
 	test_single_write("Code_Fence - bad_end_fence:space - "+l+" backticks",
@@ -388,22 +388,22 @@ for (let l = 3; l <= 5; l += 1) {
 		fence,
 		[{
 			type    : smd.Token.Code_Fence,
-			children: ["`".padStart(l)]
-		}]
+			children: ["`".padStart(l)],
+		}],
 	)
 
 	test_single_write("Multiple Code Fences should be separated - "+l+" backticks",
 		`${fence}\nFoo\n${fence}\n\nBar\n\n${fence}\nBaz\n${fence}`,
 		[{
 			type    : smd.Token.Code_Fence,
-			children: ["Foo"]
+			children: ["Foo"],
 		}, {
 			type    : smd.Token.Paragraph,
-			children: ["Bar"]
+			children: ["Bar"],
 		}, {
 			type    : smd.Token.Code_Fence,
-			children: ["Baz"]
-		}]
+			children: ["Baz"],
+		}],
 	)
 
 	test_single_write("Nested Code Fences - "+l+" backticks",
@@ -418,22 +418,21 @@ for (let l = 3; l <= 5; l += 1) {
 	// test_single_write("Code_Fence in a list item - "+l+" backticks",
 	// 	"- "+"a"+"\n"+
 	// 	"  "+fence+"\n"+
-	// 	"  "+"foo\n"+
-	// 	"  "+"bar\n"+
+	// 	"  "+"b"+"\n"+
 	// 	"  "+fence+"\n"+
-	// 	"b",
+	// 	"c",
 	// 	[{
 	// 		type    : smd.Token.List_Unordered,
 	// 		children: [{
 	// 			type    : smd.Token.List_Item,
 	// 			children: ["a", {
 	// 				type    : smd.Token.Code_Fence,
-	// 				children: ["foo\nbar"],
+	// 				children: ["b"],
 	// 			}],
 	// 		}],
 	// 	}, {
 	// 		type    : smd.Token.Paragraph,
-	// 		children: ["b"],
+	// 		children: ["c"],
 	// 	}],
 	// )
 }
@@ -1565,17 +1564,6 @@ test_single_write("Table with nested elements",
 	}],
 }])
 
-test_single_write("Inline Equation $",
-		"$equation$",
-		[{
-			type    : smd.Token.Paragraph,
-			children: [{
-				type    : smd.Token.Equation_Inline,
-				children: ["equation"],
-			}]
-		}]
-)
-
 test_single_write("Inline Equation ()",
 	"\\(equation\\)",
 	[{
@@ -1584,6 +1572,14 @@ test_single_write("Inline Equation ()",
 			type: smd.Token.Equation_Inline,
 			children: ["equation"],
 		}]
+	}]
+)
+
+test_single_write("Inline Equation () no escape",
+	"(equation)",
+	[{
+		type: smd.Token.Paragraph,
+		children: ["(equation)"],
 	}]
 )
 
@@ -1603,43 +1599,6 @@ test_single_write("Inline Equation () with spaces",
 			type: smd.Token.Equation_Inline,
 			children: [" equation "],
 		}]
-	}]
-)
-
-test_single_write("Block Equation $$",
-	"$$\nequation\n$$",
-	[{
-		type: smd.Token.Paragraph,
-		children: [{
-			type: smd.Token.Equation_Block,
-			children: ["\nequation\n"],
-		}]
-	}]
-)
-
-test_single_write("Block Equation []",
-	"\\[\nequation\n\\]",
-	[{
-		type: smd.Token.Paragraph,
-		children: [{
-			type: smd.Token.Equation_Block,
-			children: ["\nequation\n"],
-		}]
-	}]
-)
-
-test_single_write("Equation in text",
-	"some text $equation$ more text",
-	[{
-		type: smd.Token.Paragraph,
-		children: [
-			"some text ",
-			{
-				type: smd.Token.Equation_Inline,
-				children: ["equation"],
-			},
-			" more text"
-		]
 	}]
 )
 
@@ -1666,35 +1625,28 @@ test_single_write("Inline Equation $",
 // 	}]
 // )
 
-test_single_write("Inline Equation ()",
-	"\\(equation\\)",
-	[{
-		type: smd.Token.Paragraph,
-		children: [{
-			type: smd.Token.Equation_Inline,
-			children: ["equation"],
-		}]
-	}]
-)
-
-test_single_write("Inline Equation () no escape",
-	"(equation)",
-	[{
-		type: smd.Token.Paragraph,
-		children: ["(equation)"],
-	}]
-)
-
 test_single_write("Block Equation $$",
 	"$$\nequation\n$$",
 	[{
 		type: smd.Token.Paragraph,
 		children: [{
 			type: smd.Token.Equation_Block,
-			children: ["\nequation\n"]
+			children: ["equation\n"]
 		}]
 	}]
 )
+
+// TODO: escape $$
+// test_single_write("Block Equation $$ escape 1",
+// 	"\\$$\nequation\n$$",
+// 	[{
+// 		type: smd.Token.Paragraph,
+// 		children: ["$", {
+// 			type: smd.Token.Equation_Inline,
+// 			children: ["equation\n"]
+// 		}, "$"]
+// 	}]
+// )
 
 test_single_write("Block Equation []",
 	"\\[\nequation\n\\]",
@@ -1702,7 +1654,7 @@ test_single_write("Block Equation []",
 		type: smd.Token.Paragraph,
 		children: [{
 			type: smd.Token.Equation_Block,
-			children: ["\nequation\n"],
+			children: ["equation\n"],
 		}]
 	}]
 )

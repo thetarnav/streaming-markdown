@@ -37,9 +37,11 @@ export const
 	TABLE_CELL      = 29,
 	EQUATION_BLOCK  = 30,
 	EQUATION_INLINE = 31,
-	MAYBE_URL       = 100,
-	MAYBE_TASK      = 101,
-	MAYBE_BR        = 102
+	ESCAPING        = 100,
+	MAYBE_URL       = 101,
+	MAYBE_TASK      = 102,
+	MAYBE_BR        = 103,
+	MAYBE_EQ_BLOCK  = 104
 
 /** @enum {(typeof Token)[keyof typeof Token]} */
 export const Token = /** @type {const} */({
@@ -214,6 +216,29 @@ function add_text(p) {
 /**
  * @param   {Parser} p
  * @returns {void  } */
+function ensure_paragraph(p) {
+	switch (p.token) {
+	case LINE_BREAK:
+	case DOCUMENT:
+	case BLOCKQUOTE:
+	case LIST_ORDERED:
+	case LIST_UNORDERED:
+		add_token(p, PARAGRAPH)
+	}
+}
+
+/**
+ * @param   {Parser} p
+ * @param   {string} text
+ * @returns {void  } */
+function push_text(p, text) {
+	ensure_paragraph(p)
+	p.text += text
+}
+
+/**
+ * @param   {Parser} p
+ * @returns {void  } */
 function end_token(p) {
 	console.assert(p.len > 0, "No nodes to end")
 	p.len -= 1
@@ -375,6 +400,15 @@ function is_delimeter_or_number(charcode) {
 }
 
 /**
+ * @param   {number} charcode
+ * @returns {boolean} */
+function is_alnum(charcode) {
+	return is_digit(charcode)                 || // 0-9
+	       (charcode >= 65 && charcode <= 90) || // A-Z
+	       (charcode >= 97 && charcode <= 122)   // a-z
+}
+
+/**
  * Parse and render another chunk of markdown.
  * @param   {Parser} p
  * @param   {string} chunk
@@ -382,6 +416,57 @@ function is_delimeter_or_number(charcode) {
 export function parser_write(p, chunk) {
 	for (const char of chunk) {
 		const pending_with_char = p.pending + char
+
+		/*
+		 Escaping characters
+		*/
+		switch (p.token) {
+		case IMAGE:
+		case EQUATION_BLOCK:
+		case EQUATION_INLINE:
+		case CODE_BLOCK:
+		case CODE_INLINE:
+		case CODE_FENCE:
+			break // ignore
+		case ESCAPING:
+			p.token = p.tokens[p.len]
+
+			switch (char) {
+			// Escaped newline has the same affect as unescaped one
+			case '\n':
+				p.pending = char
+				continue
+			// Equation inline
+			case '(':
+				ensure_paragraph(p)
+				add_text(p)
+				add_token(p, EQUATION_INLINE)
+				continue
+			// Equation block
+			case '[':
+				ensure_paragraph(p)
+				p.pending = char
+				p.token = MAYBE_EQ_BLOCK
+				continue
+			// Escape non-alphanumeric characters
+			default:
+				ensure_paragraph(p)
+				p.text += is_alnum(char.charCodeAt(0))
+					? "\\"+char
+					: char
+				continue
+			}
+		default:
+			if (char === '\\') {
+				if (p.pending.length > 0) {
+					ensure_paragraph(p)
+					p.text += p.pending
+					p.pending = ""
+				}
+				p.token = ESCAPING
+				continue
+			}
+		}
 
 		/*
 		Token specific checks
@@ -941,6 +1026,22 @@ export function parser_write(p, chunk) {
 				continue
 			}
 			break
+		case MAYBE_EQ_BLOCK:
+			/*
+			 \[?  or  $$?
+			   ^        ^
+			*/
+			if (char === '\n') {
+				add_text(p)
+				add_token(p, EQUATION_BLOCK)
+				p.pending = ""
+			} else {
+				p.token = p.tokens[p.len]
+				p.text += p.pending
+				p.pending = ""
+				parser_write(p, char)
+			}
+			continue
 		case EQUATION_BLOCK:
 			if ("\\]" === pending_with_char || "$$" === pending_with_char) {
 				add_text(p)
@@ -1071,47 +1172,6 @@ export function parser_write(p, chunk) {
 		Common checks
 		*/
 		switch (p.pending[0]) {
-		/* Escape character */
-		case '\\':
-			if (p.token === IMAGE ||
-				p.token === EQUATION_BLOCK ||
-				p.token === EQUATION_INLINE)
-			 break
-
-			if ("\\" === p.pending) {
-				if ('(' === char || '[' === char) {
-					p.pending = pending_with_char
-					continue
-				}
-			} else {
-				if (pending_with_char === "\\[\n") {
-					add_text(p)
-					add_token(p, EQUATION_BLOCK)
-					p.pending = char
-				} else if (pending_with_char === "\\( " || pending_with_char.startsWith("\\(")) {
-					add_text(p)
-					add_token(p, EQUATION_INLINE)
-					p.pending = char
-				} else {
-					p.text = pending_with_char.slice(-2)
-					p.pending = ""
-				}
-				continue
-			}
-
-			if ('\n' === char) {
-				// Escaped newline has the same affect as unescaped one
-				p.pending = char
-			} else {
-				let charcode = char.charCodeAt(0)
-				p.pending = ""
-				p.text += is_digit(charcode)                 || // 0-9
-				          (charcode >= 65 && charcode <= 90) || // A-Z
-				          (charcode >= 97 && charcode <= 122)   // a-z
-				          	? pending_with_char
-				          	: char
-			}
-			continue
 		/* Newline */
 		case '\n':
 			if (p.token !== IMAGE &&
@@ -1244,9 +1304,8 @@ export function parser_write(p, chunk) {
 					^
 				*/
 				if ('$' === char) {
-					add_text(p)
-					add_token(p, EQUATION_BLOCK)
-					p.pending = ""
+					p.token = MAYBE_EQ_BLOCK
+					p.pending = pending_with_char
 					continue
 				}
 				/* $123
