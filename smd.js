@@ -38,10 +38,11 @@ export const
 	EQUATION_BLOCK  = 30,
 	EQUATION_INLINE = 31,
 	ESCAPING        = 100,
-	MAYBE_URL       = 101,
-	MAYBE_TASK      = 102,
-	MAYBE_BR        = 103,
-	MAYBE_EQ_BLOCK  = 104
+	NEWLINE         = 101,
+	MAYBE_URL       = 102,
+	MAYBE_TASK      = 103,
+	MAYBE_BR        = 104,
+	MAYBE_EQ_BLOCK  = 105
 
 /** @enum {(typeof Token)[keyof typeof Token]} */
 export const Token = /** @type {const} */({
@@ -199,7 +200,12 @@ export function parser(renderer) {
  * @returns {void  } */
 export function parser_end(p) {
 	if (p.pending.length > 0) {
-		parser_write(p, "\n")
+		if (p.token === NEWLINE) {
+			handle_newline(p, '\n')
+		}
+		handle_tokens(p, '\n') ||
+		handle_common(p, '\n')
+		add_text(p)
 	}
 }
 
@@ -409,978 +415,1038 @@ function is_alnum(charcode) {
 }
 
 /**
+ * @param   {Parser} p
+ * @param   {string} char
+ * @returns {boolean} */
+function handle_escape(p, char) {
+	/*
+	 Escaping characters
+	*/
+	switch (p.token) {
+	case IMAGE:
+	case EQUATION_BLOCK:
+	case EQUATION_INLINE:
+	case CODE_BLOCK:
+	case CODE_INLINE:
+	case CODE_FENCE:
+		break // ignore
+	case ESCAPING:
+		p.token = p.tokens[p.len]
+
+		switch (char) {
+		// Escaped newline has the same affect as unescaped one
+		case '\n':
+			p.pending = char
+			return true
+		// Equation inline
+		case '(':
+			ensure_paragraph(p)
+			add_text(p)
+			add_token(p, EQUATION_INLINE)
+			return true
+		// Equation block
+		case '[':
+			ensure_paragraph(p)
+			p.pending = char
+			p.token = MAYBE_EQ_BLOCK
+			return true
+		// Escape non-alphanumeric characters
+		default:
+			ensure_paragraph(p)
+			p.text += is_alnum(char.charCodeAt(0))
+				? "\\"+char
+				: char
+			return true
+		}
+	default:
+		if (char === '\\') {
+			if (p.pending.length > 0) {
+				ensure_paragraph(p)
+				p.text += p.pending
+				p.pending = ""
+			}
+			p.token = ESCAPING
+			return true
+		}
+	}
+
+	return false
+}
+
+/**
+ * @param   {Parser } p
+ * @param   {string } char
+ * @returns {boolean} */
+function handle_newline(p, char) {
+
+	if (p.token === NEWLINE) {
+	
+		let indent = p.indent_len
+		for (let i = 0; i <= p.len; i += 1) {
+			let spaces = p.spaces[i]
+			indent -= spaces
+			if (indent < 0) {
+				end_tokens_to_len(p, i)
+				break
+			}
+		}
+	
+		p.token = p.tokens[p.len]
+		
+	} else if (char === '\n') {
+		p.token = NEWLINE
+		return true
+	}
+
+	return false
+}
+
+/**
+ * @param   {Parser } p
+ * @param   {string } char
+ * @returns {boolean} */
+function handle_tokens(p, char) {
+	let pending_with_char = p.pending + char
+
+	/*
+	 Token specific checks
+	*/
+	switch (p.token) {
+	case LINE_BREAK:
+	case DOCUMENT:
+	case BLOCKQUOTE:
+	case LIST_ORDERED:
+	case LIST_UNORDERED:
+		console.assert(p.text.length === 0, "Root should not have any text")
+
+		switch (p.pending[0]) {
+		case undefined:
+			p.pending = char
+			return true
+		case ' ':
+			console.assert(p.pending.length === 1)
+			p.pending = char
+			p.indent += ' '
+			p.indent_len += 1
+			return true
+		case '\t':
+			console.assert(p.pending.length === 1)
+			p.pending = char
+			p.indent += '\t'
+			p.indent_len += 4
+			return true
+		case '\n':
+			console.assert(p.pending.length === 1)
+			/*
+			 Lists can have an empty line in between items:
+			 1. foo
+			 <empty>
+			 2. bar
+			*/
+			if (p.tokens[p.len] === LIST_ITEM && p.token === LINE_BREAK) {
+				end_token(p)
+				p.pending = char
+				return true
+			}
+			/*
+			 Exit out of tokens
+			 And ignore newlines in root
+			*/
+			end_tokens_to_len(p, p.blockquote_idx)
+			p.blockquote_idx = 0
+			p.fence_start = 0
+			p.pending = char
+			return true
+		/* Heading */
+		case '#':
+			switch (char) {
+			case '#':
+				if (p.pending.length < 6) {
+					p.pending = pending_with_char
+					return true
+				}
+				break // fail
+			case ' ':
+				switch (p.pending.length) {
+				case 1: add_token(p, HEADING_1); clear_root_pending(p); return true
+				case 2: add_token(p, HEADING_2); clear_root_pending(p); return true
+				case 3: add_token(p, HEADING_3); clear_root_pending(p); return true
+				case 4: add_token(p, HEADING_4); clear_root_pending(p); return true
+				case 5: add_token(p, HEADING_5); clear_root_pending(p); return true
+				case 6: add_token(p, HEADING_6); clear_root_pending(p); return true
+				}
+				console.assert(false, "Should not reach here")
+			}
+			break // fail
+		/* Blockquote */
+		case '>': {
+			const next_blockquote_idx = idx_of_token(p, BLOCKQUOTE, p.blockquote_idx+1)
+
+			/*
+			 Only when there is no blockquote to the right of blockquote_idx
+			 a new blockquote can be created
+			*/
+			if (next_blockquote_idx === -1) {
+				end_tokens_to_len(p, p.blockquote_idx)
+				p.blockquote_idx += 1
+				p.fence_start = 0
+				add_token(p, BLOCKQUOTE)
+			} else {
+				p.blockquote_idx = next_blockquote_idx
+			}
+
+			clear_root_pending(p)
+			p.pending = char
+			return true
+		}
+		/* Horizontal Rule
+		   "-- - --- - --"
+		*/
+		case '-':
+		case '*':
+		case '_':
+			if (p.hr_chars === 0) {
+				console.assert(p.pending.length === 1, "Pending should be one character")
+				p.hr_chars = 1
+				p.hr_char = p.pending
+			}
+
+			if (p.hr_chars > 0) {
+				switch (char) {
+				case p.hr_char:
+					p.hr_chars += 1
+					p.pending = pending_with_char
+					return true
+				case ' ':
+					p.pending = pending_with_char
+					return true
+				case '\n':
+					if (p.hr_chars < 3) break
+					p.renderer.add_token(p.renderer.data, RULE)
+					p.renderer.end_token(p.renderer.data)
+					p.pending = ""
+					p.hr_chars = 0
+					return true
+				}
+
+				p.hr_chars = 0
+			}
+
+			/* Unordered list
+			/  * foo
+			/  * *bar*
+			/  * **baz**
+			/*/
+			if ('_' !== p.pending[0] &&
+			    ' ' === p.pending[1]
+			) {
+				continue_or_add_list(p, LIST_UNORDERED)
+				add_list_item(p, 2)
+				parser_write(p, pending_with_char.slice(2))
+				return true
+			}
+
+			break // fail
+		/* Code Fence */
+		case '`':
+			/*  ``?
+			      ^
+			*/
+			if (p.pending.length < 3) {
+				if ('`' === char) {
+					p.pending = pending_with_char
+					p.fence_start = pending_with_char.length
+					return true
+				}
+				p.fence_start = 0
+				break // fail
+			}
+
+			switch (char) {
+			case '`':
+				/*  ````?
+				       ^
+				*/
+				if (p.pending.length === p.fence_start) {
+					p.pending = pending_with_char
+					p.fence_start = pending_with_char.length
+				}
+				/*  ```code`
+				           ^
+				*/
+				else {
+					add_token(p, PARAGRAPH)
+					clear_root_pending(p)
+					p.fence_start = 0
+					parser_write(p, pending_with_char)
+				}
+				return true
+			case '\n':
+				/*  ```lang\n
+				            ^
+				*/
+				add_token(p, CODE_FENCE)
+				if (p.pending.length > p.fence_start) {
+					p.renderer.set_attr(p.renderer.data, LANG, p.pending.slice(p.fence_start))
+				}
+				clear_root_pending(p)
+				return true
+			default:
+				/*  ```lang\n
+				        ^
+				*/
+				p.pending = pending_with_char
+				return true
+			}
+		/*
+		List Unordered for '+'
+		The other list types are handled with HORIZONTAL_RULE
+		*/
+		case '+':
+			if (' ' !== char) break // fail
+
+			continue_or_add_list(p, LIST_UNORDERED)
+			add_list_item(p, 2)
+			return true
+		/* List Ordered */
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9':
+			/*
+			12. foo
+			   ^
+			*/
+			if ('.' === p.pending[p.pending.length-1]) {
+				if (' ' !== char) break // fail
+
+				if (continue_or_add_list(p, LIST_ORDERED) && p.pending !== "1.") {
+					p.renderer.set_attr(p.renderer.data, START, p.pending.slice(0, -1))
+				}
+				add_list_item(p, p.pending.length+1)
+				return true
+			} else {
+				const char_code = char.charCodeAt(0)
+				if (46 === char_code || // '.'
+				    is_digit(char_code) // 0-9
+				) {
+					p.pending = pending_with_char
+					return true
+				}
+			}
+			break // fail
+		/* Table */
+		case '|':
+			add_token(p, TABLE)
+			add_token(p, TABLE_ROW)
+
+			p.pending = ""
+			parser_write(p, char)
+
+			return true
+		}
+
+		let to_write = pending_with_char
+
+		/* Add line break */
+		if (p.token === LINE_BREAK) {
+			/* Add a line break and continue in previous token */
+			p.token = p.tokens[p.len]
+			p.renderer.add_token(p.renderer.data, LINE_BREAK)
+			p.renderer.end_token(p.renderer.data)
+		}
+		/* Code Block */
+		else if (p.indent_len >= 4) {
+			/*
+			Case where there are additional spaces
+			after the indent that makes the code block
+			_________________________
+			       code
+			^^^^----indent
+			    ^^^-part of code
+			_________________________
+			 \t   code
+			^^-----indent
+			   ^^^-part of code
+			*/
+			let code_start = 0
+			for (; code_start < 4; code_start += 1) {
+				if (p.indent[code_start] === '\t') {
+					code_start = code_start+1
+					break
+				}
+			}
+			to_write = p.indent.slice(code_start) + pending_with_char
+			add_token(p, CODE_BLOCK)
+		}
+		/* Paragraph */
+		else {
+			add_token(p, PARAGRAPH)
+		}
+
+		clear_root_pending(p)
+		parser_write(p, to_write)
+		return true
+	case TABLE:
+		if (p.table_state === 1) {
+			switch (char) {
+			case '-':
+			case ' ':
+			case '|':
+			case ':':
+				p.pending = pending_with_char
+				return true
+			case '\n':
+				p.table_state = 2
+				p.pending = ""
+				return true
+			default:
+				end_token(p)
+				p.table_state = 0
+				break
+			}
+		} else {
+			switch (p.pending) {
+			case "|":
+				add_token(p, TABLE_ROW)
+				p.pending = ""
+				parser_write(p, char)
+				return true
+			case "\n":
+				end_token(p)
+				p.pending = ""
+				p.table_state = 0
+				parser_write(p, char)
+				return true
+			}
+		}
+		break
+	case TABLE_ROW:
+		switch (p.pending) {
+		case "":
+			break
+		case "|":
+			add_token(p, TABLE_CELL)
+			end_token(p)
+			p.pending = ""
+			parser_write(p, char)
+			return true
+		case "\n":
+			end_token(p)
+			p.table_state = Math.min(p.table_state+1, 2)
+			p.pending = ""
+			parser_write(p, char)
+			return true
+		default:
+			add_token(p, TABLE_CELL)
+			parser_write(p, char)
+			return true
+		}
+		break
+	case TABLE_CELL:
+		if (p.pending === "|") {
+			add_text(p)
+			end_token(p)
+			p.pending = ""
+			parser_write(p, char)
+			return true
+		}
+		break
+	case CODE_BLOCK:
+		switch (pending_with_char) {
+		case "\n    ":
+		case "\n   \t":
+		case "\n  \t":
+		case "\n \t":
+		case "\n\t":
+			p.text += "\n"
+			p.pending = ""
+			return true
+		case "\n":
+		case "\n ":
+		case "\n  ":
+		case "\n   ":
+			p.pending = pending_with_char
+			return true
+		default:
+			if (p.pending.length !== 0) {
+				add_text(p)
+				end_token(p)
+				p.pending = char
+			} else {
+				p.text += char
+			}
+			return true
+		}
+	case CODE_FENCE:
+		switch (char) {
+		case '`':
+			/*  ```\n<code>\n``??
+			                  ^
+			*/
+			p.pending = pending_with_char
+			return true
+		case '\n':
+			/*  ```\n<code>\n```\n
+			                     ^
+			*/
+			if (pending_with_char.length === p.fence_start + p.fence_end + 1) {
+				add_text(p)
+				end_token(p)
+				p.pending = ""
+				p.fence_start = 0
+				p.fence_end   = 0
+				return true
+			}
+			break
+		case ' ':
+			/*  ```\n<code>\n ??
+			                 ^  (space after newline is allowed)
+			*/
+			if (p.pending.startsWith("\n")) {
+				p.pending = pending_with_char
+				p.fence_end += 1
+				return true
+			}
+			break
+		}
+		// any other char
+		p.text   += p.pending
+		p.pending = char
+		p.fence_end = 1
+		return true
+	case CODE_INLINE:
+		switch (char) {
+		case '`':
+			if (pending_with_char.length ===
+			    p.fence_start + Number(p.pending[0] === ' ') // 0 or 1 for space
+			) {
+				add_text(p)
+				end_token(p)
+				p.pending = ""
+				p.fence_start = 0
+			} else {
+				p.pending = pending_with_char
+			}
+			return true
+		case '\n':
+			p.text += p.pending
+			p.pending = ""
+			p.token = LINE_BREAK
+			p.blockquote_idx = 0
+			add_text(p)
+			return true
+		/* Trim space before ` */
+		case ' ':
+			p.text += p.pending
+			p.pending = char
+			return true
+		default:
+			p.text += pending_with_char
+			p.pending = ""
+			return true
+		}
+	/* Checkboxes */
+	case MAYBE_TASK:
+		switch (p.pending.length) {
+		case 0:
+			if ('[' !== char) break // fail
+			p.pending = pending_with_char
+			return true
+		case 1:
+			if (' ' !== char && 'x' !== char) break // fail
+			p.pending = pending_with_char
+			return true
+		case 2:
+			if (']' !== char) break // fail
+			p.pending = pending_with_char
+			return true
+		case 3:
+			if (' ' !== char) break // fail
+			p.renderer.add_token(p.renderer.data, CHECKBOX)
+			if ('x' === p.pending[1]) {
+				p.renderer.set_attr(p.renderer.data, CHECKED, "")
+			}
+			p.renderer.end_token(p.renderer.data)
+			p.pending = " "
+			return true
+		}
+
+		p.token = p.tokens[p.len]
+		p.pending = ""
+		parser_write(p, pending_with_char)
+		return true
+	case STRONG_AST:
+	case STRONG_UND: {
+		/** @type {string} */ let symbol = '*'
+		/** @type {Token } */ let italic = ITALIC_AST
+		if (p.token === STRONG_UND) {
+			symbol = '_'
+			italic = ITALIC_UND
+		}
+
+		if (symbol === p.pending) {
+			add_text(p)
+			/* **Bold**
+			          ^
+			*/
+			if (symbol === char) {
+				end_token(p)
+				p.pending = ""
+				return true
+			}
+			/* **Bold*Bold->Em*
+			          ^
+			*/
+			add_token(p, italic)
+			p.pending = char
+			return true
+		}
+
+		break
+	}
+	case ITALIC_AST:
+	case ITALIC_UND: {
+		/** @type {string} */ let symbol = '*'
+		/** @type {Token } */ let strong = STRONG_AST
+		if (p.token === ITALIC_UND) {
+			symbol = '_'
+			strong = STRONG_UND
+		}
+
+		switch (p.pending) {
+		case symbol:
+			if (symbol === char) {
+				/* Decide between ***bold>em**em* and **bold*bold>em***
+				                             ^                       ^
+				   With the help of the next character
+				*/
+				if (p.tokens[p.len-1] === strong) {
+					p.pending = pending_with_char
+				}
+				/* *em**bold
+				       ^
+				*/
+				else {
+					add_text(p)
+					add_token(p, strong)
+					p.pending = ""
+				}
+			}
+			/* *em*foo
+			       ^
+			*/
+			else {
+				add_text(p)
+				end_token(p)
+				p.pending = char
+			}
+			return true
+		case symbol+symbol:
+			const italic = p.token
+			add_text(p)
+			end_token(p)
+			end_token(p)
+			/* ***bold>em**em* or **bold*bold>em***
+			               ^                      ^
+			*/
+			if (symbol !== char) {
+				add_token(p, italic)
+				p.pending = char
+			} else {
+				p.pending = ""
+			}
+			return true
+		}
+		break
+	}
+	case STRIKE:
+		if ("~~" === pending_with_char) {
+			add_text(p)
+			end_token(p)
+			p.pending = ""
+			return true
+		}
+		break
+	case MAYBE_EQ_BLOCK:
+		/*
+		 \[?  or  $$?
+		   ^        ^
+		*/
+		if (char === '\n') {
+			add_text(p)
+			add_token(p, EQUATION_BLOCK)
+			p.pending = ""
+		} else {
+			p.token = p.tokens[p.len]
+			p.text += p.pending
+			p.pending = ""
+			parser_write(p, char)
+		}
+		return true
+	case EQUATION_BLOCK:
+		if ("\\]" === pending_with_char || "$$" === pending_with_char) {
+			add_text(p)
+			end_token(p)
+			p.pending = ""
+			return true
+		}
+		break
+	case EQUATION_INLINE:
+		if ("\\)" === pending_with_char || "$" === p.pending[0]) {
+			add_text(p)
+			end_token(p)
+
+			if(char === ')'){
+				p.pending = ""
+			} else {
+				p.pending = char
+			}
+			return true
+		}
+		break
+	/* Raw URLs */
+	case MAYBE_URL:
+		if ("http://"  === pending_with_char ||
+			"https://" === pending_with_char
+		) {
+			add_text(p)
+			add_token(p, RAW_URL)
+			p.pending = pending_with_char
+			p.text    = pending_with_char
+		}
+		else
+		if ("http:/" [p.pending.length] === char ||
+			"https:/"[p.pending.length] === char
+		) {
+			p.pending = pending_with_char
+		}
+		else {
+			p.token = p.tokens[p.len]
+			parser_write(p, char)
+		}
+		return true
+	case LINK:
+	case IMAGE:
+		if ("]" === p.pending) {
+			/*
+			[Link](url)
+			     ^
+			*/
+			add_text(p)
+			if ('(' === char) {
+				p.pending = pending_with_char
+			} else {
+				end_token(p)
+				p.pending = char
+			}
+			return true
+		}
+		if (']' === p.pending[0] &&
+		    '(' === p.pending[1]
+		) {
+			/*
+			[Link](url)
+			          ^
+			*/
+			if (')' === char) {
+				const type = p.token === LINK ? HREF : SRC
+				const url = p.pending.slice(2)
+				p.renderer.set_attr(p.renderer.data, type, url)
+				end_token(p)
+				p.pending = ""
+			} else {
+				p.pending += char
+			}
+			return true
+		}
+		break
+	case RAW_URL:
+		/* http://example.com?
+		                     ^
+		*/
+		if (' ' === char ||
+		    '\n'=== char ||
+		    '\\'=== char
+		) {
+			p.renderer.set_attr(p.renderer.data, HREF, p.pending)
+			add_text(p)
+			end_token(p)
+			p.pending = char
+		} else {
+			p.text   += char
+			p.pending = pending_with_char
+		}
+		return true
+	case MAYBE_BR:
+		if (pending_with_char.startsWith("<br")) {
+			if (/* "<br" */
+			    pending_with_char.length === 3 ||
+			    /* "<br " */
+			    char === ' ' ||
+			    /* "<br/" | "<br /" */
+			    char === '/' && (pending_with_char.length === 4 ||
+			                     p.pending[p.pending.length-1] === ' ')
+			) {
+				p.pending = pending_with_char
+				return true
+			}
+
+			/* "<br>" | "<br/>" */
+			if (char === '>') {
+				add_text(p)
+				p.token = p.tokens[p.len]
+				p.renderer.add_token(p.renderer.data, LINE_BREAK)
+				p.renderer.end_token(p.renderer.data)
+				p.pending = ""
+				return true
+			}
+		}
+		// Fail
+		p.token = p.tokens[p.len]
+		p.text += '<'
+		p.pending = p.pending.slice(1)
+		parser_write(p, char)
+		return true
+	}
+
+	return false
+}
+
+/**
+ * @param   {Parser}  p 
+ * @param   {string}  char 
+ * @returns {boolean} */
+function handle_common(p, char) {
+	let pending_with_char = p.pending + char
+
+	/*
+	Common checks
+	*/
+	switch (p.pending[0]) {
+	/* Newline */
+	case '\n':
+		if (p.token !== IMAGE &&
+		    p.token !== EQUATION_BLOCK &&
+		    p.token !== EQUATION_INLINE
+		) {
+			add_text(p)
+			p.pending = char
+			p.token = LINE_BREAK
+			p.blockquote_idx = 0
+			return true
+		}
+		break
+	/* <br> */
+	case '<':
+		if (p.token !== IMAGE &&
+		    p.token !== EQUATION_BLOCK &&
+		    p.token !== EQUATION_INLINE
+		) {
+			add_text(p)
+			p.pending = pending_with_char
+			p.token = MAYBE_BR
+			return true
+		}
+		break
+	/* `Code Inline` */
+	case '`':
+		if (p.token === IMAGE) break
+
+		if ('`' === char) {
+			p.fence_start += 1
+			p.pending = pending_with_char
+		} else {
+			p.fence_start += 1 // started at 0, and first wasn't counted
+			add_text(p)
+			add_token(p, CODE_INLINE)
+			p.text = ' ' === char || '\n' === char ? "" : char // trim leading space
+			p.pending = ""
+		}
+		return true
+	case '_':
+	case '*': {
+		if (p.token === IMAGE ||
+		    p.token === EQUATION_BLOCK ||
+		    p.token === EQUATION_INLINE ||
+		    p.token === STRONG_AST)
+		 break
+
+		/** @type {Token} */ let italic = ITALIC_AST
+		/** @type {Token} */ let strong = STRONG_AST
+		const symbol = p.pending[0]
+		if ('_' === symbol) {
+			italic = ITALIC_UND
+			strong = STRONG_UND
+		}
+
+		if (p.pending.length === 1) {
+			/* **Strong**
+			    ^
+			*/
+			if (symbol === char) {
+				p.pending = pending_with_char
+				return true
+			}
+			/* *Em*
+			    ^
+			*/
+			if (' ' !== char && '\n' !== char) {
+				add_text(p)
+				add_token(p, italic)
+				p.pending = char
+				return true
+			}
+		} else {
+			/* ***Strong->Em***
+			     ^
+			*/
+			if (symbol === char) {
+				add_text(p)
+				add_token(p, strong)
+				add_token(p, italic)
+				p.pending = ""
+				return true
+			}
+			/* **Strong**
+			     ^
+			*/
+			if (' ' !== char && '\n' !== char) {
+				add_text(p)
+				add_token(p, strong)
+				p.pending = char
+				return true
+			}
+		}
+
+		break
+	}
+	case '~':
+		if (p.token !== IMAGE &&
+			p.token !== STRIKE
+		) {
+			if ("~" === p.pending) {
+				/* ~~Strike~~
+					^
+				*/
+				if ('~' === char) {
+					p.pending = pending_with_char
+					return true
+				}
+			} else {
+				/* ~~Strike~~
+					 ^
+				*/
+				if (' ' !== char && '\n' !== char) {
+					add_text(p)
+					add_token(p, STRIKE)
+					p.pending = char
+					return true
+				}
+			}
+		}
+		break
+	/* $eq$ | $$eq$$ */
+	case '$':
+		if (p.token !== IMAGE &&
+		    p.token !== STRIKE &&
+		    "$" === p.pending
+		) {
+			/* $$EQUATION_BLOCK$$
+				^
+			*/
+			if ('$' === char) {
+				p.token = MAYBE_EQ_BLOCK
+				p.pending = pending_with_char
+				return true
+			}
+			/* $123
+				^
+			*/
+			else if (is_delimeter_or_number(char.charCodeAt(0))) {
+				break
+			}
+			/* $EQUATION_INLINE$
+				^
+			*/
+			else {
+				add_text(p)
+				add_token(p, EQUATION_INLINE)
+				p.pending = char
+				return true
+			}
+		}
+		break
+	/* [Image](url) */
+	case '[':
+		if (p.token !== IMAGE &&
+		    p.token !== LINK &&
+		    p.token !== EQUATION_BLOCK &&
+		    p.token !== EQUATION_INLINE &&
+		    ']' !== char
+		) {
+			add_text(p)
+			add_token(p, LINK)
+			p.pending = char
+			return true
+		}
+		break
+	/* ![Image](url) */
+	case '!':
+		if (!(p.token === IMAGE) &&
+		    '[' === char
+		) {
+			add_text(p)
+			add_token(p, IMAGE)
+			p.pending = ""
+			return true
+		}
+		break
+	/* Trim spaces */
+	case ' ':
+		if (p.pending.length === 1 && ' ' === char) {
+			return true
+		}
+		break
+	}
+
+	/* foo http://...
+	       ^
+	*/
+	if (p.token !== IMAGE &&
+	    p.token !== LINK &&
+	    p.token !== EQUATION_BLOCK &&
+	    p.token !== EQUATION_INLINE &&
+	    'h' === char &&
+	   (" " === p.pending ||
+	    ""  === p.pending)
+	) {
+		p.text   += p.pending
+		p.pending = char
+
+		p.token = MAYBE_URL
+		return true
+	}
+
+	/*
+	No check hit
+	*/
+	p.text += p.pending
+	p.pending = char
+
+	return false
+}
+
+
+/**
  * Parse and render another chunk of markdown.
  * @param   {Parser} p
  * @param   {string} chunk
  * @returns {void  } */
 export function parser_write(p, chunk) {
-	for (const char of chunk) {
-		const pending_with_char = p.pending + char
-
-		/*
-		 Escaping characters
-		*/
-		switch (p.token) {
-		case IMAGE:
-		case EQUATION_BLOCK:
-		case EQUATION_INLINE:
-		case CODE_BLOCK:
-		case CODE_INLINE:
-		case CODE_FENCE:
-			break // ignore
-		case ESCAPING:
-			p.token = p.tokens[p.len]
-
-			switch (char) {
-			// Escaped newline has the same affect as unescaped one
-			case '\n':
-				p.pending = char
-				continue
-			// Equation inline
-			case '(':
-				ensure_paragraph(p)
-				add_text(p)
-				add_token(p, EQUATION_INLINE)
-				continue
-			// Equation block
-			case '[':
-				ensure_paragraph(p)
-				p.pending = char
-				p.token = MAYBE_EQ_BLOCK
-				continue
-			// Escape non-alphanumeric characters
-			default:
-				ensure_paragraph(p)
-				p.text += is_alnum(char.charCodeAt(0))
-					? "\\"+char
-					: char
-				continue
-			}
-		default:
-			if (char === '\\') {
-				if (p.pending.length > 0) {
-					ensure_paragraph(p)
-					p.text += p.pending
-					p.pending = ""
-				}
-				p.token = ESCAPING
-				continue
-			}
-		}
-
-		/*
-		Token specific checks
-		*/
-		switch (p.token) {
-		case LINE_BREAK:
-		case DOCUMENT:
-		case BLOCKQUOTE:
-		case LIST_ORDERED:
-		case LIST_UNORDERED:
-			console.assert(p.text.length === 0, "Root should not have any text")
-
-			switch (p.pending[0]) {
-			case undefined:
-				p.pending = char
-				continue
-			case ' ':
-				console.assert(p.pending.length === 1)
-				p.pending = char
-				p.indent += ' '
-				p.indent_len += 1
-				continue
-			case '\t':
-				console.assert(p.pending.length === 1)
-				p.pending = char
-				p.indent += '\t'
-				p.indent_len += 4
-				continue
-			case '\n':
-				console.assert(p.pending.length === 1)
-				/*
-				 Lists can have an empty line in between items:
-				 1. foo
-				 <empty>
-				 2. bar
-				*/
-				if (p.tokens[p.len] === LIST_ITEM && p.token === LINE_BREAK) {
-					end_token(p)
-					p.pending = char
-					continue
-				}
-				/*
-				 Exit out of tokens
-				 And ignore newlines in root
-				*/
-				end_tokens_to_len(p, p.blockquote_idx)
-				p.blockquote_idx = 0
-				p.fence_start = 0
-				p.pending = char
-				continue
-			/* Heading */
-			case '#':
-				switch (char) {
-				case '#':
-					if (p.pending.length < 6) {
-						p.pending = pending_with_char
-						continue
-					}
-					break // fail
-				case ' ':
-					switch (p.pending.length) {
-					case 1: add_token(p, HEADING_1); clear_root_pending(p); continue
-					case 2: add_token(p, HEADING_2); clear_root_pending(p); continue
-					case 3: add_token(p, HEADING_3); clear_root_pending(p); continue
-					case 4: add_token(p, HEADING_4); clear_root_pending(p); continue
-					case 5: add_token(p, HEADING_5); clear_root_pending(p); continue
-					case 6: add_token(p, HEADING_6); clear_root_pending(p); continue
-					}
-					console.assert(false, "Should not reach here")
-				}
-				break // fail
-			/* Blockquote */
-			case '>': {
-				const next_blockquote_idx = idx_of_token(p, BLOCKQUOTE, p.blockquote_idx+1)
-
-				/*
-				Only when there is no blockquote to the right of blockquote_idx
-				a new blockquote can be created
-				*/
-				if (next_blockquote_idx === -1) {
-					end_tokens_to_len(p, p.blockquote_idx)
-					p.blockquote_idx += 1
-					p.fence_start = 0
-					add_token(p, BLOCKQUOTE)
-				} else {
-					p.blockquote_idx = next_blockquote_idx
-				}
-
-				clear_root_pending(p)
-				p.pending = char
-				continue
-			}
-			/* Horizontal Rule
-			   "-- - --- - --"
-			*/
-			case '-':
-			case '*':
-			case '_':
-				if (p.hr_chars === 0) {
-					console.assert(p.pending.length === 1, "Pending should be one character")
-					p.hr_chars = 1
-					p.hr_char = p.pending
-				}
-
-				if (p.hr_chars > 0) {
-					switch (char) {
-					case p.hr_char:
-						p.hr_chars += 1
-						p.pending = pending_with_char
-						continue
-					case ' ':
-						p.pending = pending_with_char
-						continue
-					case '\n':
-						if (p.hr_chars < 3) break
-						p.renderer.add_token(p.renderer.data, RULE)
-						p.renderer.end_token(p.renderer.data)
-						p.pending = ""
-						p.hr_chars = 0
-						continue
-					}
-
-					p.hr_chars = 0
-				}
-
-				/* Unordered list
-				/  * foo
-				/  * *bar*
-				/  * **baz**
-				/*/
-				if ('_' !== p.pending[0] &&
-				    ' ' === p.pending[1]
-				) {
-					continue_or_add_list(p, LIST_UNORDERED)
-					add_list_item(p, 2)
-					parser_write(p, pending_with_char.slice(2))
-					continue
-				}
-
-				break // fail
-			/* Code Fence */
-			case '`':
-				/*  ``?
-				      ^
-				*/
-				if (p.pending.length < 3) {
-					if ('`' === char) {
-						p.pending = pending_with_char
-						p.fence_start = pending_with_char.length
-						continue
-					}
-					p.fence_start = 0
-					break // fail
-				}
-
-				switch (char) {
-				case '`':
-					/*  ````?
-					       ^
-					*/
-					if (p.pending.length === p.fence_start) {
-						p.pending = pending_with_char
-						p.fence_start = pending_with_char.length
-					}
-					/*  ```code`
-					           ^
-					*/
-					else {
-						add_token(p, PARAGRAPH)
-						clear_root_pending(p)
-						p.fence_start = 0
-						parser_write(p, pending_with_char)
-					}
-					continue
-				case '\n':
-					/*  ```lang\n
-					            ^
-					*/
-					add_token(p, CODE_FENCE)
-					if (p.pending.length > p.fence_start) {
-						p.renderer.set_attr(p.renderer.data, LANG, p.pending.slice(p.fence_start))
-					}
-					clear_root_pending(p)
-					continue
-				default:
-					/*  ```lang\n
-					        ^
-					*/
-					p.pending = pending_with_char
-					continue
-				}
-			/*
-			List Unordered for '+'
-			The other list types are handled with HORIZONTAL_RULE
-			*/
-			case '+':
-				if (' ' !== char) break // fail
-
-				continue_or_add_list(p, LIST_UNORDERED)
-				add_list_item(p, 2)
-				continue
-			/* List Ordered */
-			case '0': case '1': case '2': case '3': case '4':
-			case '5': case '6': case '7': case '8': case '9':
-				/*
-				12. foo
-				   ^
-				*/
-				if ('.' === p.pending[p.pending.length-1]) {
-					if (' ' !== char) break // fail
-
-					if (continue_or_add_list(p, LIST_ORDERED) && p.pending !== "1.") {
-						p.renderer.set_attr(p.renderer.data, START, p.pending.slice(0, -1))
-					}
-					add_list_item(p, p.pending.length+1)
-					continue
-				} else {
-					const char_code = char.charCodeAt(0)
-					if (46 === char_code || // '.'
-					    is_digit(char_code) // 0-9
-					) {
-						p.pending = pending_with_char
-						continue
-					}
-				}
-				break // fail
-			/* Table */
-			case '|':
-				add_token(p, TABLE)
-				add_token(p, TABLE_ROW)
-
-				p.pending = ""
-				parser_write(p, char)
-
-				continue
-			}
-
-			let to_write = pending_with_char
-
-			/* Add line break */
-			if (p.token === LINE_BREAK) {
-				/* Add a line break and continue in previous token */
-				p.token = p.tokens[p.len]
-				p.renderer.add_token(p.renderer.data, LINE_BREAK)
-				p.renderer.end_token(p.renderer.data)
-			}
-			/* Code Block */
-			else if (p.indent_len >= 4) {
-				/*
-				Case where there are additional spaces
-				after the indent that makes the code block
-				_________________________
-				       code
-				^^^^----indent
-				    ^^^-part of code
-				_________________________
-				 \t   code
-				^^-----indent
-				   ^^^-part of code
-				*/
-				let code_start = 0
-				for (; code_start < 4; code_start += 1) {
-					if (p.indent[code_start] === '\t') {
-						code_start = code_start+1
-						break
-					}
-				}
-				to_write = p.indent.slice(code_start) + pending_with_char
-				add_token(p, CODE_BLOCK)
-			}
-			/* Paragraph */
-			else {
-				add_token(p, PARAGRAPH)
-			}
-
-			clear_root_pending(p)
-			parser_write(p, to_write)
-			continue
-		case TABLE:
-			if (p.table_state === 1) {
-				switch (char) {
-				case '-':
-				case ' ':
-				case '|':
-				case ':':
-					p.pending = pending_with_char
-					continue
-				case '\n':
-					p.table_state = 2
-					p.pending = ""
-					continue
-				default:
-					end_token(p)
-					p.table_state = 0
-					break
-				}
-			} else {
-				switch (p.pending) {
-				case "|":
-					add_token(p, TABLE_ROW)
-					p.pending = ""
-					parser_write(p, char)
-					continue
-				case "\n":
-					end_token(p)
-					p.pending = ""
-					p.table_state = 0
-					parser_write(p, char)
-					continue
-				}
-			}
-			break
-		case TABLE_ROW:
-			switch (p.pending) {
-			case "":
-				break
-			case "|":
-				add_token(p, TABLE_CELL)
-				end_token(p)
-				p.pending = ""
-				parser_write(p, char)
-				continue
-			case "\n":
-				end_token(p)
-				p.table_state = Math.min(p.table_state+1, 2)
-				p.pending = ""
-				parser_write(p, char)
-				continue
-			default:
-				add_token(p, TABLE_CELL)
-				parser_write(p, char)
-				continue
-			}
-			break
-		case TABLE_CELL:
-			if (p.pending === "|") {
-				add_text(p)
-				end_token(p)
-				p.pending = ""
-				parser_write(p, char)
-				continue
-			}
-			break
-		case CODE_BLOCK:
-			switch (pending_with_char) {
-			case "\n    ":
-			case "\n   \t":
-			case "\n  \t":
-			case "\n \t":
-			case "\n\t":
-				p.text += "\n"
-				p.pending = ""
-				continue
-			case "\n":
-			case "\n ":
-			case "\n  ":
-			case "\n   ":
-				p.pending = pending_with_char
-				continue
-			default:
-				if (p.pending.length !== 0) {
-					add_text(p)
-					end_token(p)
-					p.pending = char
-				} else {
-					p.text += char
-				}
-				continue
-			}
-		case CODE_FENCE:
-			switch (char) {
-			case '`':
-				/*  ```\n<code>\n``??
-				                  ^
-				*/
-				p.pending = pending_with_char
-				continue
-			case '\n':
-				/*  ```\n<code>\n```\n
-				                     ^
-				*/
-				if (pending_with_char.length === p.fence_start + p.fence_end + 1) {
-					add_text(p)
-					end_token(p)
-					p.pending = ""
-					p.fence_start = 0
-					p.fence_end   = 0
-					continue
-				}
-				break
-			case ' ':
-				/*  ```\n<code>\n ??
-				                 ^  (space after newline is allowed)
-				*/
-				if (p.pending.startsWith("\n")) {
-					p.pending = pending_with_char
-					p.fence_end += 1
-					continue
-				}
-				break
-			}
-			// any other char
-			p.text   += p.pending
-			p.pending = char
-			p.fence_end = 1
-			continue
-		case CODE_INLINE:
-			switch (char) {
-			case '`':
-				if (pending_with_char.length ===
-				    p.fence_start + Number(p.pending[0] === ' ') // 0 or 1 for space
-				) {
-					add_text(p)
-					end_token(p)
-					p.pending = ""
-					p.fence_start = 0
-				} else {
-					p.pending = pending_with_char
-				}
-				continue
-			case '\n':
-				p.text += p.pending
-				p.pending = ""
-				p.token = LINE_BREAK
-				p.blockquote_idx = 0
-				add_text(p)
-				continue
-			/* Trim space before ` */
-			case ' ':
-				p.text += p.pending
-				p.pending = char
-				continue
-			default:
-				p.text += pending_with_char
-				p.pending = ""
-				continue
-			}
-		/* Checkboxes */
-		case MAYBE_TASK:
-			switch (p.pending.length) {
-			case 0:
-				if ('[' !== char) break // fail
-				p.pending = pending_with_char
-				continue
-			case 1:
-				if (' ' !== char && 'x' !== char) break // fail
-				p.pending = pending_with_char
-				continue
-			case 2:
-				if (']' !== char) break // fail
-				p.pending = pending_with_char
-				continue
-			case 3:
-				if (' ' !== char) break // fail
-				p.renderer.add_token(p.renderer.data, CHECKBOX)
-				if ('x' === p.pending[1]) {
-					p.renderer.set_attr(p.renderer.data, CHECKED, "")
-				}
-				p.renderer.end_token(p.renderer.data)
-				p.pending = " "
-				continue
-			}
-
-			p.token = p.tokens[p.len]
-			p.pending = ""
-			parser_write(p, pending_with_char)
-			continue
-		case STRONG_AST:
-		case STRONG_UND: {
-			/** @type {string} */ let symbol = '*'
-			/** @type {Token } */ let italic = ITALIC_AST
-			if (p.token === STRONG_UND) {
-				symbol = '_'
-				italic = ITALIC_UND
-			}
-
-			if (symbol === p.pending) {
-				add_text(p)
-				/* **Bold**
-				          ^
-				*/
-				if (symbol === char) {
-					end_token(p)
-					p.pending = ""
-					continue
-				}
-				/* **Bold*Bold->Em*
-				          ^
-				*/
-				add_token(p, italic)
-				p.pending = char
-				continue
-			}
-
-			break
-		}
-		case ITALIC_AST:
-		case ITALIC_UND: {
-			/** @type {string} */ let symbol = '*'
-			/** @type {Token } */ let strong = STRONG_AST
-			if (p.token === ITALIC_UND) {
-				symbol = '_'
-				strong = STRONG_UND
-			}
-
-			switch (p.pending) {
-			case symbol:
-				if (symbol === char) {
-					/* Decide between ***bold>em**em* and **bold*bold>em***
-					                             ^                       ^
-					   With the help of the next character
-					*/
-					if (p.tokens[p.len-1] === strong) {
-						p.pending = pending_with_char
-					}
-					/* *em**bold
-					       ^
-					*/
-					else {
-						add_text(p)
-						add_token(p, strong)
-						p.pending = ""
-					}
-				}
-				/* *em*foo
-				       ^
-				*/
-				else {
-					add_text(p)
-					end_token(p)
-					p.pending = char
-				}
-				continue
-			case symbol+symbol:
-				const italic = p.token
-				add_text(p)
-				end_token(p)
-				end_token(p)
-				/* ***bold>em**em* or **bold*bold>em***
-				               ^                      ^
-				*/
-				if (symbol !== char) {
-					add_token(p, italic)
-					p.pending = char
-				} else {
-					p.pending = ""
-				}
-				continue
-			}
-			break
-		}
-		case STRIKE:
-			if ("~~" === pending_with_char) {
-				add_text(p)
-				end_token(p)
-				p.pending = ""
-				continue
-			}
-			break
-		case MAYBE_EQ_BLOCK:
-			/*
-			 \[?  or  $$?
-			   ^        ^
-			*/
-			if (char === '\n') {
-				add_text(p)
-				add_token(p, EQUATION_BLOCK)
-				p.pending = ""
-			} else {
-				p.token = p.tokens[p.len]
-				p.text += p.pending
-				p.pending = ""
-				parser_write(p, char)
-			}
-			continue
-		case EQUATION_BLOCK:
-			if ("\\]" === pending_with_char || "$$" === pending_with_char) {
-				add_text(p)
-				end_token(p)
-				p.pending = ""
-				continue
-			}
-			break
-		case EQUATION_INLINE:
-			if ("\\)" === pending_with_char || "$" === p.pending[0]) {
-				add_text(p)
-				end_token(p)
-
-				if(char === ')'){
-					p.pending = ""
-				} else {
-					p.pending = char
-				}
-				continue
-			}
-			break
-		/* Raw URLs */
-		case MAYBE_URL:
-			if ("http://"  === pending_with_char ||
-				"https://" === pending_with_char
-			) {
-				add_text(p)
-				add_token(p, RAW_URL)
-				p.pending = pending_with_char
-				p.text    = pending_with_char
-			}
-			else
-			if ("http:/" [p.pending.length] === char ||
-				"https:/"[p.pending.length] === char
-			) {
-				p.pending = pending_with_char
-			}
-			else {
-				p.token = p.tokens[p.len]
-				parser_write(p, char)
-			}
-			continue
-		case LINK:
-		case IMAGE:
-			if ("]" === p.pending) {
-				/*
-				[Link](url)
-				     ^
-				*/
-				add_text(p)
-				if ('(' === char) {
-					p.pending = pending_with_char
-				} else {
-					end_token(p)
-					p.pending = char
-				}
-				continue
-			}
-			if (']' === p.pending[0] &&
-			    '(' === p.pending[1]
-			) {
-				/*
-				[Link](url)
-				          ^
-				*/
-				if (')' === char) {
-					const type = p.token === LINK ? HREF : SRC
-					const url = p.pending.slice(2)
-					p.renderer.set_attr(p.renderer.data, type, url)
-					end_token(p)
-					p.pending = ""
-				} else {
-					p.pending += char
-				}
-				continue
-			}
-			break
-		case RAW_URL:
-			/* http://example.com?
-			                     ^
-			*/
-			if (' ' === char ||
-			    '\n'=== char ||
-			    '\\'=== char
-			) {
-				p.renderer.set_attr(p.renderer.data, HREF, p.pending)
-				add_text(p)
-				end_token(p)
-				p.pending = char
-			} else {
-				p.text   += char
-				p.pending = pending_with_char
-			}
-			continue
-		case MAYBE_BR:
-			if (pending_with_char.startsWith("<br")) {
-				if (/* "<br" */
-				    pending_with_char.length === 3 ||
-				    /* "<br " */
-				    char === ' ' ||
-				    /* "<br/" | "<br /" */
-				    char === '/' && (pending_with_char.length === 4 ||
-				                     p.pending[p.pending.length-1] === ' ')
-				) {
-					p.pending = pending_with_char
-					continue
-				}
-
-				/* "<br>" | "<br/>" */
-				if (char === '>') {
-					add_text(p)
-					p.token = p.tokens[p.len]
-					p.renderer.add_token(p.renderer.data, LINE_BREAK)
-					p.renderer.end_token(p.renderer.data)
-					p.pending = ""
-					continue
-				}
-			}
-			// Fail
-			p.token = p.tokens[p.len]
-			p.text += '<'
-			p.pending = p.pending.slice(1)
-			parser_write(p, char)
-			continue
-		}
-
-		/*
-		Common checks
-		*/
-		switch (p.pending[0]) {
-		/* Newline */
-		case '\n':
-			if (p.token !== IMAGE &&
-			    p.token !== EQUATION_BLOCK &&
-			    p.token !== EQUATION_INLINE
-			) {
-				add_text(p)
-				p.pending = char
-				p.token = LINE_BREAK
-				p.blockquote_idx = 0
-				continue
-			}
-			break
-		/* <br> */
-		case '<':
-			if (p.token !== IMAGE &&
-			    p.token !== EQUATION_BLOCK &&
-			    p.token !== EQUATION_INLINE
-			) {
-				add_text(p)
-				p.pending = pending_with_char
-				p.token = MAYBE_BR
-				continue
-			}
-			break
-		/* `Code Inline` */
-		case '`':
-			if (p.token === IMAGE) break
-
-			if ('`' === char) {
-				p.fence_start += 1
-				p.pending = pending_with_char
-			} else {
-				p.fence_start += 1 // started at 0, and first wasn't counted
-				add_text(p)
-				add_token(p, CODE_INLINE)
-				p.text = ' ' === char || '\n' === char ? "" : char // trim leading space
-				p.pending = ""
-			}
-			continue
-		case '_':
-		case '*': {
-			if (p.token === IMAGE ||
-			    p.token === EQUATION_BLOCK ||
-			    p.token === EQUATION_INLINE ||
-			    p.token === STRONG_AST)
-			 break
-
-			/** @type {Token} */ let italic = ITALIC_AST
-			/** @type {Token} */ let strong = STRONG_AST
-			const symbol = p.pending[0]
-			if ('_' === symbol) {
-				italic = ITALIC_UND
-				strong = STRONG_UND
-			}
-
-			if (p.pending.length === 1) {
-				/* **Strong**
-				    ^
-				*/
-				if (symbol === char) {
-					p.pending = pending_with_char
-					continue
-				}
-				/* *Em*
-				    ^
-				*/
-				if (' ' !== char && '\n' !== char) {
-					add_text(p)
-					add_token(p, italic)
-					p.pending = char
-					continue
-				}
-			} else {
-				/* ***Strong->Em***
-				     ^
-				*/
-				if (symbol === char) {
-					add_text(p)
-					add_token(p, strong)
-					add_token(p, italic)
-					p.pending = ""
-					continue
-				}
-				/* **Strong**
-				     ^
-				*/
-				if (' ' !== char && '\n' !== char) {
-					add_text(p)
-					add_token(p, strong)
-					p.pending = char
-					continue
-				}
-			}
-
-			break
-		}
-		case '~':
-			if (p.token !== IMAGE &&
-				p.token !== STRIKE
-			) {
-				if ("~" === p.pending) {
-					/* ~~Strike~~
-						^
-					*/
-					if ('~' === char) {
-						p.pending = pending_with_char
-						continue
-					}
-				} else {
-					/* ~~Strike~~
-						 ^
-					*/
-					if (' ' !== char && '\n' !== char) {
-						add_text(p)
-						add_token(p, STRIKE)
-						p.pending = char
-						continue
-					}
-				}
-			}
-			break
-		/* $eq$ | $$eq$$ */
-		case '$':
-			if (p.token !== IMAGE &&
-			    p.token !== STRIKE &&
-			    "$" === p.pending
-			) {
-				/* $$EQUATION_BLOCK$$
-					^
-				*/
-				if ('$' === char) {
-					p.token = MAYBE_EQ_BLOCK
-					p.pending = pending_with_char
-					continue
-				}
-				/* $123
-					^
-				*/
-				else if (is_delimeter_or_number(char.charCodeAt(0))) {
-					break
-				}
-				/* $EQUATION_INLINE$
-					^
-				*/
-				else {
-					add_text(p)
-					add_token(p, EQUATION_INLINE)
-					p.pending = char
-					continue
-				}
-			}
-			break
-		/* [Image](url) */
-		case '[':
-			if (p.token !== IMAGE &&
-			    p.token !== LINK &&
-			    p.token !== EQUATION_BLOCK &&
-			    p.token !== EQUATION_INLINE &&
-			    ']' !== char
-			) {
-				add_text(p)
-				add_token(p, LINK)
-				p.pending = char
-				continue
-			}
-			break
-		/* ![Image](url) */
-		case '!':
-			if (!(p.token === IMAGE) &&
-			    '[' === char
-			) {
-				add_text(p)
-				add_token(p, IMAGE)
-				p.pending = ""
-				continue
-			}
-			break
-		/* Trim spaces */
-		case ' ':
-			if (p.pending.length === 1 && ' ' === char) {
-				continue
-			}
-			break
-		}
-
-		/* foo http://...
-		       ^
-		*/
-		if (p.token !== IMAGE &&
-		    p.token !== LINK &&
-		    p.token !== EQUATION_BLOCK &&
-		    p.token !== EQUATION_INLINE &&
-		    'h' === char &&
-		   (" " === p.pending ||
-		    ""  === p.pending)
-		) {
-			p.text   += p.pending
-			p.pending = char
-
-			p.token = MAYBE_URL
-			continue
-		}
-
-		/*
-		No check hit
-		*/
-		p.text += p.pending
-		p.pending = char
+	for (let char of chunk) {
+		handle_escape(p, char)  ||
+		handle_newline(p, char) ||
+		handle_tokens(p, char)  ||
+		handle_common(p, char)
 	}
 
 	add_text(p)
