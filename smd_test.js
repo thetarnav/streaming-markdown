@@ -413,28 +413,6 @@ for (let l = 3; l <= 5; l += 1) {
             children: [`before\n${fence}js\nsome js\n${fence}`],
         }],
     )
-
-    test_single_write("Code_Fence in a list item - "+l+" backticks",
-        "- "+"a"+"\n"+
-        "  "+fence+"\n"+
-        "  "+"b"+"\n"+
-        "  "+"c"+"\n"+
-        "  "+fence+"\n"+
-        "d",
-        [{
-            type    : smd.Token.List_Unordered,
-            children: [{
-                type    : smd.Token.List_Item,
-                children: ["a", {
-                    type    : smd.Token.Code_Fence,
-                    children: ["b\nc"],
-                }],
-            }],
-        }, {
-            type    : smd.Token.Paragraph,
-            children: ["d"],
-        }],
-    )
 }
 
 
@@ -1335,6 +1313,33 @@ for (const [c, token] of /** @type {const} */([
             }]
         }]
     )
+
+    for (let l = 3; l <= 5; l += 1) {
+        let fence = '`'.repeat(l)
+
+        test_single_write("Code_Fence ("+l+") in " + list_name + suffix,
+            c+" "+"a"+"\n"+
+            indent+fence+"\n"+
+            indent+"b"+"\n"+
+            indent+"c"+"\n"+
+            indent+fence+"\n"+
+            "d",
+            [{
+                type    : token,
+                attrs   : attrs,
+                children: [{
+                    type    : smd.Token.List_Item,
+                    children: ["a", {
+                        type    : smd.Token.Code_Fence,
+                        children: ["b\nc"],
+                    }],
+                }],
+            }, {
+                type    : smd.Token.Paragraph,
+                children: ["d"],
+            }],
+        )
+    }
 
     // test_single_write(list_name + " single line nesting" + suffix,
     //     c+" * a",
