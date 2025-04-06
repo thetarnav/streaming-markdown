@@ -1659,6 +1659,18 @@ test_single_write("Block Equation []",
     }]
 )
 
+// TODO: escape \[ breaks parsing code inline
+// test_single_write("Equation_Block [] in Code_Inline",
+//     "a`\\[b\\]`c",
+//     [{
+//         type: smd.Token.Paragraph,
+//         children: ["a", {
+//             type: smd.Token.Code_Inline,
+//             children: ["\\[b\\]"],
+//         }, "c"],
+//     }],
+// )
+
 test_single_write("Equation in text",
     "some text $equation$ more text",
     [{
