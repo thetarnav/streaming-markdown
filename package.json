@@ -1,53 +1,53 @@
 {
-	"name": "streaming-markdown",
-	"version": "0.2.6",
-	"author": "Damian Tarnawski <gthetarnav@gmail.com>",
-	"description": "Streaming Markdown parser, à la ChatGPT",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/thetarnav/streaming-markdown.git"
-	},
-	"homepage": "https://thetarnav.github.io/streaming-markdown",
-	"private": false,
-	"sideEffects": false,
-	"type": "module",
-	"files": [
-		"./smd.js",
-		"./smd.d.ts",
-		"./smd.d.ts.map",
-		"./smd.min.js"
-	],
-	"browser": "./smd.min.js",
-	"module": "./smd.js",
-	"types": "./smd.d.ts",
-	"exports": {
-		"import": {
-			"types": "./smd.d.ts",
-			"default": "./smd.js"
-		}
-	},
-	"scripts": {
-		"dev": "node ./dev.js",
-		"test": "node --test --test-reporter=dot",
-		"typecheck": "tsc --noEmit",
-		"build": "node ./build.js",
-		"prepublishOnly": "node ./build.js",
-		"postpublish": "rm smd.d.* smd.min.js"
-	},
-	"devDependencies": {
-		"@types/node": "^22.13.9",
-		"esbuild": "^0.25.0",
-		"typescript": "^5.8.2"
-	},
-	"keywords": [
-		"markdown",
-		"parser",
-		"html",
-		"ai"
-	],
-	"packageManager": "npm@10.9.0",
-	"engines": {
-		"node": ">=20"
-	}
+    "name": "streaming-markdown",
+    "version": "0.2.6",
+    "author": "Damian Tarnawski <gthetarnav@gmail.com>",
+    "description": "Streaming Markdown parser, à la ChatGPT",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/thetarnav/streaming-markdown.git"
+    },
+    "homepage": "https://thetarnav.github.io/streaming-markdown",
+    "private": false,
+    "sideEffects": false,
+    "type": "module",
+    "files": [
+        "./smd.js",
+        "./smd.d.ts",
+        "./smd.d.ts.map",
+        "./smd.min.js"
+    ],
+    "browser": "./smd.min.js",
+    "module": "./smd.js",
+    "types": "./smd.d.ts",
+    "exports": {
+        "import": {
+            "types": "./smd.d.ts",
+            "default": "./smd.js"
+        }
+    },
+    "scripts": {
+        "dev": "node ./dev.js",
+        "test": "node --test --test-reporter=dot",
+        "typecheck": "tsc --noEmit",
+        "build": "node ./build.js",
+        "prepublishOnly": "node ./build.js",
+        "postpublish": "rm smd.d.* smd.min.js"
+    },
+    "devDependencies": {
+        "@types/node": "^22.13.9",
+        "esbuild": "^0.25.0",
+        "typescript": "^5.8.2"
+    },
+    "keywords": [
+        "markdown",
+        "parser",
+        "html",
+        "ai"
+    ],
+    "packageManager": "npm@10.9.0",
+    "engines": {
+        "node": ">=20"
+    }
 }
