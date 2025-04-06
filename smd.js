@@ -38,10 +38,11 @@ export const
     EQUATION_BLOCK  = 30,
     EQUATION_INLINE = 31,
     ESCAPING        = 100,
-    MAYBE_URL       = 101,
-    MAYBE_TASK      = 102,
-    MAYBE_BR        = 103,
-    MAYBE_EQ_BLOCK  = 104
+    NEWLINE         = 101,
+    MAYBE_URL       = 102,
+    MAYBE_TASK      = 103,
+    MAYBE_BR        = 104,
+    MAYBE_EQ_BLOCK  = 105
 
 /** @enum {(typeof Token)[keyof typeof Token]} */
 export const Token = /** @type {const} */({
@@ -415,6 +416,37 @@ function is_alnum(charcode) {
  * @returns {void  } */
 export function parser_write(p, chunk) {
     for (const char of chunk) {
+
+        /*
+         Handle newlines
+        */
+        if (p.token === NEWLINE) {
+            switch (char) {
+            case ' ':
+                p.indent_len += 1
+                continue
+            case '\t':
+                p.indent_len += 4
+                continue
+            }
+
+            let indent = p.indent_len
+            for (let i = 0; i <= p.len; i += 1) {
+                indent -= p.spaces[i]
+                if (indent < 0) {
+                    end_tokens_to_len(p, i-1)
+                    break
+                }
+            }
+
+            p.indent_len = 0
+            p.token = p.tokens[p.len]
+
+            if (indent > 0) {
+                parser_write(p, " ".repeat(indent))
+            }
+        }
+
         const pending_with_char = p.pending + char
 
         /*
@@ -650,6 +682,7 @@ export function parser_write(p, chunk) {
                         p.renderer.set_attr(p.renderer.data, LANG, p.pending.slice(p.fence_start))
                     }
                     clear_root_pending(p)
+                    p.token = NEWLINE
                     continue
                 default:
                     /*  ```lang\n
@@ -853,15 +886,17 @@ export function parser_write(p, chunk) {
                     end_token(p)
                     p.pending = ""
                     p.fence_start = 0
-                    p.fence_end   = 0
+                    p.fence_end = 0
+                    p.token = NEWLINE
                     continue
                 }
+                p.token = NEWLINE
                 break
             case ' ':
                 /*  ```\n<code>\n ??
                 |                ^  (space after newline is allowed)
                 */
-                if (p.pending.startsWith("\n")) {
+                if (p.pending[0] === '\n') {
                     p.pending = pending_with_char
                     p.fence_end += 1
                     continue

@@ -414,27 +414,27 @@ for (let l = 3; l <= 5; l += 1) {
         }],
     )
 
-    // TODO: https://github.com/thetarnav/streaming-markdown/issues/16
-    // test_single_write("Code_Fence in a list item - "+l+" backticks",
-    //     "- "+"a"+"\n"+
-    //     "  "+fence+"\n"+
-    //     "  "+"b"+"\n"+
-    //     "  "+fence+"\n"+
-    //     "c",
-    //     [{
-    //         type    : smd.Token.List_Unordered,
-    //         children: [{
-    //             type    : smd.Token.List_Item,
-    //             children: ["a", {
-    //                 type    : smd.Token.Code_Fence,
-    //                 children: ["b"],
-    //             }],
-    //         }],
-    //     }, {
-    //         type    : smd.Token.Paragraph,
-    //         children: ["c"],
-    //     }],
-    // )
+    test_single_write("Code_Fence in a list item - "+l+" backticks",
+        "- "+"a"+"\n"+
+        "  "+fence+"\n"+
+        "  "+"b"+"\n"+
+        "  "+"c"+"\n"+
+        "  "+fence+"\n"+
+        "d",
+        [{
+            type    : smd.Token.List_Unordered,
+            children: [{
+                type    : smd.Token.List_Item,
+                children: ["a", {
+                    type    : smd.Token.Code_Fence,
+                    children: ["b\nc"],
+                }],
+            }],
+        }, {
+            type    : smd.Token.Paragraph,
+            children: ["d"],
+        }],
+    )
 }
 
 
