@@ -1339,6 +1339,30 @@ for (const [c, token] of /** @type {const} */([
                 children: ["d"],
             }],
         )
+
+        // TODO: issue #18
+        // test_single_write("Code_Fence ("+l+") after " + list_name + suffix,
+        //     c+" "+"a"+"\n"+
+        //     fence+"\n"+
+        //     "b"+"\n"+
+        //     "c"+"\n"+
+        //     fence+"\n"+
+        //     "d",
+        //     [{
+        //         type    : token,
+        //         attrs   : attrs,
+        //         children: [{
+        //             type    : smd.Token.List_Item,
+        //             children: ["a"],
+        //         }],
+        //     }, {
+        //         type    : smd.Token.Paragraph,
+        //         children: [{
+        //             type    : smd.Token.Code_Fence,
+        //             children: ["b\nc"],
+        //         }, "d"],
+        //     }],
+        // )
     }
 
     // test_single_write(list_name + " single line nesting" + suffix,
