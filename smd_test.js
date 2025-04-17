@@ -1345,9 +1345,7 @@ for (const [c, token] of /** @type {const} */([
         //     c+" "+"a"+"\n"+
         //     fence+"\n"+
         //     "b"+"\n"+
-        //     "c"+"\n"+
-        //     fence+"\n"+
-        //     "d",
+        //     fence,
         //     [{
         //         type    : token,
         //         attrs   : attrs,
@@ -1356,11 +1354,8 @@ for (const [c, token] of /** @type {const} */([
         //             children: ["a"],
         //         }],
         //     }, {
-        //         type    : smd.Token.Paragraph,
-        //         children: [{
-        //             type    : smd.Token.Code_Fence,
-        //             children: ["b\nc"],
-        //         }, "d"],
+        //         type    : smd.Token.Code_Fence,
+        //         children: ["b"],
         //     }],
         // )
     }
@@ -1592,6 +1587,30 @@ test_single_write("Table with nested elements",
         }],
     }],
 }])
+
+// TODO: multiline cells
+// test_single_write("Table with multiline cells",
+//     "| h1 | h2 |"+"\n"+
+//     "| -- | -- |"+"\n"+
+//     "| a  | b  |"+"\n"+
+//     "|    | B  |"+"\n",
+//     [{
+//         type    : smd.Token.Table,
+//         children: [{
+//             type:     smd.Token.Table_Row,
+//             children: [
+//                 {type: smd.Token.Table_Cell, children: [" h1 "]},
+//                 {type: smd.Token.Table_Cell, children: [" h2 "]},
+//             ],
+//         }, {
+//             type:     smd.Token.Table_Row,
+//             children: [
+//                 {type: smd.Token.Table_Cell, children: [" a "]},
+//                 {type: smd.Token.Table_Cell, children: [" b ", BR, "B "]},
+//             ],
+//         }],
+//     }],
+// )
 
 test_single_write("Inline Equation ()",
     "\\(equation\\)",

@@ -140,6 +140,7 @@ smd.parser_end(parser)
 - [x] Blockquotes
 - [x] Tables
     - [ ] Align cols right/center
+    - [ ] Multiline cells
 - [ ] Subscript
 - [ ] Superscript
 - [ ] Emoji Shortcodes
