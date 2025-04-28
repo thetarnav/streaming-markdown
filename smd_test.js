@@ -1474,6 +1474,56 @@ test_single_write("Simple Table",
     }]
 }])
 
+// TODO: issue #20
+// test_single_write("Table after heading",
+// `# Heading
+// | Foo | Bar |
+// | -- | -- |
+// | a | b |`,
+// [{
+//     type    : smd.Token.Heading_1,
+//     children: ["Heading"],
+// }, {
+//     type    : smd.Token.Table,
+//     children: [{
+//         type:     smd.Token.Table_Row,
+//         children: [
+//             {type: smd.Token.Table_Cell, children: [" Foo "]},
+//             {type: smd.Token.Table_Cell, children: [" Bar "]},
+//         ],
+//     }, {
+//         type:     smd.Token.Table_Row,
+//         children: [
+//             {type: smd.Token.Table_Cell, children: [" a "]},
+//             {type: smd.Token.Table_Cell, children: [" b "]},
+//         ],
+//     }],
+// }])
+// test_single_write("Table after paragraph",
+// `paragraph
+// | Foo | Bar |
+// | -- | -- |
+// | a | b |`,
+// [{
+//     type    : smd.Token.Paragraph,
+//     children: ["paragraph"],
+// }, {
+//     type    : smd.Token.Table,
+//     children: [{
+//         type:     smd.Token.Table_Row,
+//         children: [
+//             {type: smd.Token.Table_Cell, children: [" Foo "]},
+//             {type: smd.Token.Table_Cell, children: [" Bar "]},
+//         ],
+//     }, {
+//         type:     smd.Token.Table_Row,
+//         children: [
+//             {type: smd.Token.Table_Cell, children: [" a "]},
+//             {type: smd.Token.Table_Cell, children: [" b "]},
+//         ],
+//     }],
+// }])
+
 test_single_write("Table Empty Cells",
 `||
 |-|
