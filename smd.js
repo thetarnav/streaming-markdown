@@ -303,6 +303,24 @@ function end_tokens_to_len(p, len) {
 }
 
 /**
+ * @param   {Parser} p
+ * @param   {number} indent
+ * @returns {number} */
+function end_tokens_to_indent(p, indent) {
+
+    for (let i = 0; i <= p.len; i += 1) {
+        indent -= p.spaces[i]
+        if (indent < 0) {
+            // avoids setting p.fence_start = 0 in end_tokens_to_len
+            while (p.len > i-1) {end_token(p)}
+            break
+        }
+    }
+    
+    return indent
+}
+
+/**
  * @param   {Parser } p
  * @param   {Token  } list_token
  * @returns {boolean} added a new list */
@@ -428,16 +446,9 @@ export function parser_write(p, chunk) {
                 p.indent_len += 4
                 continue
             }
-
-            let indent = p.indent_len
-            for (let i = 0; i <= p.len; i += 1) {
-                indent -= p.spaces[i]
-                if (indent < 0) {
-                    end_tokens_to_len(p, i-1)
-                    break
-                }
-            }
-
+            
+            let indent = end_tokens_to_indent(p, p.indent_len)
+            
             p.indent_len = 0
             p.token = p.tokens[p.len]
 
@@ -625,6 +636,8 @@ export function parser_write(p, chunk) {
                     /*  ```lang\n
                                 ^
                     */
+                    end_tokens_to_indent(p, p.indent_len)
+        
                     add_token(p, CODE_FENCE)
                     if (p.pending.length > p.fence_start) {
                         p.renderer.set_attr(p.renderer.data, LANG, p.pending.slice(p.fence_start))
