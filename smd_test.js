@@ -311,7 +311,7 @@ for (let l = 3; l <= 5; l += 1) {
     let fence_less = '`'.repeat(l - 1)
     let fence_more = '`'.repeat(l + 1)
 
-    test_single_write("Empty Code_Fence - "+l+" backticks",
+    test_single_write("Empty Code_Fence:"+l,
         fence+"\n"+fence,
         [{
             type    : smd.Token.Code_Fence,
@@ -319,7 +319,7 @@ for (let l = 3; l <= 5; l += 1) {
         }]
     )
 
-    test_single_write("Code_Fence - "+l+" backticks",
+    test_single_write("Code_Fence:"+l,
         fence+"\nfoo\n"+fence,
         [{
             type    : smd.Token.Code_Fence,
@@ -327,7 +327,21 @@ for (let l = 3; l <= 5; l += 1) {
         }]
     )
 
-    test_single_write("Code_Fence space before close - "+l+" backticks",
+    test_single_write("Code_Fence:"+l+" after paragraph",
+        "a"+"\n"+
+        fence+"\n"+
+        "b"+"\n"+
+        fence,
+        [{
+            type    : smd.Token.Paragraph,
+            children: ["a"],
+        }, {
+            type    : smd.Token.Code_Fence,
+            children: ["b"],
+        }],
+    )
+
+    test_single_write("Code_Fence:"+l+" space before close",
         fence+"\nfoo\n "+fence,
         [{
             type    : smd.Token.Code_Fence,
@@ -335,7 +349,7 @@ for (let l = 3; l <= 5; l += 1) {
         }]
     )
 
-    test_single_write("Code_Fence with language - "+l+" backticks",
+    test_single_write("Code_Fence:"+l+" with language",
         fence+"js\nfoo\n"+fence,
         [{
             type    : smd.Token.Code_Fence,
@@ -344,7 +358,7 @@ for (let l = 3; l <= 5; l += 1) {
         }],
     )
 
-    test_single_write("Code_Fence escaped backticks - "+l+" backticks",
+    test_single_write("Code_Fence:"+l+" escaped backticks",
         fence+"\n"+fence_less+"\n"+fence,
         [{
             type    : smd.Token.Code_Fence,
@@ -352,7 +366,7 @@ for (let l = 3; l <= 5; l += 1) {
         }],
     )
 
-    test_single_write("Code_Fence - bad_end_fence:less - "+l+" backticks",
+    test_single_write("Code_Fence:"+l+" - bad_end_fence:less",
         fence+"\n"+
         fence_less+"\n"+
         fence,
@@ -362,7 +376,7 @@ for (let l = 3; l <= 5; l += 1) {
         }],
     )
 
-    test_single_write("Code_Fence - bad_end_fence:more - "+l+" backticks",
+    test_single_write("Code_Fence:"+l+" - bad_end_fence:more",
         fence+"\n"+
         fence_more+"\n"+
         fence,
@@ -372,7 +386,7 @@ for (let l = 3; l <= 5; l += 1) {
         }],
     )
 
-    test_single_write("Code_Fence - bad_end_fence:char - "+l+" backticks",
+    test_single_write("Code_Fence:"+l+" - bad_end_fence:char",
         fence+"\n"+
         fence+"b"+"\n"+
         fence,
@@ -382,7 +396,7 @@ for (let l = 3; l <= 5; l += 1) {
         }],
     )
 
-    test_single_write("Code_Fence - bad_end_fence:space - "+l+" backticks",
+    test_single_write("Code_Fence:"+l+" - bad_end_fence:space",
         fence+"\n"+
         "`".padStart(l)+"\n"+
         fence,
@@ -392,7 +406,7 @@ for (let l = 3; l <= 5; l += 1) {
         }],
     )
 
-    test_single_write("Multiple Code Fences should be separated - "+l+" backticks",
+    test_single_write("Multiple Code Fence:"+l+" should be separated",
         `${fence}\nFoo\n${fence}\n\nBar\n\n${fence}\nBaz\n${fence}`,
         [{
             type    : smd.Token.Code_Fence,
@@ -406,7 +420,7 @@ for (let l = 3; l <= 5; l += 1) {
         }],
     )
 
-    test_single_write("Nested Code Fences - "+l+" backticks",
+    test_single_write("Nested Code Fence:"+l,
         `${fence_more}\nbefore\n${fence}js\nsome js\n${fence}\n${fence_more}`,
         [{
             type    : smd.Token.Code_Fence,
@@ -1317,7 +1331,7 @@ for (const [c, token] of /** @type {const} */([
     for (let l = 3; l <= 5; l += 1) {
         let fence = '`'.repeat(l)
 
-        test_single_write("Code_Fence ("+l+") in " + list_name + suffix,
+        test_single_write("Code_Fence:"+l+" in " + list_name + suffix,
             c+" "+"a"+"\n"+
             indent+fence+"\n"+
             indent+"b"+"\n"+
@@ -1340,7 +1354,7 @@ for (const [c, token] of /** @type {const} */([
             }],
         )
 
-        test_single_write("Code_Fence ("+l+") after " + list_name + suffix,
+        test_single_write("Code_Fence:"+l+" after " + list_name + suffix,
             c+" "+"a"+"\n"+
             fence+"\n"+
             "b"+"\n"+

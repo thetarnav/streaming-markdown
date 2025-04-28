@@ -637,6 +637,9 @@ export function parser_write(p, chunk) {
                                 ^
                     */
                     end_tokens_to_indent(p, p.indent_len)
+                    if (p.tokens[p.len] === PARAGRAPH) {
+                        end_token(p)
+                    }
         
                     add_token(p, CODE_FENCE)
                     if (p.pending.length > p.fence_start) {
