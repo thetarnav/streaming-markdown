@@ -81,6 +81,12 @@ export const BR = {
     children: []
 }
 
+const ANSI_GRAY  = "\u001b[30m"
+const ANSI_RED   = "\u001b[31m"
+const ANSI_GREEN = "\u001b[32m"
+const ANSI_CYAN  = "\u001b[36m"
+const ANSI_RESET = "\u001b[0m"
+
 /**
  * @param {number} len
  * @param {number} h
@@ -88,16 +94,16 @@ export const BR = {
 function compare_pad(len, h) {
     let txt = ""
     if (h < 0) {
-        txt += "\u001b[31m"
+        txt += ANSI_RED
     } else if (h > 0) {
-        txt += "\u001b[32m"
+        txt += ANSI_GREEN
     } else {
-        txt += "\u001b[30m"
+        txt += ANSI_GRAY
     }
     for (let i = 0; i <= len; i += 1) {
         txt += ": "
     }
-    txt += "\u001b[0m"
+    txt += ANSI_RESET
     return txt
 }
 
@@ -135,7 +141,7 @@ function compare_push_node(node, lines, len, h) {
  * @param {number} h
  * @returns {void} */
 function compare_push_type(type, lines, len, h) {
-    lines.push(compare_pad(len, h) + "\u001b[36m" + smd.token_to_string(type) + "\u001b[0m")
+    lines.push(compare_pad(len, h) + ANSI_CYAN + smd.token_to_string(type) + ANSI_RESET)
 }
 
 /**
@@ -258,18 +264,19 @@ function compare_children(children, expected_children, lines, len) {
  * @param {string  } markdown
  * @returns {void} */
 function assert_children(children, expected_children, markdown) {
+
     /** @type {string[]} */
-    const lines = []
-    const result = compare_children(children, expected_children, lines, 0)
-    if (!result) {
-        const stl = Error.stackTraceLimit
+    let lines = []
+    
+    if (!compare_children(children, expected_children, lines, 0)) {
+        let stl = Error.stackTraceLimit
         Error.stackTraceLimit = 0
-        const e = new Error(
-            "Children not equal\n"+
-            "Input:\n```\n"+
+        let e = new Error(
+            ANSI_RED+"Children not equal\n"+ANSI_RESET+
+            ANSI_GRAY+"Input:\n"+ANSI_RESET+
             markdown+
-            "\n```\n"+
-            "Tokens:\n"+
+            "\n"+
+            ANSI_GRAY+"Tokens:\n"+ANSI_RESET+
             lines.join("\n")+
             "\n"
         )
