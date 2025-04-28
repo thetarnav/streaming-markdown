@@ -692,6 +692,8 @@ export function parser_write(p, chunk) {
                 break // fail
             /* Table */
             case '|':
+                end_tokens_to_len(p, p.blockquote_idx)
+
                 add_token(p, TABLE)
                 add_token(p, TABLE_ROW)
 
