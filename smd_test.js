@@ -42,6 +42,18 @@ for (let level = 1; level <= 6; level += 1) {
             children: ["foo"]
         }]
     )
+
+    test_single_write(`Heading_${level} ended after newline`,
+        "#".repeat(level)+" "+"foo"+"\n"+
+        "bar",
+        [{
+            type    : heading_type,
+            children: ["foo"]
+        }, {
+            type    : smd.Token.Paragraph,
+            children: ["bar"],
+        }]
+    )
 }
 
 test_single_write("Newline",

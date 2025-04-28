@@ -705,12 +705,26 @@ export function parser_write(p, chunk) {
 
             let to_write = pending_with_char
 
-            /* Add line break */
+            /* Add a line break and continue in previous token */
             if (p.token === LINE_BREAK) {
-                /* Add a line break and continue in previous token */
+
                 p.token = p.tokens[p.len]
-                p.renderer.add_token(p.renderer.data, LINE_BREAK)
-                p.renderer.end_token(p.renderer.data)
+
+                switch (p.token) {
+                /* Headings should be ended with a line break */
+                case HEADING_1:
+                case HEADING_2:
+                case HEADING_3:
+                case HEADING_4:
+                case HEADING_5:
+                case HEADING_6:
+                    end_token(p)
+                    break
+                default:
+                    p.renderer.add_token(p.renderer.data, LINE_BREAK)
+                    p.renderer.end_token(p.renderer.data)
+                    break
+                }
             }
             /* Code Block */
             else if (p.indent_len >= 4) {
