@@ -267,10 +267,10 @@ function display_whitespace(str) {
     for (let i = 0; i < str.length; i += 1) {
         let c = str[i]
         switch (c) {
-        case ' ':  txt += ANSI_GRAY + "·"     + ANSI_RESET ;break
-        case '\n': txt += ANSI_GRAY + "\\n\n" + ANSI_RESET ;break
-        case '\r': txt += ANSI_GRAY + "\\r"   + ANSI_RESET ;break
-        case '\t': txt += ANSI_GRAY + "\\t"   + ANSI_RESET ;break
+        case ' ':  txt += ANSI_GRAY + "·"   + ANSI_RESET ;break
+        case '\n': txt += ANSI_GRAY + "↵\n" + ANSI_RESET ;break
+        case '\r': txt += ANSI_GRAY + "↵"   + ANSI_RESET ;break
+        case '\t': txt += ANSI_GRAY + "⇥"   + ANSI_RESET ;break
         default:
             if (c < ' ') {
                 txt += ANSI_GRAY+"\\x"+c.charCodeAt(0).toString(16).padStart(2, '0')+ANSI_RESET
