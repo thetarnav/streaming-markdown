@@ -527,15 +527,20 @@ export function parser_write(p, chunk) {
                     }
                     break // fail
                 case ' ':
+                    end_tokens_to_indent(p, p.indent_len)
                     switch (p.pending.length) {
-                    case 1: add_token(p, HEADING_1); clear_root_pending(p); continue
-                    case 2: add_token(p, HEADING_2); clear_root_pending(p); continue
-                    case 3: add_token(p, HEADING_3); clear_root_pending(p); continue
-                    case 4: add_token(p, HEADING_4); clear_root_pending(p); continue
-                    case 5: add_token(p, HEADING_5); clear_root_pending(p); continue
-                    case 6: add_token(p, HEADING_6); clear_root_pending(p); continue
+                    case 1: add_token(p, HEADING_1) ;break
+                    case 2: add_token(p, HEADING_2) ;break
+                    case 3: add_token(p, HEADING_3) ;break
+                    case 4: add_token(p, HEADING_4) ;break
+                    case 5: add_token(p, HEADING_5) ;break
+                    case 6: add_token(p, HEADING_6) ;break
+                    default:
+                        console.assert(false, "Should not reach here")
+                        return
                     }
-                    console.assert(false, "Should not reach here")
+                    clear_root_pending(p)
+                    continue
                 }
                 break // fail
             /* Blockquote */

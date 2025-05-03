@@ -1080,17 +1080,17 @@ for (const [c, token] of /** @type {const} */([
     ["1.",   smd.Token.List_Ordered],
     ["420.", smd.Token.List_Ordered],
 ])) {
-    const list_name = token === smd.Token.List_Unordered
+    let list_name = token === smd.Token.List_Unordered
         ? "List Unordered"
         : "List Ordered"
-    const suffix = "; prefix: "+c
+    let suffix = "; prefix: "+c
 
-    const attrs = c === "420."
+    let attrs = c === "420."
         ? {[smd.Attr.Start]: "420"}
         : undefined
 
-    const indent       = " ".repeat(c.length + 1)
-    const indent_small = " ".repeat(c.length)
+    let indent       = " ".repeat(c.length + 1)
+    let indent_small = " ".repeat(c.length)
 
     test_single_write(list_name + suffix,
         c+" foo",
@@ -1411,7 +1411,94 @@ for (const [c, token] of /** @type {const} */([
         )
     }
 
-    // test_single_write(list_name + " single line nesting" + suffix,
+    for (let add_newline of [false, true]) {
+        let newline = add_newline ? "\n" : ""
+        let newline_title = add_newline ? "; newline" : ""
+
+        test_single_write(list_name+" after heading"+newline_title+suffix,
+            "# a\n"+
+            newline+
+            c+" b",
+            [{
+                type    : smd.Token.Heading_1,
+                children: ["a"],
+            }, {
+                type    : token,
+                attrs   : attrs,
+                children: [{
+                    type    : smd.Token.List_Item,
+                    children: ["b"]
+                }]
+            }]
+        )
+
+        test_single_write(list_name+" nested after heading"+newline_title+suffix,
+            "# a\n"+
+            newline+
+            c+" b"+"\n"+
+            indent+"* c",
+            [{
+                type    : smd.Token.Heading_1,
+                children: ["a"],
+            }, {
+                type    : token,
+                attrs   : attrs,
+                children: [{
+                    type    : smd.Token.List_Item,
+                    children: ["b", {
+                        type    : smd.Token.List_Unordered,
+                        children: [{
+                            type    : smd.Token.List_Item,
+                            children: ["c"]
+                        }]
+                    }]
+                }]
+            }]
+        )
+
+        test_single_write(list_name+" before heading"+newline_title+suffix,
+            c+" a\n"+
+            newline+
+            "# b",
+            [{
+                type    : token,
+                attrs   : attrs,
+                children: [{
+                    type    : smd.Token.List_Item,
+                    children: ["a"]
+                }]
+            }, {
+                type    : smd.Token.Heading_1,
+                children: ["b"],
+            }]
+        )
+
+        test_single_write(list_name+" nested before heading"+newline_title+suffix,
+            c+" a\n"+
+            indent+"- b"+"\n"+
+            newline+
+            "## c",
+            [{
+                type    : token,
+                attrs   : attrs,
+                children: [{
+                    type    : smd.Token.List_Item,
+                    children: ["a", {
+                        type    : smd.Token.List_Unordered,
+                        children: [{
+                            type    : smd.Token.List_Item,
+                            children: ["b"]
+                        }]
+                    }]
+                }]
+            }, {
+                type    : smd.Token.Heading_2,
+                children: ["c"],
+            }]
+        )
+    }
+
+    // test_single_write(list_name+" single line nesting"+suffix,
     //     c+" * a",
     //     [{
     //         type    : token,
