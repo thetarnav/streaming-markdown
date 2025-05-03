@@ -81,11 +81,12 @@ export const BR = {
     children: []
 }
 
-const ANSI_GRAY  = "\u001b[30m"
-const ANSI_RED   = "\u001b[31m"
-const ANSI_GREEN = "\u001b[32m"
-const ANSI_CYAN  = "\u001b[36m"
-const ANSI_RESET = "\u001b[0m"
+const ANSI_GRAY   = "\u001b[30m"
+const ANSI_RED    = "\u001b[31m"
+const ANSI_GREEN  = "\u001b[32m"
+const ANSI_PURPLE = "\u001b[35m"
+const ANSI_CYAN   = "\u001b[36m"
+const ANSI_RESET  = "\u001b[0m"
 
 /**
  * @param {number} len
@@ -259,6 +260,29 @@ function compare_children(children, expected_children, lines, len) {
 }
 
 /**
+ * @param   {string} str
+ * @returns {string} */
+function display_whitespace(str) {
+    let txt = ""
+    for (let i = 0; i < str.length; i += 1) {
+        let c = str[i]
+        switch (c) {
+        case ' ':  txt += ANSI_GRAY + "·"     + ANSI_RESET ;break
+        case '\n': txt += ANSI_GRAY + "\\n\n" + ANSI_RESET ;break
+        case '\r': txt += ANSI_GRAY + "\\r"   + ANSI_RESET ;break
+        case '\t': txt += ANSI_GRAY + "\\t"   + ANSI_RESET ;break
+        default:
+            if (c < ' ') {
+                txt += ANSI_GRAY+"\\x"+c.charCodeAt(0).toString(16).padStart(2, '0')+ANSI_RESET
+            } else {
+                txt += c
+            }
+        }
+    }
+    return txt
+}
+
+/**
  * @param {Children} children
  * @param {Children} expected_children
  * @param {string  } markdown
@@ -273,10 +297,10 @@ function assert_children(children, expected_children, markdown) {
         Error.stackTraceLimit = 0
         let e = new Error(
             ANSI_RED+"Children not equal\n"+ANSI_RESET+
-            ANSI_GRAY+"Input:\n"+ANSI_RESET+
-            markdown+
+            ANSI_PURPLE+"Input:\n"+ANSI_RESET+
+            display_whitespace(markdown)+
             "\n"+
-            ANSI_GRAY+"Tokens:\n"+ANSI_RESET+
+            ANSI_PURPLE+"Tokens:\n"+ANSI_RESET+
             lines.join("\n")+
             "\n"
         )
