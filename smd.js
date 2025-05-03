@@ -714,24 +714,9 @@ export function parser_write(p, chunk) {
 
             /* Add a line break and continue in previous token */
             if (p.token === LINE_BREAK) {
-
                 p.token = p.tokens[p.len]
-
-                switch (p.token) {
-                /* Headings should be ended with a line break */
-                case HEADING_1:
-                case HEADING_2:
-                case HEADING_3:
-                case HEADING_4:
-                case HEADING_5:
-                case HEADING_6:
-                    end_token(p)
-                    break
-                default:
-                    p.renderer.add_token(p.renderer.data, LINE_BREAK)
-                    p.renderer.end_token(p.renderer.data)
-                    break
-                }
+                p.renderer.add_token(p.renderer.data, LINE_BREAK)
+                p.renderer.end_token(p.renderer.data)
             }
             /* Code Block */
             else if (p.indent_len >= 4) {
@@ -1231,10 +1216,23 @@ export function parser_write(p, chunk) {
             }
         /* Newline */
         case '\n':
-            if (p.token !== IMAGE &&
-                p.token !== EQUATION_BLOCK &&
-                p.token !== EQUATION_INLINE
-            ) {
+            switch (p.token) {
+            case IMAGE:
+            case EQUATION_BLOCK:
+            case EQUATION_INLINE:
+                break
+            case HEADING_1:
+            case HEADING_2:
+            case HEADING_3:
+            case HEADING_4:
+            case HEADING_5:
+            case HEADING_6:
+                add_text(p)
+                end_tokens_to_len(p, p.blockquote_idx)
+                p.blockquote_idx = 0
+                p.pending = char
+                continue
+            default:
                 add_text(p)
                 p.pending = char
                 p.token = LINE_BREAK

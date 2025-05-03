@@ -55,18 +55,17 @@ for (let level = 1; level <= 6; level += 1) {
         }]
     )
 
-    // // TODO: issue #21
-    // test_single_write(`Heading_${level} after heading`,
-    //     "# foo"+"\n"+
-    //     "#".repeat(level)+" "+"bar",
-    //     [{
-    //         type    : smd.Token.Heading_1,
-    //         children: ["foo"]
-    //     }, {
-    //         type    : heading_type,
-    //         children: ["bar"],
-    //     }]
-    // )
+    test_single_write(`Heading_${level} after heading`,
+        "# foo"+"\n"+
+        "#".repeat(level)+" "+"bar",
+        [{
+            type    : smd.Token.Heading_1,
+            children: ["foo"]
+        }, {
+            type    : heading_type,
+            children: ["bar"],
+        }]
+    )
 }
 
 test_single_write("Newline",
