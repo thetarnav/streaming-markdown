@@ -366,20 +366,19 @@ for (let l = 3; l <= 5; l += 1) {
         }],
     )
 
-    // // TODO: issue #21
-    // test_single_write("Code_Fence:"+l+" after heading",
-    //     "# a"+"\n"+
-    //     fence+"\n"+
-    //     "b"+"\n"+
-    //     fence,
-    //     [{
-    //         type    : smd.Token.Heading_1,
-    //         children: ["a"],
-    //     }, {
-    //         type    : smd.Token.Code_Fence,
-    //         children: ["b"],
-    //     }],
-    // )
+    test_single_write("Code_Fence:"+l+" after heading",
+        "# a"+"\n"+
+        fence+"\n"+
+        "b"+"\n"+
+        fence,
+        [{
+            type    : smd.Token.Heading_1,
+            children: ["a"],
+        }, {
+            type    : smd.Token.Code_Fence,
+            children: ["b"],
+        }],
+    )
 
     test_single_write("Code_Fence:"+l+" space before close",
         fence+"\nfoo\n "+fence,

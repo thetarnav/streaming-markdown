@@ -308,14 +308,23 @@ function end_tokens_to_len(p, len) {
  * @returns {number} */
 function end_tokens_to_indent(p, indent) {
 
+    let idx = 0
     for (let i = 0; i <= p.len; i += 1) {
         indent -= p.spaces[i]
         if (indent < 0) {
-            // avoids setting p.fence_start = 0 in end_tokens_to_len
-            while (p.len > i-1) {end_token(p)}
+            break   
+        }
+        switch (p.tokens[i]) {
+        case CODE_BLOCK:
+        case CODE_FENCE:
+        case BLOCKQUOTE:
+        case LIST_ITEM:
+            idx = i
             break
         }
     }
+
+    while (p.len > idx) {end_token(p)}
     
     return indent
 }
@@ -632,14 +641,11 @@ export function parser_write(p, chunk) {
                         parser_write(p, pending_with_char)
                     }
                     continue
-                case '\n':
+                case '\n': {
                     /*  ```lang\n
                                 ^
                     */
                     end_tokens_to_indent(p, p.indent_len)
-                    if (p.tokens[p.len] === PARAGRAPH) {
-                        end_token(p)
-                    }
         
                     add_token(p, CODE_FENCE)
                     if (p.pending.length > p.fence_start) {
@@ -648,6 +654,7 @@ export function parser_write(p, chunk) {
                     clear_root_pending(p)
                     p.token = NEWLINE
                     continue
+                }
                 default:
                     /*  ```lang\n
                             ^
