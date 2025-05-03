@@ -1411,9 +1411,19 @@ for (const [c, token] of /** @type {const} */([
         )
     }
 
-    for (let add_newline of [false, true]) {
-        let newline = add_newline ? "\n" : ""
-        let newline_title = add_newline ? "; newline" : ""
+    for (let add_newline of /** @type {const} */([0, 1, 2])) {
+        /** @type {string} */ let newline = ""
+        /** @type {string} */ let newline_title = ""
+        switch (add_newline) {
+        case 1:
+            newline = "\n"
+            newline_title = "; newline"
+            break
+        case 2:
+            newline = indent+"\n"
+            newline_title = "; indent newline"
+            break
+        }
 
         test_single_write(list_name+" after heading"+newline_title+suffix,
             "# a\n"+

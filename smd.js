@@ -505,6 +505,7 @@ export function parser_write(p, chunk) {
                 */
                 if (p.tokens[p.len] === LIST_ITEM && p.token === LINE_BREAK) {
                     end_token(p)
+                    clear_root_pending(p)
                     p.pending = char
                     continue
                 }
@@ -513,6 +514,7 @@ export function parser_write(p, chunk) {
                  And ignore newlines in root
                 */
                 end_tokens_to_len(p, p.blockquote_idx)
+                clear_root_pending(p)
                 p.blockquote_idx = 0
                 p.fence_start = 0
                 p.pending = char
