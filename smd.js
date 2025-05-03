@@ -589,9 +589,10 @@ export function parser_write(p, chunk) {
                         continue
                     case '\n':
                         if (p.hr_chars < 3) break
+                        end_tokens_to_indent(p, p.indent_len)
                         p.renderer.add_token(p.renderer.data, RULE)
                         p.renderer.end_token(p.renderer.data)
-                        p.pending = ""
+                        clear_root_pending(p)
                         p.hr_chars = 0
                         continue
                     }

@@ -175,34 +175,50 @@ test_single_write("Trim too many spaces in italic",
 
 for (const c of ["*", "-", "_"]) {
     for (let l = 3; l <= 6; l += 1) {
-        let txt = ""
+        let rule = ""
         for (let i = 0; i < l; i += 1) {
             if (i % 2 === 0) {
-                txt += " " // mix in some spaces
+                rule += " " // mix in some spaces
             }
-            txt += c
+            rule += c
         }
 
-        test_single_write('Horizontal Rule "' + txt + '"',
-            txt,
+        test_single_write('Horizontal Rule "'+rule+'"',
+            rule,
             [{
+                type    : smd.Token.Rule,
+                children: []
+            }]
+        )
+
+        test_single_write("Text after Horizontal Rule",
+            rule+"\n"+
+            "foo",
+            [{
+                type    : smd.Token.Rule,
+                children: []
+            }, {
+                type    : smd.Token.Paragraph,
+                children: ["foo"],
+            }]
+        )
+
+        test_single_write("Horizontal Rule after list",
+            "- foo\n"+
+            rule,
+            [{
+                type    : smd.Token.List_Unordered,
+                children: [{
+                    type    : smd.Token.List_Item,
+                    children: ["foo"],
+                }]
+            }, {
                 type    : smd.Token.Rule,
                 children: []
             }]
         )
     }
 }
-
-test_single_write("Text after Horizontal Rule",
-    "---\nfoo",
-    [{
-        type    : smd.Token.Rule,
-        children: []
-    }, {
-        type    : smd.Token.Paragraph,
-        children: ["foo"],
-    }]
-)
 
 for (let l = 1; l <= 4; l += 1) {
     const c = '`'.repeat(l)
