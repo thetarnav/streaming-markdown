@@ -4,30 +4,21 @@ import {test_single_write, BR} from "./smd_test_setup.js"
 
 for (let level = 1; level <= 6; level += 1) {
 
-    /** @type {smd.Token} */
-    let heading_type
-    switch (level) {
-    case 1: heading_type = smd.Token.Heading_1; break
-    case 2: heading_type = smd.Token.Heading_2; break
-    case 3: heading_type = smd.Token.Heading_3; break
-    case 4: heading_type = smd.Token.Heading_4; break
-    case 5: heading_type = smd.Token.Heading_5; break
-    case 6: heading_type = smd.Token.Heading_6; break
-    default: throw new Error("Invalid heading level")
-    }
+    let heading = smd.heading_from_level(level)
+    let hashes = "#".repeat(level)
 
     test_single_write(`Heading_${level}`,
-        "#".repeat(level) + " " + "foo",
+        hashes+" "+"foo",
         [{
-            type    : heading_type,
+            type    : heading,
             children: ["foo"]
         }]
     )
 
     test_single_write(`Heading_${level} with Line Italic`,
-        "#".repeat(level) + " foo *bar*",
+        hashes+" foo *bar*",
         [{
-            type    : heading_type,
+            type    : heading,
             children: ["foo ", {
                 type    : smd.Token.Italic_Ast,
                 children: ["bar"]
@@ -36,18 +27,18 @@ for (let level = 1; level <= 6; level += 1) {
     )
 
     test_single_write(`Heading_${level} after line break`,
-        "\n" + "#".repeat(level) + " " + "foo",
+        "\n"+hashes+" "+"foo",
         [{
-            type    : heading_type,
+            type    : heading,
             children: ["foo"]
         }]
     )
 
     test_single_write(`Heading_${level} ended after newline`,
-        "#".repeat(level)+" "+"foo"+"\n"+
+        hashes+" "+"foo"+"\n"+
         "bar",
         [{
-            type    : heading_type,
+            type    : heading,
             children: ["foo"]
         }, {
             type    : smd.Token.Paragraph,
@@ -57,12 +48,12 @@ for (let level = 1; level <= 6; level += 1) {
 
     test_single_write(`Heading_${level} after heading`,
         "# foo"+"\n"+
-        "#".repeat(level)+" "+"bar",
+        hashes+" "+"bar",
         [{
             type    : smd.Token.Heading_1,
             children: ["foo"]
         }, {
-            type    : heading_type,
+            type    : heading,
             children: ["bar"],
         }]
     )

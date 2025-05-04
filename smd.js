@@ -147,6 +147,36 @@ export function attr_to_html_attr(type) {
 }
 
 /**
+ * @param   {number} level
+ * @returns {Token } */
+export const level_to_heading = (level) => {
+    switch (level) {
+    case 1:  return HEADING_1
+    case 2:  return HEADING_2
+    case 3:  return HEADING_3
+    case 4:  return HEADING_4
+    case 5:  return HEADING_5
+    default: return HEADING_6
+    }
+}
+export const heading_from_level = level_to_heading
+
+/**
+ * @param   {Token} token
+ * @returns {number} */
+export const heading_to_level = (token) => {
+    switch (token) {
+    case HEADING_1: return 1
+    case HEADING_2: return 2
+    case HEADING_3: return 3
+    case HEADING_4: return 4
+    case HEADING_5: return 5
+    case HEADING_6: return 6
+    default:        return 0
+    }
+}
+
+/**
  * @typedef  {object      } Parser
  * @property {Any_Renderer} renderer        - {@link Renderer} interface
  * @property {string      } text            - Text to be added to the last token in the next flush
@@ -530,17 +560,7 @@ export function parser_write(p, chunk) {
                     break // fail
                 case ' ':
                     end_tokens_to_indent(p, p.indent_len)
-                    switch (p.pending.length) {
-                    case 1: add_token(p, HEADING_1) ;break
-                    case 2: add_token(p, HEADING_2) ;break
-                    case 3: add_token(p, HEADING_3) ;break
-                    case 4: add_token(p, HEADING_4) ;break
-                    case 5: add_token(p, HEADING_5) ;break
-                    case 6: add_token(p, HEADING_6) ;break
-                    default:
-                        console.assert(false, "Should not reach here")
-                        return
-                    }
+                    add_token(p, heading_from_level(p.pending.length))
                     clear_root_pending(p)
                     continue
                 }
