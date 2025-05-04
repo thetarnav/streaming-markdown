@@ -36,9 +36,9 @@
         "postpublish": "rm smd.d.* smd.min.js"
     },
     "devDependencies": {
-        "@types/node": "^22.13.9",
-        "esbuild": "^0.25.0",
-        "typescript": "^5.8.2"
+        "@types/node": "^22.15.3",
+        "esbuild": "^0.25.3",
+        "typescript": "^5.8.3"
     },
     "keywords": [
         "markdown",
@@ -46,7 +46,7 @@
         "html",
         "ai"
     ],
-    "packageManager": "npm@10.9.0",
+    "packageManager": "pnpm@10.10.0",
     "engines": {
         "node": ">=20"
     }
