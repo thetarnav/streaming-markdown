@@ -18,9 +18,28 @@
         {
             "type": "chrome",
             "request": "launch",
-            "name": "Launch Chrome against localhost",
+            "name": "Launch Chrome",
             "url": "http://localhost:3000",
             "webRoot": "${workspaceFolder}",
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Run Dev",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+        },
+    ],
+    "compounds": [
+        {
+            "name": "Run Dev & Chrome",
+            "configurations": ["Run Dev", "Launch Chrome"],
         }
-    ]
+    ],
 }
