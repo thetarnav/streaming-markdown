@@ -1298,6 +1298,7 @@ export function parser_write(p, chunk) {
         case '_':
         case '*': {
             if (p.token === IMAGE ||
+                p.token === LINK ||
                 p.token === EQUATION_BLOCK ||
                 p.token === EQUATION_INLINE ||
                 p.token === STRONG_AST)

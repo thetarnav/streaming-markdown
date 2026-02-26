@@ -753,6 +753,18 @@ test_single_write("Link",
     }]
 )
 
+test_single_write("Link with Underline",
+    "[title_with_underline](url)",
+    [{
+        type: smd.Token.Paragraph,
+        children: [{
+            type: smd.Token.Link,
+            attrs: { [smd.Attr.Href]: "url" },
+            children: ["title_with_underline"],
+        }]
+    }]
+)
+
 test_single_write("Link with code",
     "[`title`](url)",
     [{
