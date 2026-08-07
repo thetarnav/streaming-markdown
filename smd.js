@@ -574,7 +574,7 @@ export function parser_write(p, chunk) {
                 a new blockquote can be created
                 */
                 if (next_blockquote_idx === -1) {
-                    end_tokens_to_len(p, p.blockquote_idx)
+                    end_tokens_to_indent(p, p.indent_len)
                     p.blockquote_idx += 1
                     p.fence_start = 0
                     add_token(p, BLOCKQUOTE)
@@ -727,7 +727,7 @@ export function parser_write(p, chunk) {
                 break // fail
             /* Table */
             case '|':
-                end_tokens_to_len(p, p.blockquote_idx)
+                end_tokens_to_indent(p, p.indent_len)
 
                 add_token(p, TABLE)
                 add_token(p, TABLE_ROW)
