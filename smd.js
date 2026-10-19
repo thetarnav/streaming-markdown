@@ -881,7 +881,11 @@ export function parser_write(p, chunk) {
                 /*  ```\n<code>\n```\n
                 |                    ^
                 */
-                if (pending_with_char.length === p.fence_start + p.fence_end + 1) {
+                // Only a line-start fence can close the block. Before the
+                // first content character, fence_end is still zero.
+                if ((p.pending[0] === '\n' || p.fence_end === 0) &&
+                    pending_with_char.length === p.fence_start + p.fence_end + 1
+                ) {
                     add_text(p)
                     end_token(p)
                     p.pending = ""

@@ -338,3 +338,25 @@ export function test_single_write(title, markdown, expected_children) {
         assert_children(renderer.data.root.children, expected_children, markdown)
     })
 }
+
+/**
+ * Check every possible boundary between two streaming chunks.
+ * @param {string} title
+ * @param {string} markdown
+ * @param {Children} expected_children
+ * @returns {void}
+ */
+export function test_chunked_write(title, markdown, expected_children) {
+    t.test(title + "; every two-chunk split;", () => {
+        for (let split = 1; split < markdown.length; split += 1) {
+            const renderer = test_renderer()
+            const parser = smd.parser(renderer)
+
+            smd.parser_write(parser, markdown.slice(0, split))
+            smd.parser_write(parser, markdown.slice(split))
+            smd.parser_end(parser)
+
+            assert_children(renderer.data.root.children, expected_children, markdown)
+        }
+    })
+}
