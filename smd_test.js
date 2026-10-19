@@ -1,6 +1,6 @@
 import * as smd from "./smd.js"
 
-import {test_single_write, BR} from "./smd_test_setup.js"
+import {test_single_write, test_chunked_write, BR} from "./smd_test_setup.js"
 
 for (let level = 1; level <= 6; level += 1) {
 
@@ -336,6 +336,22 @@ for (let l = 1; l <= 2; l += 1) {
     )
 }
 
+{
+    const markdown = "# Test start\n\n```\nthis is a\nmultiline code\nfunction_call(```\ncode should end after this\n```\n\nPost-code text"
+    const expected = [{
+        type    : smd.Token.Heading_1,
+        children: ["Test start"],
+    }, {
+        type    : smd.Token.Code_Fence,
+        children: ["this is a\nmultiline code\nfunction_call(```\ncode should end after this"],
+    }, {
+        type    : smd.Token.Paragraph,
+        children: ["Post-code text"],
+    }]
+    test_single_write("Code_Fence issue #40", markdown, expected)
+    test_chunked_write("Code_Fence issue #40", markdown, expected)
+}
+
 for (let l = 3; l <= 5; l += 1) {
 
     let fence      = '`'.repeat(l)
@@ -357,6 +373,20 @@ for (let l = 3; l <= 5; l += 1) {
             children: ["foo"]
         }]
     )
+
+    for (const prefix of ["function_call(", "x", " x", "\nfunction_call("]) {
+        const markdown = fence+"\n"+prefix+fence+"\nstill code\n"+fence+"\n\nPost-code text"
+        const expected = [{
+            type    : smd.Token.Code_Fence,
+            children: [prefix+fence+"\nstill code"],
+        }, {
+            type    : smd.Token.Paragraph,
+            children: ["Post-code text"],
+        }]
+        const title = "Code_Fence:"+l+" mid-line fence after "+JSON.stringify(prefix)
+        test_single_write(title, markdown, expected)
+        test_chunked_write(title, markdown, expected)
+    }
 
     test_single_write("Code_Fence:"+l+" after paragraph",
         "a"+"\n"+
